@@ -120,10 +120,14 @@ src/
 - Middleware = `proxy.ts` (Next 16). Rol en metadata como bootstrap; migrará a
   `profiles` en Sesión 1 (único punto a cambiar: `getUserRole`).
 - Push del repo: **commit local sin push** (a elección del usuario; sin remoto aún).
+- Clave pública Supabase en formato nuevo `sb_publishable_...` (sustituye a la
+  anon JWT); va en `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 **Pendiente / al empezar la Sesión 1:**
-- Rellenar `.env.local` con las credenciales reales de Supabase y verificar el
-  ciclo login/logout end-to-end en el navegador.
+- `.env.local` ya tiene las credenciales reales de Supabase (EU) y están
+  **validadas** (endpoint settings → 200, email auth activo). Falta la prueba
+  interactiva del enlace mágico (requiere abrir el email) y comprobar en Supabase
+  que las Redirect URLs permiten `http://localhost:3000/**`.
 - Configurar un remoto git y hacer push cuando se decida.
 - Sesión 1: modelo de datos completo + RLS + `supabase gen types` (mover el rol a
   `profiles`).
