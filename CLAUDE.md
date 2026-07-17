@@ -175,5 +175,41 @@ src/
   repo/cliente).
 - Panel profesional: lista y ficha de pacientes, invitaciones, tareas (Sesión 2).
 
+### Sesión 2 — Panel profesional: gestión de pacientes ✅ (completada)
+
+**Hecho:**
+- Migraciones `…010` (`patient_notes` + RLS) y `…011` (`invitation_preview`,
+  función SECURITY DEFINER para la landing pública de invitación).
+- **Capa de queries** centralizada en `src/lib/queries/` (identity, patients con
+  resumen, tasks, notes, invitations, patient-detail) — nunca lookups sueltos.
+- **Server actions** en `src/lib/actions/` (patients: crear/estado/etiquetas,
+  tasks CRUD, notes, invitations) con `revalidatePath`.
+- **Dashboard `/pro`**: lista de pacientes con resumen (tareas pendientes, próxima
+  cita, última actividad, alertas), filtros por estado (activo/archivado/todos) y
+  por etiqueta, alta de paciente.
+- **Ficha `/pro/patients/[id]`**: cabecera (estado, etiquetas editables,
+  archivar/reactivar), pestañas — **Tareas** (CRUD completo) y **Notas** (CRUD)
+  funcionales; Escalas/Citas/Pagos/Diario/Documentos en solo-lectura con datos
+  reales (gestión completa en sus sesiones).
+- **Invitación por link** (token de un solo uso) generable desde la ficha +
+  landing pública `/invite/[token]` (valida vía `invitation_preview`).
+- Tipos conectados a los clientes Supabase (`createBrowserClient<Database>`).
+- Verificación: `build` + `lint` + `typecheck` OK; **`npm run test:pro`** (flujo
+  profesional real contra Supabase) **16/16**; `test:rls` sigue 24/24.
+
+**Decisiones / notas:**
+- `patient_notes`: notas privadas del profesional (el paciente no tiene acceso).
+- Tabs por query param (`?tab=`), server-rendered (sin JS para navegar).
+- El `patients_guard` permite al profesional dueño archivar/reactivar (cambiar
+  `status`); histórico intacto.
+- El proxy hace pública la ruta `/invite`.
+
+**Pendiente / al empezar la Sesión 3:**
+- La UI del panel necesita probarse en navegador con un profesional logueado
+  (login por magic link, no automatizable); la lógica de datos está verificada
+  por `test:pro`.
+- Sesión 3: PWA del paciente — alta por invitación (consumir token vía
+  `accept_invitation`), home, completar tareas, botón de emergencia.
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md

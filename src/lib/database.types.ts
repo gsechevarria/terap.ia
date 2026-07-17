@@ -424,6 +424,45 @@ export type Database = {
           },
         ]
       }
+      patient_notes: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          patient_id: string
+          professional_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          patient_id: string
+          professional_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          patient_id?: string
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_notes_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_notes_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           created_at: string
@@ -985,6 +1024,14 @@ export type Database = {
       current_patient_id: { Args: never; Returns: string }
       current_patient_professional_id: { Args: never; Returns: string }
       current_professional_id: { Args: never; Returns: string }
+      invitation_preview: {
+        Args: { p_token: string }
+        Returns: {
+          expires_at: string
+          professional_name: string
+          valid: boolean
+        }[]
+      }
       professional_owns_patient: {
         Args: { p_patient_id: string }
         Returns: boolean

@@ -14,7 +14,7 @@ import { ROLES, getUserRole, homePathForRole } from "@/lib/auth/roles";
  * usuario + rol con `supabase.auth.getUser()`. Esto es defensa en profundidad.
  */
 
-const PUBLIC_PREFIXES = ["/login", "/auth"];
+const PUBLIC_PREFIXES = ["/login", "/auth", "/invite"];
 
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/") return true;
