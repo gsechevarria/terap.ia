@@ -132,5 +132,48 @@ src/
 - Sesión 1: modelo de datos completo + RLS + `supabase gen types` (mover el rol a
   `profiles`).
 
+### Sesión 1 — Modelo de datos completo + RLS ✅ (completada)
+
+**Hecho:**
+- **9 migraciones** en `supabase/migrations/` (`…001`–`…009`), **aplicadas** al
+  proyecto remoto (`supabase db push`).
+- **19 tablas**, todas con RLS: professionals, patients, invitations, tasks,
+  task_completions, scales, scale_assignments, scale_responses, appointments,
+  payment_settings, session_packs, payments, mood_entries, resources, documents,
+  consent_templates, consents, emergency_links, notifications.
+- Helpers `SECURITY DEFINER` para RLS sin recursión: `current_professional_id()`,
+  `current_patient_id()`, `current_patient_professional_id()`,
+  `professional_owns_patient()`.
+- Glue de auth: trigger `handle_new_user` (crea `professionals` al registrarse) y
+  función `accept_invitation` (token de un solo uso + caducidad).
+- Escalas **opt-in**: sin `scale_assignments` activo el paciente no ve ni puede
+  responder. Seed catálogo **PHQ-9** y **GAD-7** (v1).
+- Trigger `compute_scale_response`: score + severidad (rangos estándar) + flag de
+  ítem crítico (PHQ-9 ítem 9). Solo calcula/clasifica, no interpreta.
+- Pagos **sin facturación** (céntimos). Seed emergencias **024/112**.
+- Tipos generados en `src/lib/database.types.ts` (`npm run gen:types`) y
+  conectados a los clientes Supabase (`createBrowserClient<Database>`, etc.).
+- **Test de RLS** `scripts/test-rls.mjs` (`npm run test:rls`): **24/24 OK** —
+  aislamiento profesional↔profesional y paciente↔paciente, escritura cruzada
+  bloqueada, opt-in y scoring.
+- `supabase` CLI fijado como devDependency; `config.toml` vía `supabase init`.
+
+**Decisiones / notas:**
+- **No se creó tabla `profiles`**: el ámbito se deriva de pertenecer a
+  `professionals`/`patients`; el rol operativo lo sigue leyendo la app del
+  metadata (Sesión 0) vía `getUserRole`. Migrar el origen del rol a BD queda para
+  cuando haga falta (solo cambiaría `getUserRole`).
+- Se añadió `consent_templates` (plantilla) separada de `consents` (firma).
+- La migración `…009` endurece el `with check` de escritura del profesional
+  (exige `professional_owns_patient`) tras detectar el test un hueco; + trigger
+  `patients_guard` (el paciente no puede reasignarse de profesional ni archivarse).
+- Simplificación pendiente (Sesiones 2/5): control por columnas en el
+  `UPDATE` del paciente sobre su ficha/citas.
+
+**Pendiente / al empezar la Sesión 2:**
+- `SUPABASE_SERVICE_ROLE_KEY` está en `.env.local` (solo para `test:rls`; nunca al
+  repo/cliente).
+- Panel profesional: lista y ficha de pacientes, invitaciones, tareas (Sesión 2).
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md
