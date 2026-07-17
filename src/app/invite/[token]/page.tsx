@@ -36,13 +36,14 @@ export default async function InvitePage({
               Válida hasta {formatDate(preview.expires_at)}.
             </p>
             <Link
-              href="/login"
+              href={`/login?invite=${token}`}
               className="mt-6 inline-flex rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
             >
               Acceder para aceptar
             </Link>
             <p className="mt-3 text-xs text-neutral-400">
-              El alta guiada con este enlace se completa en la app del paciente.
+              Recibirás un enlace por correo; ábrelo en este dispositivo para
+              completar tu alta.
             </p>
           </>
         ) : (

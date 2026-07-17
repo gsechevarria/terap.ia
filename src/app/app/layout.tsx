@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { SignOutForm } from "@/components/SignOutForm";
+import { ServiceWorkerRegister } from "@/app/app/_components/ServiceWorkerRegister";
 
 /**
  * Layout de la app del paciente (base de la futura PWA).
@@ -34,6 +35,7 @@ export default async function PatientLayout({ children }: { children: ReactNode 
         </div>
       </header>
       <main className="flex-1 p-4">{children}</main>
+      <ServiceWorkerRegister />
     </div>
   );
 }

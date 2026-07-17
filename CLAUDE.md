@@ -211,5 +211,44 @@ src/
 - Sesión 3: PWA del paciente — alta por invitación (consumir token vía
   `accept_invitation`), home, completar tareas, botón de emergencia.
 
+### Sesión 3 — PWA paciente base ✅ (completada)
+
+**Hecho:**
+- **Alta por invitación**: `/invite/[token]` → `/login?invite=<token>` (fuerza rol
+  paciente) → magic link → `/auth/confirm?next=/onboarding/<token>` →
+  `/onboarding/[token]`. La acción `completeOnboardingAction` consume el token
+  (`accept_invitation`, un solo uso) y **registra la firma del consentimiento**
+  (checkbox + timestamp + hash SHA-256 del texto) en `consents`.
+- Login refactorizado: `page.tsx` (server, lee `?invite`) + `LoginForm.tsx`
+  (client).
+- **Home `/app`**: saludo, próxima cita (con link de videollamada si existe) y
+  tareas; el paciente **completa tareas** (marcar hecha + texto libre opcional).
+  Botón de emergencia (024) siempre visible en el layout. Estado "no vinculado"
+  gestionado.
+- **PWA**: `app/manifest.ts` (standalone, theme calmado `#4f9d8b`, `start_url`
+  `/app`), iconos PNG generados sin dependencias (`npm run gen:icons`),
+  `public/sw.js` (con handler de fetch → instalable) registrado desde el layout,
+  `viewport`/`themeColor`/`appleWebApp` en metadata. Proxy excluye
+  `manifest.webmanifest` y `sw.js`.
+- Verificación: `build`/`lint`/`typecheck` OK; **`npm run test:onboarding`**
+  (alta real contra Supabase: aceptar invitación → vincular → consentimiento →
+  completar tarea → token de un solo uso) **8/8**. `test:rls` 24/24, `test:pro`
+  16/16.
+
+**Decisiones / notas:**
+- Consentimiento: se firma un texto por defecto (`src/lib/consent.ts`); la gestión
+  de plantillas propias del profesional se hará más adelante (`template_id` null).
+- `accept_invitation` es ejecutable por el paciente (verificado); vincula
+  `patients.user_id` sin tocar `professional_id`/`status` (respeta `patients_guard`).
+- Onboarding devuelve resultado (sin `redirect()` en la action) para poder mostrar
+  errores en el cliente.
+
+**Pendiente / al empezar la Sesión 4:**
+- Probar en navegador/móvil el ciclo completo con login por magic link (alta →
+  consentimiento → completar tarea → instalar PWA); la lógica está verificada por
+  `test:onboarding`.
+- Sesión 4: escalas clínicas opt-in (activación por el profesional, formulario en
+  la PWA, puntuación + severidad, alerta ítem 9, gráfica + export).
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md

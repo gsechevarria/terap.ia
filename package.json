@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit",
     "test:rls": "node --env-file=.env.local scripts/test-rls.mjs",
     "test:pro": "node --env-file=.env.local scripts/test-pro-flow.mjs",
+    "test:onboarding": "node --env-file=.env.local scripts/test-onboarding.mjs",
     "db:push": "supabase db push",
-    "gen:types": "supabase gen types typescript --project-id levufuoigdlexscpvlgk --schema public > src/lib/database.types.ts"
+    "gen:types": "supabase gen types typescript --project-id levufuoigdlexscpvlgk --schema public > src/lib/database.types.ts",
+    "gen:icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

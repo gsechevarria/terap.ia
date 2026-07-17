@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 
@@ -11,6 +11,14 @@ export const metadata: Metadata = {
   title: "terap.ia",
   description:
     "Espacio de bienestar mental entre profesional y paciente de consulta privada.",
+  appleWebApp: { capable: true, title: "terap.ia", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4f9d8b",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
