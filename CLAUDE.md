@@ -423,5 +423,28 @@ src/
 - Sesión 9: analítica de consulta (ocupación, no-shows, ingresos, activos vs
   archivados; evolución agregada de escalas).
 
+### Sesión 9 — Analítica de consulta ✅ (completada)
+
+**Hecho:**
+- Sin migración (agrega datos ya existentes). Query `getProfessionalAnalytics`
+  (`src/lib/queries/analytics.ts`).
+- **`/pro/analitica`** (nav): tiles (pacientes activos/archivados, **tasa de
+  no-shows**, citas de las últimas 8 semanas), **ocupación semanal** (BarChart),
+  **ingresos por mes** (BarChart, reutiliza `getPaymentsOverview`) y **evolución
+  agregada de escalas** (media mensual por escala, `ScoreChart`) — anónima.
+- Componente `BarChart` (SVG, una serie, tema-aware).
+- Todo **descriptivo y anonimizado**; sin interpretación clínica.
+- Verificación: `build`/`lint`/`typecheck` OK; **`npm run test:analytics` 6/6**
+  (activos/archivados, no-shows 33%, ocupación 8 sem., ingresos, respuestas de
+  escala visibles al profesional). Resto de tests verdes.
+
+**Notas:**
+- Con la BD sin seed, el panel muestra estados vacíos ("se poblará con el seed");
+  la historia coherente llega con la **Sesión 11** (seed).
+
+**Pendiente / al empezar la Sesión 10:**
+- Sesión 10: apps nativas (Capacitor) — envolver la PWA, push nativo, biometría,
+  checklist de publicación.
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md

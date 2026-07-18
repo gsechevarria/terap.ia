@@ -16,6 +16,7 @@
     "test:payments": "node --env-file=.env.local scripts/test-payments.mjs",
     "test:wellbeing": "node --env-file=.env.local scripts/test-wellbeing.mjs",
     "test:notifications": "node --env-file=.env.local scripts/test-notifications.mjs",
+    "test:analytics": "node --env-file=.env.local scripts/test-analytics.mjs",
     "db:push": "supabase db push",
     "gen:types": "supabase gen types typescript --project-id levufuoigdlexscpvlgk --schema public > src/lib/database.types.ts",
     "gen:icons": "node scripts/gen-icons.mjs"
