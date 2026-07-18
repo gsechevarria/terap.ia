@@ -13,8 +13,12 @@ import {
 } from "@/lib/queries/patient-detail";
 import { getScaleCatalog, getFlaggedCountForPatient } from "@/lib/queries/scales";
 import { getPatientPaymentDetail } from "@/lib/queries/payments";
+import { getProfessionalResources } from "@/lib/queries/wellbeing";
 import { ScalesPanel } from "@/app/pro/_components/ScalesPanel";
 import { PaymentsPanel } from "@/app/pro/_components/PaymentsPanel";
+import { ResourcesPanel } from "@/app/pro/_components/ResourcesPanel";
+import { DocumentsPanel } from "@/app/pro/_components/DocumentsPanel";
+import { ScoreChart } from "@/app/pro/_components/ScoreChart";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { StatusButton } from "@/app/pro/_components/StatusButton";
 import { TagsEditor } from "@/app/pro/_components/TagsEditor";
@@ -29,6 +33,7 @@ const TABS = [
   { key: "citas", label: "Citas" },
   { key: "pagos", label: "Pagos" },
   { key: "diario", label: "Diario" },
+  { key: "recursos", label: "Recursos" },
   { key: "documentos", label: "Documentos" },
 ] as const;
 
@@ -128,6 +133,7 @@ export default async function PatientDetailPage({
             {tab === "citas" && <AppointmentsTab patientId={id} />}
             {tab === "pagos" && <PaymentsTab patientId={id} />}
             {tab === "diario" && <DiaryTab patientId={id} />}
+            {tab === "recursos" && <ResourcesTab patientId={id} />}
             {tab === "documentos" && <DocumentsTab patientId={id} />}
           </div>
         </div>
@@ -142,14 +148,6 @@ export default async function PatientDetailPage({
         </aside>
       </div>
     </div>
-  );
-}
-
-function FutureNote({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="mt-4 rounded-lg border border-dashed border-black/[.15] p-3 text-xs text-neutral-500 dark:border-white/[.15]">
-      {children}
-    </p>
   );
 }
 
@@ -211,58 +209,53 @@ async function PaymentsTab({ patientId }: { patientId: string }) {
 
 async function DiaryTab({ patientId }: { patientId: string }) {
   const entries = await getRecentMoodEntries(patientId);
+  const points = [...entries]
+    .reverse()
+    .map((e) => ({ date: e.entry_date, score: e.mood_value, severity: null }));
   return (
     <div>
       {entries.length === 0 ? (
         <p className="text-sm text-neutral-500">Sin entradas en el diario.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {entries.map((e) => (
-            <li
-              key={e.id}
-              className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
-            >
-              <div>
-                <span className="font-medium">{"● ".repeat(e.mood_value)}</span>
-                <span className="text-xs text-neutral-500">{e.mood_value}/5</span>
-                {e.note && (
-                  <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-                    {e.note}
-                  </p>
-                )}
-              </div>
-              <span className="text-xs text-neutral-400">{formatDate(e.entry_date)}</span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
+            <h3 className="mb-3 text-sm font-semibold">
+              Evolución del ánimo (1-5)
+            </h3>
+            <ScoreChart points={points} max={5} severity={[]} title="Ánimo" />
+          </div>
+          <ul className="mt-4 flex flex-col gap-2">
+            {entries.map((e) => (
+              <li
+                key={e.id}
+                className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
+              >
+                <div>
+                  <span className="font-medium">{e.mood_value}/5</span>
+                  {e.note && (
+                    <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
+                      {e.note}
+                    </p>
+                  )}
+                </div>
+                <span className="text-xs text-neutral-400">
+                  {formatDate(e.entry_date)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
-      <FutureNote>
-        El diario emocional (solo registro, sin interpretación) se gestiona en la
-        Sesión 7.
-      </FutureNote>
     </div>
   );
 }
 
+async function ResourcesTab({ patientId }: { patientId: string }) {
+  const resources = await getProfessionalResources(patientId);
+  return <ResourcesPanel patientId={patientId} resources={resources} />;
+}
+
 async function DocumentsTab({ patientId }: { patientId: string }) {
   const docs = await getDocuments(patientId);
-  return (
-    <div>
-      {docs.length === 0 ? (
-        <p className="text-sm text-neutral-500">Sin documentos.</p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {docs.map((d) => (
-            <li
-              key={d.id}
-              className="rounded-lg border border-black/[.08] p-3 text-sm dark:border-white/[.12]"
-            >
-              {d.title ?? d.storage_path}
-            </li>
-          ))}
-        </ul>
-      )}
-      <FutureNote>El repositorio de documentos se gestiona en la Sesión 7.</FutureNote>
-    </div>
-  );
+  return <DocumentsPanel patientId={patientId} documents={docs} />;
 }

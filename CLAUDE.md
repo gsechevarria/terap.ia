@@ -350,5 +350,39 @@ src/
 - Probar en navegador el ciclo cita→asistencia→pago/bono→resumen→export.
 - Sesión 7: diario emocional (paciente) + biblioteca de recursos + documentos.
 
+### Sesión 7 — Diario emocional + biblioteca + documentos ✅ (completada)
+
+**Hecho:**
+- Migración `…014`: bucket privado de Storage **`files`** + políticas RLS
+  (ruta `<patientId>/<archivo>`; el profesional dueño sube/lee/borra, el paciente
+  lee).
+- **Diario emocional**: el paciente registra ánimo 1-5 + nota (`MoodLogger` en
+  `/app` y `/app/diary`), ve su histórico y gráfica. El profesional lo ve en la
+  ficha (pestaña Diario) con **gráfica** (reutiliza `ScoreChart`, max 5, sin
+  bandas). **Sin análisis ni sugerencias.**
+- **Biblioteca de recursos** (ficha, pestaña Recursos, `ResourcesPanel`): el
+  profesional comparte **enlaces** (por paciente o generales para todos sus
+  pacientes) y **sube archivos** PDF/audio (Storage, por paciente); borrar. El
+  paciente los ve en `/app/resources`.
+- **Documentos** (ficha, pestaña Documentos, `DocumentsPanel`): subir/listar/
+  borrar por paciente (Storage). Descarga por **URL firmada** vía ruta `/files`
+  (la RLS de Storage autoriza; `createSignedUrl` solo funciona si hay permiso).
+- Paciente: cards/enlaces en el home a Diario y Recursos.
+- Verificación: `build`/`lint`/`typecheck` OK; **`npm run test:wellbeing` 10/10**
+  (diario RLS, recursos por paciente/generales, **Storage con RLS**: subida del
+  profesional, URL firmada del paciente, aislamiento). Resto de tests verdes.
+
+**Decisiones / notas:**
+- Storage por paciente (`<patientId>/…`); recursos-archivo son por paciente; los
+  recursos "generales" (a todos) son solo enlaces.
+- Descarga vía route handler `/files?path=` que hace `createSignedUrl` con la
+  sesión del usuario (RLS de Storage decide).
+- Subidas mediante server actions con `FormData` (el archivo se sube con la sesión
+  del profesional; RLS aplica).
+
+**Pendiente / al empezar la Sesión 8:**
+- Probar en navegador la subida/descarga real de archivos y el diario.
+- Sesión 8: notificaciones y recordatorios (Web Push VAPID + Edge Functions/cron).
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md

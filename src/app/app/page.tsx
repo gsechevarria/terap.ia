@@ -6,6 +6,7 @@ import { getMyActiveAssignments } from "@/lib/queries/scales";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { PatientTasks } from "@/app/app/_components/PatientTasks";
+import { MoodLogger } from "@/app/app/_components/MoodLogger";
 
 export default async function PatientHome() {
   const patient = await getCurrentPatient();
@@ -38,6 +39,8 @@ export default async function PatientHome() {
           Hola{firstName ? `, ${firstName}` : ""} 🌿
         </h1>
       </header>
+
+      <MoodLogger />
 
       <section className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
         <h2 className="text-sm font-semibold text-neutral-500">Próxima cita</h2>
@@ -110,6 +113,21 @@ export default async function PatientHome() {
       )}
 
       <PatientTasks tasks={tasks} />
+
+      <div className="flex gap-3">
+        <Link
+          href="/app/diary"
+          className="flex-1 rounded-xl border border-black/[.08] p-4 text-center text-sm font-medium transition-colors hover:bg-black/[.02] dark:border-white/[.12] dark:hover:bg-white/[.04]"
+        >
+          Mi diario
+        </Link>
+        <Link
+          href="/app/resources"
+          className="flex-1 rounded-xl border border-black/[.08] p-4 text-center text-sm font-medium transition-colors hover:bg-black/[.02] dark:border-white/[.12] dark:hover:bg-white/[.04]"
+        >
+          Recursos
+        </Link>
+      </div>
     </div>
   );
 }
