@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { SignOutForm } from "@/components/SignOutForm";
 import { ServiceWorkerRegister } from "@/app/app/_components/ServiceWorkerRegister";
+import { NativeGate } from "@/app/app/_components/NativeGate";
 
 /**
  * Layout de la app del paciente (base de la futura PWA).
@@ -22,6 +23,7 @@ export default async function PatientLayout({ children }: { children: ReactNode 
   if (role !== ROLES.PATIENT) redirect("/login?error=sin-rol");
 
   return (
+    <NativeGate>
     <div className="flex min-h-full flex-col">
       <header className="flex items-center justify-between border-b border-black/[.08] px-4 py-3 dark:border-white/[.12]">
         <span className="font-semibold">terap.ia</span>
@@ -45,5 +47,6 @@ export default async function PatientLayout({ children }: { children: ReactNode 
       <main className="flex-1 p-4">{children}</main>
       <ServiceWorkerRegister />
     </div>
+    </NativeGate>
   );
 }

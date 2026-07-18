@@ -38,6 +38,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Capacitor: los proyectos nativos se generan con `cap add` en una máquina con
+# las toolchains (Xcode / Android SDK). No se versionan en este repo.
+/android
+/ios
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

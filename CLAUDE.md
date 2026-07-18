@@ -446,5 +446,36 @@ src/
 - Sesión 10: apps nativas (Capacitor) — envolver la PWA, push nativo, biometría,
   checklist de publicación.
 
+### Sesión 10 — Apps nativas (Capacitor) 🟡 (código listo; build en dispositivo pendiente de toolchains)
+
+**Hecho:**
+- Migración `…016`: `device_push_tokens` (FCM/APNs) + RLS por usuario.
+- **Capacitor 8** instalado (`core/cli/android/ios/app/push-notifications` +
+  `@aparajita/capacitor-biometric-auth` + `@capacitor/assets`). `capacitor.config.ts`
+  (`appId com.terapia.app`, `webDir www`, `server.url` desde `CAP_SERVER_URL`:
+  la app nativa carga la **PWA desplegada**). `www/index.html` placeholder.
+- **Integración web** (solo actúa en nativo, imports dinámicos tras
+  `Capacitor.isNativePlatform()`, la PWA web no se ve afectada): `src/lib/native.ts`
+  (biometría + push nativo), `NativeGate` en el layout `/app` (desbloqueo
+  biométrico al abrir + registro de push nativo), acción `saveNativePushTokenAction`.
+- Scripts `cap:*` (add/sync/open/assets) y **checklist de publicación**
+  (`docs/PUBLICACION_STORES.md`): FCM/APNs, `NSFaceIDUsageDescription`, privacidad
+  de datos de salud en App Store/Play Store.
+- `.gitignore`: `/android` y `/ios` (proyectos nativos se generan con `cap add`).
+- Verificación: `build`/`lint`/`typecheck` **web** OK.
+
+**Límite del entorno (honesto):**
+- Este entorno es **Windows sin Xcode ni Android SDK**: el **build instalable en
+  dispositivo/simulador** (el cierre de la sesión) **no se pudo ejecutar aquí**.
+  Los proyectos `android/`/`ios/` y el build se generan en una máquina con las
+  toolchains siguiendo `docs/PUBLICACION_STORES.md`.
+- Envío de push **nativo** (FCM Admin) queda pendiente de credenciales FCM; el web
+  push sí funciona. `device_push_tokens` reutiliza el patrón RLS ya verificado.
+
+**Pendiente / al empezar la Sesión 11:**
+- Generar/compilar nativo en macOS (iOS) y con Android SDK; probar biometría+push.
+- Sesión 11: seed idempotente (2 profesionales, 8-10 pacientes, 3 meses de
+  histórico) + deploy Vercel + landing + guion de demo + Lighthouse.
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md
