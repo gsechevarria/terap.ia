@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
+import { settleAttendedAppointment } from "@/lib/payments";
 import type { TablesInsert } from "@/lib/types";
 
 type Freq = "none" | "daily" | "weekly" | "biweekly" | "monthly";
@@ -154,6 +155,11 @@ export async function setAttendanceAction(
   if (attendance === "attended") patch.status = "completed";
   const { error } = await supabase.from("appointments").update(patch).eq("id", id);
   if (error) throw new Error(error.message);
+
+  // Consumo de bono / pago pendiente automático al acudir.
+  if (attendance === "attended") {
+    await settleAttendedAppointment(id);
+  }
   revalidatePath("/pro/agenda");
 }
 

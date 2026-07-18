@@ -7,14 +7,15 @@ import { getNotesForPatient } from "@/lib/queries/notes";
 import { getActiveInvitation } from "@/lib/queries/invitations";
 import {
   getDocuments,
-  getPaymentsSummary,
   getRecentMoodEntries,
   getScaleAssignments,
   getUpcomingAppointments,
 } from "@/lib/queries/patient-detail";
 import { getScaleCatalog, getFlaggedCountForPatient } from "@/lib/queries/scales";
+import { getPatientPaymentDetail } from "@/lib/queries/payments";
 import { ScalesPanel } from "@/app/pro/_components/ScalesPanel";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
+import { PaymentsPanel } from "@/app/pro/_components/PaymentsPanel";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { StatusButton } from "@/app/pro/_components/StatusButton";
 import { TagsEditor } from "@/app/pro/_components/TagsEditor";
 import { InvitePanel } from "@/app/pro/_components/InvitePanel";
@@ -204,46 +205,8 @@ async function AppointmentsTab({ patientId }: { patientId: string }) {
 }
 
 async function PaymentsTab({ patientId }: { patientId: string }) {
-  const { payments, debtCents, packRemaining } =
-    await getPaymentsSummary(patientId);
-  return (
-    <div>
-      <div className="flex gap-4">
-        <div className="rounded-lg border border-black/[.08] px-4 py-2 dark:border-white/[.12]">
-          <div className="text-xs text-neutral-400">Deuda pendiente</div>
-          <div className="font-semibold">{formatCurrency(debtCents)}</div>
-        </div>
-        <div className="rounded-lg border border-black/[.08] px-4 py-2 dark:border-white/[.12]">
-          <div className="text-xs text-neutral-400">Sesiones de bono</div>
-          <div className="font-semibold">{packRemaining}</div>
-        </div>
-      </div>
-      {payments.length === 0 ? (
-        <p className="mt-4 text-sm text-neutral-500">Sin pagos registrados.</p>
-      ) : (
-        <ul className="mt-4 flex flex-col gap-2">
-          {payments.map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
-            >
-              <span className="text-sm">{formatCurrency(p.amount_cents, p.currency)}</span>
-              <span
-                className={`text-xs font-medium ${
-                  p.status === "paid" ? "text-emerald-600" : "text-amber-600"
-                }`}
-              >
-                {p.status === "paid" ? "pagado" : "pendiente"}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <FutureNote>
-        El seguimiento de pagos (sin facturación) se gestiona en la Sesión 6.
-      </FutureNote>
-    </div>
-  );
+  const detail = await getPatientPaymentDetail(patientId);
+  return <PaymentsPanel patientId={patientId} detail={detail} />;
 }
 
 async function DiaryTab({ patientId }: { patientId: string }) {

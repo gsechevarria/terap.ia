@@ -3,7 +3,8 @@ import { getCurrentPatient } from "@/lib/queries/identity";
 import { getTasksForPatient } from "@/lib/queries/tasks";
 import { getUpcomingAppointments } from "@/lib/queries/patient-detail";
 import { getMyActiveAssignments } from "@/lib/queries/scales";
-import { formatDateTime } from "@/lib/format";
+import { getMyPaymentSummary } from "@/lib/queries/payments";
+import { formatCurrency, formatDateTime } from "@/lib/format";
 import { PatientTasks } from "@/app/app/_components/PatientTasks";
 
 export default async function PatientHome() {
@@ -21,10 +22,11 @@ export default async function PatientHome() {
     );
   }
 
-  const [tasks, appts, scales] = await Promise.all([
+  const [tasks, appts, scales, pay] = await Promise.all([
     getTasksForPatient(patient.id),
     getUpcomingAppointments(patient.id),
     getMyActiveAssignments(),
+    getMyPaymentSummary(),
   ]);
   const nextAppt = appts[0] ?? null;
   const firstName = patient.full_name?.split(" ")[0] ?? "";
@@ -63,6 +65,28 @@ export default async function PatientHome() {
           Ver todas mis citas →
         </Link>
       </section>
+
+      {(pay.debtCents > 0 || pay.packRemaining > 0) && (
+        <Link
+          href="/app/payments"
+          className="flex items-center justify-between rounded-xl border border-black/[.08] p-4 transition-colors hover:bg-black/[.02] dark:border-white/[.12] dark:hover:bg-white/[.04]"
+        >
+          <span className="text-sm text-neutral-500">Pagos</span>
+          <span className="text-sm">
+            {pay.debtCents > 0 && (
+              <span className="font-medium text-amber-600">
+                {formatCurrency(pay.debtCents)} pendiente
+              </span>
+            )}
+            {pay.debtCents > 0 && pay.packRemaining > 0 && " · "}
+            {pay.packRemaining > 0 && (
+              <span className="text-neutral-600 dark:text-neutral-300">
+                bono: {pay.packRemaining}
+              </span>
+            )}
+          </span>
+        </Link>
+      )}
 
       {scales.length > 0 && (
         <section className="flex flex-col gap-2">

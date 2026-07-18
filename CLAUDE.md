@@ -318,5 +318,37 @@ src/
 - Sesión 6: seguimiento de pagos (precios, pagos, bonos, deuda, export) SIN
   facturación.
 
+### Sesión 6 — Seguimiento de pagos (sin facturación) ✅ (completada)
+
+**Hecho:**
+- Sin migración (esquema de pagos ya existía). Importes en **céntimos**.
+- **Ficha, pestaña Pagos** (`PaymentsPanel`): precio por sesión (upsert
+  `payment_settings`), bonos 5/10 con precio, registro de pagos
+  (pagado/pendiente, alternar estado, eliminar), deuda + bono restante.
+- **Consumo automático de bono**: al marcar una cita como "acudió"
+  (`setAttendanceAction` → `settleAttendedAppointment`): si hay bono activo con
+  sesiones, consume una (`used_sessions++`) y registra un pago cubierto; si no,
+  crea un **pago pendiente** con el precio aplicable (paciente o por defecto).
+  Idempotente (no re-liquida una cita ya liquidada).
+- **`/pro/pagos`**: resumen de ingresos por mes + cobrado/pendiente totales +
+  **export CSV** para gestoría (`/pro/pagos/export`, con BOM).
+- **Paciente** (`/app/payments` + card en el home): pendiente de pago + bono
+  restante + lista de pendientes (solo lectura).
+- **Prohibido facturar**: no hay generación de facturas en código ni UI; el CSV
+  es un export para la gestoría, no una factura (avisos en la UI).
+- Verificación: `build`/`lint`/`typecheck` OK; **`npm run test:payments` 10/10**
+  (precio upsert, bono con consumo, pendiente→pagado, deuda del paciente,
+  aislamiento). Resto de tests siguen verdes.
+
+**Decisiones / notas:**
+- El auto-consumo vive en `src/lib/payments.ts` (`settleAttendedAppointment`),
+  llamado desde la action de asistencia; se ejercita por la UI de agenda (el test
+  cubre las operaciones de pago/bono y la RLS).
+- `session_type` por defecto `individual` (no hay tipos por cita en el esquema).
+
+**Pendiente / al empezar la Sesión 7:**
+- Probar en navegador el ciclo cita→asistencia→pago/bono→resumen→export.
+- Sesión 7: diario emocional (paciente) + biblioteca de recursos + documentos.
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md

@@ -16,6 +16,7 @@ export type ScaleAssignment = Tables<"scale_assignments">;
 export type ScaleResponse = Tables<"scale_responses">;
 export type Appointment = Tables<"appointments">;
 export type Payment = Tables<"payments">;
+export type PaymentSetting = Tables<"payment_settings">;
 export type SessionPack = Tables<"session_packs">;
 export type MoodEntry = Tables<"mood_entries">;
 export type ResourceRow = Tables<"resources">;
