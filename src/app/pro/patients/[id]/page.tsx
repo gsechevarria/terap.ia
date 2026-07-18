@@ -63,58 +63,64 @@ export default async function PatientDetailPage({
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Link href="/pro" className="text-sm text-neutral-500 hover:underline">
+      <Link href="/pro" className="text-sm text-ink-3 hover:text-ink">
         ← Pacientes
       </Link>
 
       {alertCount > 0 && (
-        <div className="mt-3 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          ⚠️ Este paciente tiene {alertCount} respuesta
-          {alertCount > 1 ? "s" : ""} con el ítem de riesgo marcado.{" "}
-          <Link
-            href={`/pro/patients/${id}?tab=escalas`}
-            className="font-medium underline"
-          >
-            Ver escalas
-          </Link>
+        <div className="mt-4 flex items-start gap-2.5 rounded border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
+          <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full bg-danger" />
+          <p>
+            Este paciente tiene {alertCount} respuesta
+            {alertCount > 1 ? "s" : ""} con el ítem de riesgo marcado.{" "}
+            <Link
+              href={`/pro/patients/${id}?tab=escalas`}
+              className="font-medium underline underline-offset-2"
+            >
+              Ver escalas
+            </Link>
+          </p>
         </div>
       )}
 
       {/* Cabecera */}
-      <div className="mt-2 flex flex-col gap-3 border-b border-black/[.08] pb-5 dark:border-white/[.12] sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {patient.full_name ?? "Sin nombre"}
-            </h1>
-            {patient.status === "archived" && (
-              <span className="rounded bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
-                archivado
-              </span>
+      <div className="mt-3 flex flex-col gap-3 border-b border-line pb-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-panel text-lg font-semibold text-ink-2">
+            {(patient.full_name ?? "?").charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="page-title truncate">
+                {patient.full_name ?? "Sin nombre"}
+              </h1>
+              {patient.status === "archived" && (
+                <span className="chip">archivado</span>
+              )}
+            </div>
+            {patient.email && (
+              <p className="mt-0.5 text-sm text-ink-2">{patient.email}</p>
             )}
-          </div>
-          {patient.email && (
-            <p className="mt-0.5 text-sm text-neutral-500">{patient.email}</p>
-          )}
-          <div className="mt-2">
-            <TagsEditor patientId={patient.id} tags={patient.tags} />
+            <div className="mt-2">
+              <TagsEditor patientId={patient.id} tags={patient.tags} />
+            </div>
           </div>
         </div>
         <StatusButton patientId={patient.id} status={patient.status} />
       </div>
 
-      <div className="mt-5 grid gap-6 lg:grid-cols-[1fr_18rem]">
+      <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_18rem]">
         <div className="min-w-0">
           {/* Pestañas */}
-          <nav className="flex flex-wrap gap-1 border-b border-black/[.08] dark:border-white/[.12]">
+          <nav className="flex flex-wrap gap-0.5 border-b border-line">
             {TABS.map((t) => (
               <Link
                 key={t.key}
                 href={`/pro/patients/${id}?tab=${t.key}`}
-                className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+                className={`-mb-px border-b-2 px-2.5 py-1.5 text-sm transition-colors duration-100 ${
                   tab === t.key
-                    ? "border-neutral-900 text-neutral-900 dark:border-white dark:text-white"
-                    : "border-transparent text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                    ? "border-ink font-medium text-ink"
+                    : "border-transparent text-ink-2 hover:text-ink"
                 }`}
               >
                 {t.label}
@@ -122,7 +128,7 @@ export default async function PatientDetailPage({
             ))}
           </nav>
 
-          <div className="mt-5">
+          <div className="mt-6">
             {tab === "tareas" && (
               <TasksPanel patientId={id} tasks={await getTasksForPatient(id)} />
             )}
@@ -171,25 +177,25 @@ async function AppointmentsTab({ patientId }: { patientId: string }) {
     <div>
       <Link
         href={`/pro/agenda?patient=${patientId}`}
-        className="mb-3 inline-flex rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-neutral-900"
+        className="btn-primary mb-4"
       >
         Nueva cita en la agenda
       </Link>
       {appts.length === 0 ? (
-        <p className="text-sm text-neutral-500">Sin próximas citas.</p>
+        <p className="text-sm text-ink-2">Sin próximas citas.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="card divide-y divide-line">
           {appts.map((a) => (
             <li
               key={a.id}
-              className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
+              className="flex items-center justify-between px-4 py-3"
             >
               <span className="text-sm">{formatDateTime(a.starts_at)}</span>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-neutral-500">{a.status}</span>
+                <span className="chip">{a.status}</span>
                 <a
                   href={`/appointments/${a.id}/ics`}
-                  className="text-xs text-neutral-500 underline"
+                  className="text-xs text-ink-3 underline underline-offset-2 hover:text-ink"
                 >
                   .ics
                 </a>
@@ -215,30 +221,28 @@ async function DiaryTab({ patientId }: { patientId: string }) {
   return (
     <div>
       {entries.length === 0 ? (
-        <p className="text-sm text-neutral-500">Sin entradas en el diario.</p>
+        <p className="text-sm text-ink-2">Sin entradas en el diario.</p>
       ) : (
         <>
-          <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
+          <div className="card p-4">
             <h3 className="mb-3 text-sm font-semibold">
               Evolución del ánimo (1-5)
             </h3>
             <ScoreChart points={points} max={5} severity={[]} title="Ánimo" />
           </div>
-          <ul className="mt-4 flex flex-col gap-2">
+          <ul className="card mt-4 divide-y divide-line">
             {entries.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
+                className="flex items-start justify-between gap-4 px-4 py-3"
               >
-                <div>
-                  <span className="font-medium">{e.mood_value}/5</span>
+                <div className="min-w-0">
+                  <span className="text-sm font-medium">{e.mood_value}/5</span>
                   {e.note && (
-                    <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-                      {e.note}
-                    </p>
+                    <p className="mt-1 text-sm text-ink-2">{e.note}</p>
                   )}
                 </div>
-                <span className="text-xs text-neutral-400">
+                <span className="shrink-0 text-xs text-ink-3">
                   {formatDate(e.entry_date)}
                 </span>
               </li>

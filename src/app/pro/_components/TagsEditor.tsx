@@ -30,15 +30,12 @@ export function TagsEditor({
 
   if (!editing) {
     return (
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="group flex flex-wrap items-center gap-1.5">
         {tags.length === 0 ? (
-          <span className="text-xs text-neutral-400">Sin etiquetas</span>
+          <span className="text-xs text-ink-3">Sin etiquetas</span>
         ) : (
           tags.map((t) => (
-            <span
-              key={t}
-              className="rounded-full bg-black/[.05] px-2 py-0.5 text-xs text-neutral-600 dark:bg-white/[.08] dark:text-neutral-300"
-            >
+            <span key={t} className="chip">
               {t}
             </span>
           ))
@@ -46,9 +43,9 @@ export function TagsEditor({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-xs text-neutral-500 underline hover:text-neutral-700 dark:hover:text-neutral-300"
+          className="rounded-sm px-1 text-xs text-ink-3 opacity-0 transition-opacity duration-100 group-hover:opacity-100 hover:bg-wash hover:text-ink focus-visible:opacity-100"
         >
-          editar
+          Editar
         </button>
       </div>
     );
@@ -60,13 +57,13 @@ export function TagsEditor({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="ansiedad, quincenal"
-        className="rounded-lg border border-black/[.12] bg-transparent px-2 py-1 text-sm outline-none focus:border-black/40 dark:border-white/[.16]"
+        className="field h-7 w-auto px-2 py-1 text-xs"
       />
       <button
         type="button"
         onClick={save}
         disabled={pending}
-        className="rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+        className="btn-primary btn-sm"
       >
         Guardar
       </button>
@@ -76,9 +73,9 @@ export function TagsEditor({
           setValue(tags.join(", "));
           setEditing(false);
         }}
-        className="text-xs text-neutral-500 underline"
+        className="btn-subtle btn-sm"
       >
-        cancelar
+        Cancelar
       </button>
     </div>
   );

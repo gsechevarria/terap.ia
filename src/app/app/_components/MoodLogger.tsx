@@ -32,8 +32,8 @@ export function MoodLogger() {
   }
 
   return (
-    <section className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-      <h2 className="text-lg font-semibold">¿Cómo estás hoy?</h2>
+    <section className="card p-4">
+      <h2 className="text-base font-semibold">¿Cómo estás hoy?</h2>
       <div className="mt-3 flex justify-between gap-1">
         {FACES.map((f) => (
           <button
@@ -41,14 +41,14 @@ export function MoodLogger() {
             type="button"
             onClick={() => setValue(f.value)}
             aria-label={f.label}
-            className={`flex flex-1 flex-col items-center gap-1 rounded-lg border py-2 transition-colors ${
+            className={`flex flex-1 cursor-pointer flex-col items-center gap-1 rounded border py-2 transition-colors duration-100 ${
               value === f.value
-                ? "border-neutral-900 bg-black/[.04] dark:border-white dark:bg-white/[.08]"
-                : "border-transparent hover:bg-black/[.03] dark:hover:bg-white/[.05]"
+                ? "border-accent bg-accent-soft"
+                : "border-transparent hover:bg-wash"
             }`}
           >
             <span className="text-2xl">{f.emoji}</span>
-            <span className="text-[10px] text-neutral-500">{f.label}</span>
+            <span className="text-[10px] text-ink-2">{f.label}</span>
           </button>
         ))}
       </div>
@@ -60,24 +60,20 @@ export function MoodLogger() {
             onChange={(e) => setNote(e.target.value)}
             rows={2}
             placeholder="¿Quieres añadir algo? (opcional)"
-            className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none dark:border-white/[.16]"
+            className="field"
           />
           <button
             type="button"
             onClick={submit}
             disabled={pending}
-            className="self-start rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+            className="btn-primary self-start"
           >
             {pending ? "Guardando…" : "Registrar"}
           </button>
         </div>
       )}
 
-      {done && (
-        <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400">
-          Registrado 🌿
-        </p>
-      )}
+      {done && <p className="mt-3 text-sm font-medium text-accent">Registrado</p>}
     </section>
   );
 }

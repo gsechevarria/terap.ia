@@ -18,9 +18,6 @@ const STATUS: Record<string, string> = {
   completed: "completada",
 };
 
-const inputCls =
-  "rounded-lg border border-black/[.12] bg-transparent px-2 py-1 text-sm outline-none dark:border-white/[.16]";
-
 export function AppointmentItem({ appt }: { appt: AgendaAppointment }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -40,41 +37,33 @@ export function AppointmentItem({ appt }: { appt: AgendaAppointment }) {
   }
 
   return (
-    <li
-      className={`rounded-lg border border-black/[.08] p-3 dark:border-white/[.12] ${
-        cancelled ? "opacity-60" : ""
-      }`}
-    >
+    <li className={`group p-4 ${cancelled ? "opacity-60" : ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{formatDateTime(appt.starts_at)}</span>
-            <span className="text-xs text-neutral-500">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">
+              {formatDateTime(appt.starts_at)}
+            </span>
+            <span className="text-xs text-ink-2">
               {appt.patientName ?? "—"}
             </span>
-            <span className="rounded bg-black/[.05] px-1.5 py-0.5 text-[11px] text-neutral-600 dark:bg-white/[.08] dark:text-neutral-300">
-              {STATUS[appt.status] ?? appt.status}
-            </span>
+            <span className="chip">{STATUS[appt.status] ?? appt.status}</span>
           </div>
           {appt.video_link && (
             <a
               href={appt.video_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-1 inline-block text-xs text-sky-600 underline"
+              className="mt-1 inline-block text-xs font-medium text-accent hover:underline"
             >
               Videollamada
             </a>
           )}
-          {appt.notes && (
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-              {appt.notes}
-            </p>
-          )}
+          {appt.notes && <p className="mt-1 text-sm text-ink-2">{appt.notes}</p>}
         </div>
 
-        <div className="flex flex-col items-end gap-1.5 text-xs">
-          <label className="flex items-center gap-1 text-neutral-500">
+        <div className="flex flex-col items-end gap-1.5">
+          <label className="flex items-center gap-1.5 text-xs font-medium text-ink-2">
             Asistencia
             <select
               value={appt.attendance}
@@ -87,7 +76,7 @@ export function AppointmentItem({ appt }: { appt: AgendaAppointment }) {
                   ),
                 )
               }
-              className={inputCls}
+              className="field h-7 w-auto px-2 py-0.5 text-xs"
             >
               <option value="pending">Pendiente</option>
               <option value="attended">Acudió</option>
@@ -95,74 +84,71 @@ export function AppointmentItem({ appt }: { appt: AgendaAppointment }) {
               <option value="late_cancel">Canceló tarde</option>
             </select>
           </label>
-          <div className="flex items-center gap-2">
-            <a
-              href={`/appointments/${appt.id}/ics`}
-              className="text-neutral-500 underline hover:text-neutral-800 dark:hover:text-neutral-200"
-            >
+          <div className="flex items-center gap-0.5 opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100">
+            <a href={`/appointments/${appt.id}/ics`} className="btn-subtle btn-sm">
               .ics
             </a>
             <button
               type="button"
               onClick={() => setEditing((v) => !v)}
-              className="text-neutral-500 underline"
+              className="btn-subtle btn-sm"
             >
-              editar
+              Editar
             </button>
             {!cancelled && (
               <button
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => cancelAppointmentAction(appt.id))}
-                className="text-amber-600 underline disabled:opacity-60"
+                className="btn-subtle btn-sm text-warn hover:text-warn"
               >
-                cancelar
+                Cancelar
               </button>
             )}
             <button
               type="button"
               disabled={pending}
               onClick={() => run(() => deleteAppointmentAction(appt.id))}
-              className="text-red-600 underline disabled:opacity-60"
+              className="btn-danger btn-sm"
             >
-              eliminar
+              Eliminar
             </button>
           </div>
         </div>
       </div>
 
       {editing && (
-        <div className="mt-3 grid gap-2 border-t border-black/[.06] pt-3 sm:grid-cols-2 dark:border-white/[.1]">
-          <label className="flex flex-col gap-1 text-xs text-neutral-500">
-            Inicio
+        <div className="mt-3 grid gap-2 border-t border-line pt-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="field-label">Inicio</span>
             <input
               type="datetime-local"
               value={start}
               onChange={(e) => setStart(e.target.value)}
-              className={inputCls}
+              className="field"
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-neutral-500">
-            Fin
+          <label className="block">
+            <span className="field-label">Fin</span>
             <input
               type="datetime-local"
               value={end}
               onChange={(e) => setEnd(e.target.value)}
-              className={inputCls}
+              className="field"
             />
           </label>
           <input
             value={videoLink}
             onChange={(e) => setVideoLink(e.target.value)}
             placeholder="Link de videollamada"
-            className={`${inputCls} sm:col-span-2`}
+            className="field sm:col-span-2"
           />
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             placeholder="Notas"
-            className={`${inputCls} sm:col-span-2`}
+            className="field sm:col-span-2"
           />
           <button
             type="button"
@@ -180,7 +166,7 @@ export function AppointmentItem({ appt }: { appt: AgendaAppointment }) {
                 setEditing(false);
               })
             }
-            className="justify-self-start rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+            className="btn-primary justify-self-start"
           >
             Guardar cambios
           </button>

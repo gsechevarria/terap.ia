@@ -10,9 +10,9 @@ export function BlockItem({ block }: { block: AgendaBlock }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   return (
-    <li className="flex items-center justify-between rounded-lg border border-dashed border-black/[.15] p-3 text-sm dark:border-white/[.15]">
+    <li className="group flex items-center justify-between px-4 py-3 text-sm">
       <span>
-        <span className="text-neutral-500">Bloqueo:</span>{" "}
+        <span className="text-ink-3">Bloqueo:</span>{" "}
         {formatDateTime(block.starts_at)} → {formatDateTime(block.ends_at)}
         {block.reason ? ` · ${block.reason}` : ""}
       </span>
@@ -25,9 +25,9 @@ export function BlockItem({ block }: { block: AgendaBlock }) {
             router.refresh();
           })
         }
-        className="text-xs text-red-600 underline disabled:opacity-60"
+        className="btn-danger btn-sm opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100"
       >
-        eliminar
+        Eliminar
       </button>
     </li>
   );

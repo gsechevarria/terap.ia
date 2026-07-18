@@ -21,8 +21,8 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Analítica</h1>
-      <p className="mt-1 text-sm text-neutral-500">
+      <h1 className="page-title">Analítica</h1>
+      <p className="mt-1 text-sm text-ink-2">
         Resumen descriptivo de tu consulta.
       </p>
 
@@ -93,7 +93,7 @@ export default async function AnalyticsPage() {
         )}
       </Section>
 
-      <p className="mt-8 text-xs text-neutral-400">
+      <p className="mt-10 text-xs text-ink-3">
         Datos descriptivos y anonimizados; no constituyen interpretación clínica.
       </p>
     </div>
@@ -110,10 +110,14 @@ function Tile({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-      <div className="text-xs text-neutral-400">{label}</div>
-      <div className="text-2xl font-semibold">{value}</div>
-      {hint && <div className="text-xs text-neutral-400">{hint}</div>}
+    <div className="card p-4">
+      <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
+        {label}
+      </div>
+      <div className="mt-0.5 text-2xl font-semibold tracking-[-0.01em]">
+        {value}
+      </div>
+      {hint && <div className="text-xs text-ink-3">{hint}</div>}
     </div>
   );
 }
@@ -126,7 +130,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-8">
+    <section className="mt-10">
       <h2 className="mb-3 text-sm font-semibold">{title}</h2>
       {children}
     </section>
@@ -135,8 +139,8 @@ function Section({
 
 function Empty() {
   return (
-    <p className="rounded-lg border border-dashed border-black/[.15] p-4 text-sm text-neutral-500 dark:border-white/[.15]">
-      Aún no hay datos suficientes (se poblará con el seed en la Sesión 11).
+    <p className="rounded-lg border border-dashed border-line p-4 text-sm text-ink-2">
+      Aún no hay datos suficientes.
     </p>
   );
 }

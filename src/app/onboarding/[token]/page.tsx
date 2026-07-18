@@ -25,13 +25,11 @@ export default async function OnboardingPage({
   if (patient && (await hasSignedConsent(patient.id))) redirect("/app");
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{CONSENT_TITLE}</h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Un último paso antes de empezar.
-      </p>
+    <main className="mx-auto w-full max-w-2xl p-6">
+      <p className="section-label">Un último paso antes de empezar</p>
+      <h1 className="page-title mt-2">{CONSENT_TITLE}</h1>
 
-      <div className="mt-5 max-h-[50vh] overflow-y-auto whitespace-pre-wrap rounded-xl border border-black/[.08] bg-black/[.02] p-4 text-sm leading-relaxed dark:border-white/[.12] dark:bg-white/[.03]">
+      <div className="card mt-5 max-h-[50vh] overflow-y-auto bg-panel p-5 text-sm leading-relaxed whitespace-pre-wrap">
         {CONSENT_BODY}
       </div>
 

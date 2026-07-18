@@ -13,62 +13,60 @@ export default async function PaymentsOverviewPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Pagos</h1>
-        <a
-          href="/pro/pagos/export"
-          className="rounded-lg border border-black/[.12] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.16] dark:hover:bg-white/[.06]"
-        >
+        <h1 className="page-title">Pagos</h1>
+        <a href="/pro/pagos/export" className="btn-ghost">
           Exportar CSV
         </a>
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-4">
-        <div className="rounded-xl border border-black/[.08] px-5 py-3 dark:border-white/[.12]">
-          <div className="text-xs text-neutral-400">Cobrado (total)</div>
-          <div className="text-lg font-semibold">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:max-w-md">
+        <div className="card px-5 py-4">
+          <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
+            Cobrado (total)
+          </div>
+          <div className="mt-0.5 text-xl font-semibold">
             {formatCurrency(totalPaidCents)}
           </div>
         </div>
-        <div className="rounded-xl border border-black/[.08] px-5 py-3 dark:border-white/[.12]">
-          <div className="text-xs text-neutral-400">Pendiente (deuda)</div>
-          <div className="text-lg font-semibold text-amber-600">
+        <div className="card px-5 py-4">
+          <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
+            Pendiente (deuda)
+          </div>
+          <div className="mt-0.5 text-xl font-semibold text-warn">
             {formatCurrency(totalPendingCents)}
           </div>
         </div>
       </div>
 
-      <h2 className="mt-8 text-sm font-semibold text-neutral-500">
-        Ingresos por mes
-      </h2>
+      <h2 className="section-label mt-10 mb-2">Ingresos por mes</h2>
       {byMonth.length === 0 ? (
-        <p className="mt-2 text-sm text-neutral-500">Sin cobros registrados.</p>
+        <p className="mt-2 text-sm text-ink-2">Sin cobros registrados.</p>
       ) : (
-        <table className="mt-2 w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-black/[.08] text-left text-neutral-500 dark:border-white/[.12]">
-              <th className="py-2 font-medium">Mes</th>
-              <th className="py-2 font-medium">Pagos</th>
-              <th className="py-2 text-right font-medium">Ingresos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {byMonth.map((m) => (
-              <tr
-                key={m.month}
-                className="border-b border-black/[.05] dark:border-white/[.08]"
-              >
-                <td className="py-2 capitalize">{monthLabel(m.month)}</td>
-                <td className="py-2">{m.count}</td>
-                <td className="py-2 text-right font-medium">
-                  {formatCurrency(m.paidCents)}
-                </td>
+        <div className="card overflow-x-auto">
+          <table className="table-base">
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th>Pagos</th>
+                <th className="text-right">Ingresos</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {byMonth.map((m) => (
+                <tr key={m.month} className="last:[&>td]:border-b-0">
+                  <td className="capitalize">{monthLabel(m.month)}</td>
+                  <td>{m.count}</td>
+                  <td className="text-right font-medium">
+                    {formatCurrency(m.paidCents)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      <p className="mt-6 text-xs text-neutral-400">
+      <p className="mt-6 text-xs text-ink-3">
         Export para la gestoría. terap.ia no emite facturas.
       </p>
     </div>

@@ -29,16 +29,16 @@ export function NotificationPreferences({
   }
 
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="card divide-y divide-line">
       {OPTIONS.map((o) => (
         <li key={o.key}>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="row-hover flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm">
             <input
               type="checkbox"
               checked={prefs[o.key]}
               disabled={pending}
               onChange={() => toggle(o.key)}
-              className="h-4 w-4"
+              className="size-4 accent-[var(--accent)]"
             />
             {o.label}
           </label>

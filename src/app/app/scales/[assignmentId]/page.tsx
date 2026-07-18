@@ -17,7 +17,7 @@ export default async function PatientScalePage({
 
   return (
     <div className="mx-auto max-w-md">
-      <Link href="/app" className="text-sm text-neutral-500 hover:underline">
+      <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
         ← Inicio
       </Link>
       <div className="mt-3">

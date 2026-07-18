@@ -41,46 +41,46 @@ export function InvitePanel({
   }
 
   return (
-    <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-      <h3 className="text-sm font-semibold">Invitación</h3>
+    <div className="card bg-panel p-4">
+      <h3 className="section-label">Invitación</h3>
       {token ? (
-        <div className="mt-2 flex flex-col gap-2">
+        <div className="mt-3 flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <input
               readOnly
               value={link}
-              className="min-w-0 flex-1 rounded-lg border border-black/[.12] bg-black/[.03] px-2 py-1.5 text-xs dark:border-white/[.16] dark:bg-white/[.06]"
+              className="field min-w-0 flex-1 px-2 py-1.5 text-xs"
             />
             <button
               type="button"
               onClick={copy}
-              className="shrink-0 rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white dark:bg-white dark:text-neutral-900"
+              className="btn-primary h-7 shrink-0 px-2.5 text-xs"
             >
               {copied ? "Copiado" : "Copiar"}
             </button>
           </div>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-ink-3">
             Válida hasta {formatDate(expiresAt)}. Un solo uso.{" "}
             <button
               type="button"
               onClick={generate}
               disabled={pending}
-              className="underline disabled:opacity-60"
+              className="underline underline-offset-2 hover:text-ink disabled:opacity-50"
             >
               Regenerar
             </button>
           </p>
         </div>
       ) : (
-        <div className="mt-2">
-          <p className="text-xs text-neutral-500">
+        <div className="mt-3">
+          <p className="text-xs text-ink-2">
             Genera un enlace para que el paciente se dé de alta.
           </p>
           <button
             type="button"
             onClick={generate}
             disabled={pending}
-            className="mt-2 rounded-lg border border-black/[.12] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/[.04] disabled:opacity-60 dark:border-white/[.16] dark:hover:bg-white/[.06]"
+            className="btn-ghost mt-3"
           >
             {pending ? "Generando…" : "Generar enlace de invitación"}
           </button>

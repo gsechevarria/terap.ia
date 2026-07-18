@@ -8,38 +8,42 @@ export default async function PatientPaymentsPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <Link href="/app" className="text-sm text-neutral-500 hover:underline">
+      <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
         ← Inicio
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Pagos</h1>
+      <h1 className="page-title mt-3">Pagos</h1>
 
-      <div className="mt-5 flex gap-4">
-        <div className="flex-1 rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-          <div className="text-xs text-neutral-400">Pendiente de pago</div>
-          <div className="text-lg font-semibold">{formatCurrency(debtCents)}</div>
+      <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="card p-4">
+          <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
+            Pendiente de pago
+          </div>
+          <div className="mt-0.5 text-lg font-semibold">
+            {formatCurrency(debtCents)}
+          </div>
         </div>
-        <div className="flex-1 rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-          <div className="text-xs text-neutral-400">Sesiones de bono</div>
-          <div className="text-lg font-semibold">{packRemaining}</div>
+        <div className="card p-4">
+          <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
+            Sesiones de bono
+          </div>
+          <div className="mt-0.5 text-lg font-semibold">{packRemaining}</div>
         </div>
       </div>
 
-      <h2 className="mt-6 text-sm font-semibold text-neutral-500">
-        Pendiente de pago
-      </h2>
+      <h2 className="section-label mt-8 mb-2">Pendiente de pago</h2>
       {pending.length === 0 ? (
-        <p className="mt-2 text-sm text-neutral-500">
-          No tienes pagos pendientes. 🌿
-        </p>
+        <p className="mt-2 text-sm text-ink-2">No tienes pagos pendientes.</p>
       ) : (
-        <ul className="mt-2 flex flex-col gap-2">
+        <ul className="card divide-y divide-line">
           {pending.map((p) => (
             <li
               key={p.id}
-              className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 text-sm dark:border-white/[.12]"
+              className="flex items-center justify-between px-4 py-3 text-sm"
             >
-              <span>{formatCurrency(p.amount_cents, p.currency)}</span>
-              <span className="text-xs text-neutral-400">
+              <span className="font-medium">
+                {formatCurrency(p.amount_cents, p.currency)}
+              </span>
+              <span className="text-xs text-ink-3">
                 {formatDate(p.created_at)}
               </span>
             </li>

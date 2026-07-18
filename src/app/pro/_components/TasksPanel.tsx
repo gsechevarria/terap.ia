@@ -75,14 +75,14 @@ export function TasksPanel({
   return (
     <div className="flex flex-col gap-5">
       {/* Crear */}
-      <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-        <h3 className="text-sm font-semibold">Nueva tarea</h3>
+      <div className="card bg-panel p-4">
+        <h3 className="section-label">Nueva tarea</h3>
         <div className="mt-3 flex flex-col gap-2">
           <input
             value={creating.title}
             onChange={(e) => setCreating({ ...creating, title: e.target.value })}
             placeholder="Título"
-            className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/[.16]"
+            className="field"
           />
           <textarea
             value={creating.description}
@@ -91,10 +91,10 @@ export function TasksPanel({
             }
             placeholder="Descripción (opcional)"
             rows={2}
-            className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/[.16]"
+            className="field"
           />
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-neutral-500">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-xs font-medium text-ink-2">
               Fecha límite
               <input
                 type="date"
@@ -102,14 +102,14 @@ export function TasksPanel({
                 onChange={(e) =>
                   setCreating({ ...creating, dueDate: e.target.value })
                 }
-                className="rounded-lg border border-black/[.12] bg-transparent px-2 py-1 text-sm outline-none dark:border-white/[.16]"
+                className="field w-auto px-2 py-1"
               />
             </label>
             <button
               type="button"
               onClick={create}
               disabled={pending || !creating.title.trim()}
-              className="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+              className="btn-primary"
             >
               Añadir tarea
             </button>
@@ -119,22 +119,19 @@ export function TasksPanel({
 
       {/* Lista */}
       {tasks.length === 0 ? (
-        <p className="text-sm text-neutral-500">No hay tareas asignadas.</p>
+        <p className="text-sm text-ink-2">No hay tareas asignadas.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="card divide-y divide-line">
           {tasks.map((t) =>
             editingId === t.id ? (
-              <li
-                key={t.id}
-                className="rounded-lg border border-black/[.12] p-3 dark:border-white/[.16]"
-              >
+              <li key={t.id} className="p-4">
                 <div className="flex flex-col gap-2">
                   <input
                     value={editDraft.title}
                     onChange={(e) =>
                       setEditDraft({ ...editDraft, title: e.target.value })
                     }
-                    className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none dark:border-white/[.16]"
+                    className="field"
                   />
                   <textarea
                     value={editDraft.description}
@@ -142,7 +139,7 @@ export function TasksPanel({
                       setEditDraft({ ...editDraft, description: e.target.value })
                     }
                     rows={2}
-                    className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none dark:border-white/[.16]"
+                    className="field"
                   />
                   <div className="flex flex-wrap items-center gap-2">
                     <input
@@ -151,77 +148,76 @@ export function TasksPanel({
                       onChange={(e) =>
                         setEditDraft({ ...editDraft, dueDate: e.target.value })
                       }
-                      className="rounded-lg border border-black/[.12] bg-transparent px-2 py-1 text-sm dark:border-white/[.16]"
+                      className="field w-auto px-2 py-1"
                     />
                     <button
                       type="button"
                       onClick={saveEdit}
                       disabled={pending}
-                      className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+                      className="btn-primary btn-sm"
                     >
                       Guardar
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditingId(null)}
-                      className="text-xs text-neutral-500 underline"
+                      className="btn-subtle btn-sm"
                     >
-                      cancelar
+                      Cancelar
                     </button>
                   </div>
                 </div>
               </li>
             ) : (
-              <li
-                key={t.id}
-                className="rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
-              >
+              <li key={t.id} className="group p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{t.title}</span>
+                      <span className="text-sm font-medium">{t.title}</span>
                       {t.completed ? (
-                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        <span className="rounded-sm bg-accent-soft px-1.5 py-px text-xs font-medium text-accent">
                           hecha
                         </span>
                       ) : (
-                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                        <span className="rounded-sm bg-warn-soft px-1.5 py-px text-xs font-medium text-warn">
                           pendiente
                         </span>
                       )}
                     </div>
                     {t.description && (
-                      <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-300">
+                      <p className="mt-1 text-sm whitespace-pre-wrap text-ink-2">
                         {t.description}
                       </p>
                     )}
-                    <p className="mt-1 text-xs text-neutral-400">
-                      {t.due_date ? `Límite: ${formatDate(t.due_date)}` : "Sin fecha límite"}
+                    <p className="mt-1 text-xs text-ink-3">
+                      {t.due_date
+                        ? `Límite: ${formatDate(t.due_date)}`
+                        : "Sin fecha límite"}
                       {t.completed && t.lastCompletion
                         ? ` · Completada ${formatDateTime(t.lastCompletion.completed_at)}`
                         : ""}
                     </p>
                     {t.completed && t.lastCompletion?.response_text && (
-                      <p className="mt-1 rounded bg-black/[.03] p-2 text-sm dark:bg-white/[.06]">
+                      <p className="mt-2 rounded bg-panel p-2.5 text-sm text-ink-2">
                         “{t.lastCompletion.response_text}”
                       </p>
                     )}
                   </div>
-                  <div className="flex shrink-0 gap-2">
+                  <div className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100">
                     <button
                       type="button"
                       onClick={() => startEdit(t)}
-                      className="text-xs text-neutral-500 underline hover:text-neutral-700 dark:hover:text-neutral-300"
+                      className="btn-subtle btn-sm"
                     >
-                      editar
+                      Editar
                     </button>
                     <button
                       type="button"
                       onClick={() => remove(t.id)}
                       disabled={pending}
-                      className="text-xs text-neutral-500 underline hover:text-red-600 disabled:opacity-60"
+                      className="btn-danger btn-sm"
                     >
-                      eliminar
+                      Eliminar
                     </button>
                   </div>
                 </div>

@@ -9,68 +9,71 @@ export default async function PatientResourcesPage() {
   ]);
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-6">
-      <Link href="/app" className="text-sm text-neutral-500 hover:underline">
-        ← Inicio
-      </Link>
+    <div className="mx-auto flex max-w-md flex-col gap-8">
+      <div>
+        <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
+          ← Inicio
+        </Link>
+        <h1 className="page-title mt-3">Recursos</h1>
+        <div className="mt-4">
+          {resources.length === 0 ? (
+            <p className="text-sm text-ink-2">
+              Tu profesional aún no ha compartido recursos.
+            </p>
+          ) : (
+            <ul className="card divide-y divide-line">
+              {resources.map((r) => (
+                <li
+                  key={r.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3"
+                >
+                  <span className="min-w-0 truncate text-sm font-medium">
+                    {r.title}
+                  </span>
+                  {r.kind === "link" && r.url ? (
+                    <a
+                      href={r.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-sm font-medium text-accent hover:underline"
+                    >
+                      Abrir
+                    </a>
+                  ) : r.storage_path ? (
+                    <a
+                      href={`/files?path=${encodeURIComponent(r.storage_path)}`}
+                      className="shrink-0 text-sm font-medium text-accent hover:underline"
+                    >
+                      Descargar
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
 
       <section>
-        <h1 className="mb-2 text-2xl font-semibold tracking-tight">Recursos</h1>
-        {resources.length === 0 ? (
-          <p className="text-sm text-neutral-500">
-            Tu profesional aún no ha compartido recursos.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {resources.map((r) => (
-              <li
-                key={r.id}
-                className="flex items-center justify-between rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]"
-              >
-                <span className="font-medium">{r.title}</span>
-                {r.kind === "link" && r.url ? (
-                  <a
-                    href={r.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-sky-600 underline"
-                  >
-                    Abrir
-                  </a>
-                ) : r.storage_path ? (
-                  <a
-                    href={`/files?path=${encodeURIComponent(r.storage_path)}`}
-                    className="text-sm text-sky-600 underline"
-                  >
-                    Descargar
-                  </a>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-lg font-semibold">Documentos</h2>
+        <h2 className="mb-2 text-base font-semibold">Documentos</h2>
         {documents.length === 0 ? (
-          <p className="text-sm text-neutral-500">No tienes documentos.</p>
+          <p className="text-sm text-ink-2">No tienes documentos.</p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="card divide-y divide-line">
             {documents.map((d) => (
               <li
                 key={d.id}
-                className="flex items-center justify-between rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]"
+                className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
               >
-                <span>
+                <span className="min-w-0">
                   {d.title ?? "Documento"}
-                  <span className="ml-2 text-xs text-neutral-400">
+                  <span className="ml-2 text-xs text-ink-3">
                     {formatDate(d.created_at)}
                   </span>
                 </span>
                 <a
                   href={`/files?path=${encodeURIComponent(d.storage_path)}`}
-                  className="text-sm text-sky-600 underline"
+                  className="shrink-0 text-sm font-medium text-accent hover:underline"
                 >
                   Descargar
                 </a>

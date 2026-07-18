@@ -36,8 +36,8 @@ export default async function AgendaPage({
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
-      <p className="mt-1 text-sm text-neutral-500">
+      <h1 className="page-title">Agenda</h1>
+      <p className="mt-1 text-sm text-ink-2">
         Próximas citas y disponibilidad desde hoy.
       </p>
 
@@ -46,16 +46,14 @@ export default async function AgendaPage({
         <NewBlock />
       </div>
 
-      <div className="mt-8">
+      <div className="mt-10">
         {appointments.length === 0 ? (
-          <p className="text-sm text-neutral-500">No hay citas próximas.</p>
+          <p className="text-sm text-ink-2">No hay citas próximas.</p>
         ) : (
           [...byDay.entries()].map(([day, appts]) => (
-            <div key={day} className="mb-6">
-              <h2 className="mb-2 text-sm font-semibold capitalize text-neutral-500">
-                {day}
-              </h2>
-              <ul className="flex flex-col gap-2">
+            <div key={day} className="mb-8">
+              <h2 className="section-label mb-2 capitalize">{day}</h2>
+              <ul className="card divide-y divide-line">
                 {appts.map((a) => (
                   <AppointmentItem key={a.id} appt={a} />
                 ))}
@@ -66,10 +64,8 @@ export default async function AgendaPage({
 
         {blocks.length > 0 && (
           <div className="mt-4">
-            <h2 className="mb-2 text-sm font-semibold text-neutral-500">
-              Bloqueos
-            </h2>
-            <ul className="flex flex-col gap-2">
+            <h2 className="section-label mb-2">Bloqueos</h2>
+            <ul className="card divide-y divide-line">
               {blocks.map((b) => (
                 <BlockItem key={b.id} block={b} />
               ))}

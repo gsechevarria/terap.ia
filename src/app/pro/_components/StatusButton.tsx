@@ -26,7 +26,7 @@ export function StatusButton({
           router.refresh();
         })
       }
-      className="rounded-lg border border-black/[.12] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/[.04] disabled:opacity-60 dark:border-white/[.16] dark:hover:bg-white/[.06]"
+      className="btn-ghost"
     >
       {pending ? "…" : status === "active" ? "Archivar" : "Reactivar"}
     </button>

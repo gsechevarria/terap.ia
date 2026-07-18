@@ -44,39 +44,36 @@ export function NotesPanel({
           onChange={(e) => setValue(e.target.value)}
           rows={3}
           placeholder="Nota rápida (privada, solo tú la ves)…"
-          className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/[.16]"
+          className="field"
         />
         <button
           type="button"
           onClick={add}
           disabled={pending || !value.trim()}
-          className="self-start rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+          className="btn-primary self-start"
         >
           Añadir nota
         </button>
       </div>
 
       {notes.length === 0 ? (
-        <p className="text-sm text-neutral-500">Sin notas todavía.</p>
+        <p className="text-sm text-ink-2">Sin notas todavía.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="card divide-y divide-line">
           {notes.map((n) => (
-            <li
-              key={n.id}
-              className="rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
-            >
-              <p className="whitespace-pre-wrap text-sm">{n.body}</p>
+            <li key={n.id} className="group p-4">
+              <p className="text-sm whitespace-pre-wrap">{n.body}</p>
               <div className="mt-1.5 flex items-center justify-between">
-                <span className="text-xs text-neutral-400">
+                <span className="text-xs text-ink-3">
                   {formatDateTime(n.created_at)}
                 </span>
                 <button
                   type="button"
                   onClick={() => remove(n.id)}
                   disabled={pending}
-                  className="text-xs text-neutral-500 underline hover:text-red-600 disabled:opacity-60"
+                  className="btn-danger btn-sm opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100"
                 >
-                  eliminar
+                  Eliminar
                 </button>
               </div>
             </li>

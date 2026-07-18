@@ -9,9 +9,6 @@ import {
 } from "@/lib/actions/resources";
 import type { ResourceRow } from "@/lib/types";
 
-const inputCls =
-  "rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/[.16]";
-
 export function ResourcesPanel({
   patientId,
   resources,
@@ -76,70 +73,120 @@ export function ResourcesPanel({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-        <h3 className="text-sm font-semibold">Compartir un enlace</h3>
-        <div className="mt-2 flex flex-col gap-2">
-          <input value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} placeholder="Título" className={inputCls} />
-          <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://…" className={inputCls} />
-          <label className="flex items-center gap-2 text-sm text-neutral-500">
-            <input type="checkbox" checked={linkShared} onChange={(e) => setLinkShared(e.target.checked)} />
+      <div className="card bg-panel p-4">
+        <h3 className="section-label">Compartir un enlace</h3>
+        <div className="mt-3 flex flex-col gap-2">
+          <input
+            value={linkTitle}
+            onChange={(e) => setLinkTitle(e.target.value)}
+            placeholder="Título"
+            className="field"
+          />
+          <input
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            placeholder="https://…"
+            className="field"
+          />
+          <label className="flex items-center gap-2 text-sm text-ink-2">
+            <input
+              type="checkbox"
+              checked={linkShared}
+              onChange={(e) => setLinkShared(e.target.checked)}
+              className="accent-[var(--accent)]"
+            />
             Compartir con todos mis pacientes
           </label>
-          <button type="button" onClick={addLink} disabled={pending} className="self-start rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900">
+          <button
+            type="button"
+            onClick={addLink}
+            disabled={pending}
+            className="btn-primary self-start"
+          >
             Añadir enlace
           </button>
         </div>
       </div>
 
-      <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-        <h3 className="text-sm font-semibold">Subir archivo (PDF / audio)</h3>
-        <div className="mt-2 flex flex-col gap-2">
-          <input value={fileTitle} onChange={(e) => setFileTitle(e.target.value)} placeholder="Título" className={inputCls} />
+      <div className="card bg-panel p-4">
+        <h3 className="section-label">Subir archivo (PDF / audio)</h3>
+        <div className="mt-3 flex flex-col gap-2">
+          <input
+            value={fileTitle}
+            onChange={(e) => setFileTitle(e.target.value)}
+            placeholder="Título"
+            className="field"
+          />
           <div className="flex flex-wrap items-center gap-2">
-            <select value={fileKind} onChange={(e) => setFileKind(e.target.value as "pdf" | "audio")} className={inputCls}>
+            <select
+              value={fileKind}
+              onChange={(e) => setFileKind(e.target.value as "pdf" | "audio")}
+              className="field w-auto"
+            >
               <option value="pdf">PDF</option>
               <option value="audio">Audio</option>
             </select>
-            <input ref={fileRef} type="file" className="text-sm" />
-            <button type="button" onClick={addFile} disabled={pending} className="rounded-lg border border-black/[.12] px-3 py-1.5 text-sm font-medium disabled:opacity-60 dark:border-white/[.16]">
+            <input ref={fileRef} type="file" className="text-sm text-ink-2" />
+            <button
+              type="button"
+              onClick={addFile}
+              disabled={pending}
+              className="btn-ghost"
+            >
               Subir
             </button>
           </div>
-          <p className="text-xs text-neutral-400">Los archivos se asocian a este paciente.</p>
+          <p className="text-xs text-ink-3">
+            Los archivos se asocian a este paciente.
+          </p>
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {resources.length === 0 ? (
-        <p className="text-sm text-neutral-500">Sin recursos.</p>
+        <p className="text-sm text-ink-2">Sin recursos.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="card divide-y divide-line">
           {resources.map((r) => (
-            <li key={r.id} className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 text-sm dark:border-white/[.12]">
+            <li
+              key={r.id}
+              className="group flex items-center justify-between px-4 py-3 text-sm"
+            >
               <div className="min-w-0">
                 <span className="font-medium">{r.title}</span>
-                <span className="ml-2 rounded bg-black/[.05] px-1.5 py-0.5 text-[11px] text-neutral-600 dark:bg-white/[.08] dark:text-neutral-300">
-                  {r.kind}
-                </span>
+                <span className="chip ml-2">{r.kind}</span>
                 {r.patient_id === null && (
-                  <span className="ml-1 rounded bg-sky-100 px-1.5 py-0.5 text-[11px] text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                  <span className="ml-1 rounded-sm bg-info-soft px-1.5 py-px text-xs font-medium text-info">
                     general
                   </span>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-3">
+              <div className="flex shrink-0 items-center gap-1.5">
                 {r.kind === "link" && r.url ? (
-                  <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-sky-600 underline">
-                    abrir
+                  <a
+                    href={r.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-accent hover:underline"
+                  >
+                    Abrir
                   </a>
                 ) : r.storage_path ? (
-                  <a href={`/files?path=${encodeURIComponent(r.storage_path)}`} className="text-sky-600 underline">
-                    descargar
+                  <a
+                    href={`/files?path=${encodeURIComponent(r.storage_path)}`}
+                    className="text-sm font-medium text-accent hover:underline"
+                  >
+                    Descargar
                   </a>
                 ) : null}
-                <button type="button" onClick={() => run(() => deleteResourceAction(r.id, patientId))} disabled={pending} className="text-neutral-400 underline hover:text-red-600">
-                  eliminar
+                <button
+                  type="button"
+                  onClick={() => run(() => deleteResourceAction(r.id, patientId))}
+                  disabled={pending}
+                  className="btn-danger btn-sm opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100"
+                >
+                  Eliminar
                 </button>
               </div>
             </li>

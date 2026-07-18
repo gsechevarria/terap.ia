@@ -514,4 +514,24 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
 `test:agenda` `test:payments` `test:wellbeing` `test:notifications` `test:analytics`.
 
 <!-- Reglas del agente para esta versión de Next.js -->
+
+## UI/Diseño
+- Skill instalada: .claude/skills/frontend-design (usar en sesiones de dashboard y PWA)
+- Dirección estética: estilo Notion — fondo blanco #FFFFFF, texto #37352F, bordes #E9E9E7, radios 3-4px, tipografía de sistema, jerarquía por peso/tamaño, sombras mínimas, controles en hover
+- Diferenciación: menos densidad que Notion; estados clínicos (alertas PHQ-9/GAD-7) visibles de un vistazo sin interacción
+- **Rediseño completo aplicado (jul 2026):** sistema de tokens en `globals.css`
+  (`:root` + `@theme inline`): `canvas/panel/wash/line/ink/ink-2/ink-3/accent/
+  danger/warn/info` (+variantes `-soft`), modo oscuro automático vía
+  `prefers-color-scheme` (las vistas NO usan `dark:`; usan los tokens).
+  Clases base en `@layer components`: `btn-primary/ghost/subtle/danger`,
+  `btn-sm`, `field`, `field-label`, `card`, `chip`, `page-title`,
+  `section-label`, `row-hover`, `table-base`. Acento verde calmado
+  (#0F7B6C claro / #4F9D8B oscuro). Tipografía 100% de sistema (sin Geist).
+  Nota Tailwind v4: `@apply` no compone clases propias — la base de los
+  botones se comparte por grupo de selectores.
+- Landing `/` rediseñada: hero + maqueta CSS del panel (`AppWindow`) + grid de
+  funcionalidades + principios + cierre. Sin JS de cliente.
+- Nav del panel con estado activo: `src/app/pro/_components/ProNav.tsx` (client).
+- Acciones secundarias en listas aparecen en hover/focus (patrón Notion,
+  `group-hover` + `group-focus-within`).
 @AGENTS.md

@@ -4,47 +4,33 @@ import { createPatientAction } from "@/lib/actions/patients";
 export default function NewPatientPage() {
   return (
     <div className="mx-auto max-w-lg">
-      <Link href="/pro" className="text-sm text-neutral-500 hover:underline">
-        ← Volver
+      <Link href="/pro" className="text-sm text-ink-3 hover:text-ink">
+        ← Pacientes
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-        Nuevo paciente
-      </h1>
-      <p className="mt-1 text-sm text-neutral-500">
-        Crea la ficha. Después podrás generar un enlace de invitación para que se
-        dé de alta.
+      <h1 className="page-title mt-3">Nuevo paciente</h1>
+      <p className="mt-1 text-sm text-ink-2">
+        Crea la ficha. Después podrás generar un enlace de invitación para que
+        se dé de alta.
       </p>
 
-      <form action={createPatientAction} className="mt-6 flex flex-col gap-5">
-        <label className="flex flex-col gap-1.5 text-sm font-medium">
-          Nombre completo
-          <input
-            name="full_name"
-            required
-            autoFocus
-            className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-base outline-none focus:border-black/40 dark:border-white/[.16] dark:focus:border-white/50"
-          />
+      <form action={createPatientAction} className="mt-8 flex flex-col gap-5">
+        <label className="block">
+          <span className="field-label">Nombre completo</span>
+          <input name="full_name" required autoFocus className="field py-2 text-base" />
         </label>
-        <label className="flex flex-col gap-1.5 text-sm font-medium">
-          Correo (opcional)
-          <input
-            name="email"
-            type="email"
-            className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-base outline-none focus:border-black/40 dark:border-white/[.16] dark:focus:border-white/50"
-          />
+        <label className="block">
+          <span className="field-label">Correo (opcional)</span>
+          <input name="email" type="email" className="field py-2 text-base" />
         </label>
-        <label className="flex flex-col gap-1.5 text-sm font-medium">
-          Etiquetas (separadas por comas)
+        <label className="block">
+          <span className="field-label">Etiquetas (separadas por comas)</span>
           <input
             name="tags"
             placeholder="ansiedad, quincenal"
-            className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-base outline-none focus:border-black/40 dark:border-white/[.16] dark:focus:border-white/50"
+            className="field py-2 text-base"
           />
         </label>
-        <button
-          type="submit"
-          className="self-start rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-        >
+        <button type="submit" className="btn-primary h-9 self-start px-5">
           Crear paciente
         </button>
       </form>

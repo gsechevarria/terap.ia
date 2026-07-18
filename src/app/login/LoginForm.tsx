@@ -46,24 +46,24 @@ export function LoginForm({ invite }: { invite?: string }) {
   }
 
   return (
-    <div className="w-full max-w-sm rounded-2xl border border-black/[.08] bg-white p-8 shadow-sm dark:border-white/[.12] dark:bg-neutral-900">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {isInvite ? "Aceptar invitación" : "Acceder a terap.ia"}
+    <div className="card w-full max-w-sm p-8">
+      <h1 className="text-xl font-semibold tracking-[-0.01em]">
+        {isInvite ? "Aceptar invitación" : "Acceder"}
       </h1>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 text-sm text-ink-2">
         {isInvite
           ? "Introduce tu correo para darte de alta como paciente."
-          : "Acceso sin contraseña mediante enlace mágico."}
+          : "Sin contraseña: te enviamos un enlace por correo."}
       </p>
 
       {status === "sent" ? (
-        <p className="mt-6 rounded-lg bg-emerald-50 p-4 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+        <p className="mt-6 rounded bg-accent-soft p-4 text-sm text-accent">
           {message}
         </p>
       ) : (
         <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-5">
-          <label className="flex flex-col gap-1.5 text-sm font-medium">
-            Correo electrónico
+          <label className="block">
+            <span className="field-label">Correo electrónico</span>
             <input
               type="email"
               required
@@ -71,13 +71,13 @@ export function LoginForm({ invite }: { invite?: string }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
-              className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-base outline-none focus:border-black/40 dark:border-white/[.16] dark:focus:border-white/50"
+              className="field py-2 text-base"
             />
           </label>
 
           {!isInvite && (
-            <fieldset className="flex flex-col gap-1.5 text-sm font-medium">
-              <legend className="mb-1.5">Accedes como</legend>
+            <fieldset>
+              <legend className="field-label">Accedes como</legend>
               <div className="grid grid-cols-2 gap-2">
                 <RoleOption
                   label="Profesional"
@@ -92,14 +92,14 @@ export function LoginForm({ invite }: { invite?: string }) {
                   onSelect={setRole}
                 />
               </div>
-              <p className="mt-1 text-xs font-normal text-neutral-500">
+              <p className="mt-1.5 text-xs text-ink-3">
                 El rol solo se asigna en tu primer acceso.
               </p>
             </fieldset>
           )}
 
           {status === "error" && (
-            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
+            <p className="rounded bg-danger-soft p-3 text-sm text-danger">
               {message}
             </p>
           )}
@@ -107,7 +107,7 @@ export function LoginForm({ invite }: { invite?: string }) {
           <button
             type="submit"
             disabled={status === "sending"}
-            className="rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-60 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+            className="btn-primary h-9"
           >
             {status === "sending" ? "Enviando…" : "Enviar enlace de acceso"}
           </button>
@@ -130,10 +130,10 @@ function RoleOption({
 }) {
   return (
     <label
-      className={`cursor-pointer rounded-lg border px-3 py-2 text-center text-sm transition-colors ${
+      className={`cursor-pointer rounded border px-3 py-2 text-center text-sm font-medium transition-colors duration-100 ${
         checked
-          ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900"
-          : "border-black/[.12] hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.06]"
+          ? "border-accent bg-accent-soft text-accent"
+          : "border-line text-ink-2 hover:bg-wash"
       }`}
     >
       <input

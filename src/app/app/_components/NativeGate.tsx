@@ -39,15 +39,15 @@ export function NativeGate({ children }: { children: ReactNode }) {
     <>
       {children}
       {locked && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-white p-6 text-center dark:bg-neutral-950">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-canvas p-6 text-center">
           <p className="text-lg font-medium">terap.ia está bloqueada</p>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-ink-2">
             Verifica tu identidad para continuar.
           </p>
           <button
             type="button"
             onClick={unlock}
-            className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white dark:bg-white dark:text-neutral-900"
+            className="btn-primary h-9 px-5"
           >
             Desbloquear
           </button>

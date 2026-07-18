@@ -56,13 +56,13 @@ export function ScalesPanel({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-        <h3 className="text-sm font-semibold">Activar una escala (opt-in)</h3>
-        <p className="mt-1 text-xs text-neutral-500">
+      <div className="card bg-panel p-4">
+        <h3 className="section-label">Activar una escala (opt-in)</h3>
+        <p className="mt-1 text-xs text-ink-3">
           Sin activación, el paciente no ve ningún cuestionario.
         </p>
         {available.length === 0 ? (
-          <p className="mt-3 text-sm text-neutral-500">
+          <p className="mt-3 text-sm text-ink-2">
             Todas las escalas del catálogo ya están activas para este paciente.
           </p>
         ) : (
@@ -70,7 +70,7 @@ export function ScalesPanel({
             <select
               value={scaleId || available[0]?.id}
               onChange={(e) => setScaleId(e.target.value)}
-              className="rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none dark:border-white/[.16]"
+              className="field"
             >
               {available.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -85,6 +85,7 @@ export function ScalesPanel({
                   name="scale-type"
                   checked={type === "one_off"}
                   onChange={() => setType("one_off")}
+                  className="accent-[var(--accent)]"
                 />
                 Puntual
               </label>
@@ -94,18 +95,19 @@ export function ScalesPanel({
                   name="scale-type"
                   checked={type === "recurring"}
                   onChange={() => setType("recurring")}
+                  className="accent-[var(--accent)]"
                 />
                 Recurrente
               </label>
               {type === "recurring" && (
-                <label className="flex items-center gap-1.5 text-sm text-neutral-500">
+                <label className="flex items-center gap-1.5 text-sm text-ink-2">
                   cada
                   <input
                     type="number"
                     min={1}
                     value={interval}
                     onChange={(e) => setInterval(Number(e.target.value) || 14)}
-                    className="w-16 rounded-lg border border-black/[.12] bg-transparent px-2 py-1 text-sm dark:border-white/[.16]"
+                    className="field w-16 px-2 py-1"
                   />
                   días
                 </label>
@@ -114,7 +116,7 @@ export function ScalesPanel({
                 type="button"
                 onClick={activate}
                 disabled={pending}
-                className="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+                className="btn-primary"
               >
                 Activar
               </button>
@@ -124,38 +126,32 @@ export function ScalesPanel({
       </div>
 
       {assignments.length === 0 ? (
-        <p className="text-sm text-neutral-500">
-          Ninguna escala activada todavía.
-        </p>
+        <p className="text-sm text-ink-2">Ninguna escala activada todavía.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="card divide-y divide-line">
           {assignments.map((a) => (
             <li
               key={a.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
+              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
             >
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{a.scaleCode}</span>
-                  <span className="text-xs text-neutral-500">
+                  <span className="text-sm font-medium">{a.scaleCode}</span>
+                  <span className="chip">
                     {a.assignment_type === "recurring" ? "recurrente" : "puntual"}
                   </span>
-                  {!a.active && (
-                    <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[11px] text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
-                      inactiva
-                    </span>
-                  )}
+                  {!a.active && <span className="chip">inactiva</span>}
                 </div>
-                <div className="mt-0.5 text-xs text-neutral-500">
+                <div className="mt-0.5 text-xs text-ink-3">
                   {a.latestScore != null
                     ? `Última: ${a.latestScore} · ${a.latestSeverity} · ${formatDate(a.latestAt)}`
                     : "Sin respuestas"}
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
                 <Link
                   href={`/pro/patients/${patientId}/scales/${a.id}`}
-                  className="text-sm text-neutral-600 underline hover:text-neutral-900 dark:text-neutral-300"
+                  className="btn-subtle btn-sm text-accent hover:text-accent"
                 >
                   Ver evolución
                 </Link>
@@ -163,9 +159,9 @@ export function ScalesPanel({
                   type="button"
                   onClick={() => toggle(a.id, !a.active)}
                   disabled={pending}
-                  className="text-sm text-neutral-500 underline disabled:opacity-60"
+                  className="btn-subtle btn-sm"
                 >
-                  {a.active ? "desactivar" : "reactivar"}
+                  {a.active ? "Desactivar" : "Reactivar"}
                 </button>
               </div>
             </li>

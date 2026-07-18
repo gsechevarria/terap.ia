@@ -2,10 +2,7 @@
 export function SignOutForm() {
   return (
     <form action="/auth/signout" method="post">
-      <button
-        type="submit"
-        className="rounded-lg border border-black/[.12] px-3 py-1.5 text-sm font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.16] dark:hover:bg-white/[.06]"
-      >
+      <button type="submit" className="btn-subtle h-7 px-2 text-xs">
         Cerrar sesión
       </button>
     </form>

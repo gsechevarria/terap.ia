@@ -28,44 +28,44 @@ export default async function ProDashboard({
     listPatientTags(),
   ]);
 
+  const withAlerts = patients.filter((p) => p.openAlerts > 0);
+
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
-          <p className="mt-1 text-sm text-neutral-500">
+          <h1 className="page-title">Pacientes</h1>
+          <p className="mt-1 text-sm text-ink-2">
             {patients.length} {patients.length === 1 ? "paciente" : "pacientes"}
           </p>
         </div>
-        <Link
-          href="/pro/patients/new"
-          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-        >
+        <Link href="/pro/patients/new" className="btn-primary">
           Nuevo paciente
         </Link>
       </div>
 
-      {patients.some((p) => p.openAlerts > 0) && (
-        <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-          ⚠️ Pacientes con alertas:{" "}
-          {patients
-            .filter((p) => p.openAlerts > 0)
-            .map((p, i, arr) => (
+      {withAlerts.length > 0 && (
+        <div className="mt-5 flex items-start gap-2.5 rounded border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
+          <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full bg-danger" />
+          <p>
+            <span className="font-semibold">Alertas por revisar:</span>{" "}
+            {withAlerts.map((p, i) => (
               <span key={p.id}>
                 <Link
                   href={`/pro/patients/${p.id}?tab=escalas`}
-                  className="font-medium underline"
+                  className="font-medium underline underline-offset-2"
                 >
                   {p.full_name ?? "Sin nombre"}
                 </Link>
-                {i < arr.length - 1 ? ", " : ""}
+                {i < withAlerts.length - 1 ? ", " : ""}
               </span>
             ))}
+          </p>
         </div>
       )}
 
       {/* Filtro por estado */}
-      <div className="mt-6 flex flex-wrap items-center gap-2">
+      <div className="mt-6 flex flex-wrap items-center gap-1">
         <StatusTab label="Activos" value="active" current={status} tag={tag} />
         <StatusTab label="Archivados" value="archived" current={status} tag={tag} />
         <StatusTab label="Todos" value="all" current={status} tag={tag} />
@@ -73,8 +73,12 @@ export default async function ProDashboard({
 
       {/* Filtro por etiqueta */}
       {tags.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <TagChip label="Todas las etiquetas" href={buildHref(status, undefined)} active={!tag} />
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <TagChip
+            label="Todas las etiquetas"
+            href={buildHref(status, undefined)}
+            active={!tag}
+          />
           {tags.map((t) => (
             <TagChip key={t} label={t} href={buildHref(status, t)} active={tag === t} />
           ))}
@@ -82,17 +86,24 @@ export default async function ProDashboard({
       )}
 
       {/* Lista */}
-      <div className="mt-6 flex flex-col gap-3">
+      <div className="mt-5">
         {patients.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-black/[.15] p-8 text-center text-sm text-neutral-500 dark:border-white/[.15]">
+          <div className="rounded-lg border border-dashed border-line p-10 text-center text-sm text-ink-2">
             No hay pacientes con este filtro.{" "}
-            <Link href="/pro/patients/new" className="underline">
+            <Link
+              href="/pro/patients/new"
+              className="font-medium text-accent hover:underline"
+            >
               Crea el primero
             </Link>
             .
           </div>
         ) : (
-          patients.map((p) => <PatientRow key={p.id} patient={p} />)
+          <div className="card divide-y divide-line overflow-hidden">
+            {patients.map((p) => (
+              <PatientRow key={p.id} patient={p} />
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -122,10 +133,10 @@ function StatusTab({
   return (
     <Link
       href={buildHref(value, tag)}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+      className={`rounded px-2.5 py-1 text-sm transition-colors duration-100 ${
         active
-          ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
-          : "border border-black/[.12] hover:bg-black/[.04] dark:border-white/[.16] dark:hover:bg-white/[.06]"
+          ? "bg-wash-2 font-medium text-ink"
+          : "text-ink-2 hover:bg-wash hover:text-ink"
       }`}
     >
       {label}
@@ -145,10 +156,10 @@ function TagChip({
   return (
     <Link
       href={href}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+      className={`rounded-sm px-1.5 py-0.5 text-xs font-medium transition-colors duration-100 ${
         active
-          ? "bg-neutral-800 text-white dark:bg-neutral-200 dark:text-neutral-900"
-          : "bg-black/[.05] text-neutral-600 hover:bg-black/[.09] dark:bg-white/[.08] dark:text-neutral-300"
+          ? "bg-accent-soft text-accent"
+          : "bg-panel text-ink-2 hover:bg-wash-2"
       }`}
     >
       {label}
@@ -160,38 +171,38 @@ function PatientRow({ patient }: { patient: PatientOverview }) {
   return (
     <Link
       href={`/pro/patients/${patient.id}`}
-      className="flex flex-col gap-3 rounded-xl border border-black/[.08] p-4 transition-colors hover:bg-black/[.02] dark:border-white/[.12] dark:hover:bg-white/[.04] sm:flex-row sm:items-center sm:justify-between"
+      className="row-hover flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
     >
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-medium">
-            {patient.full_name ?? "Sin nombre"}
-          </span>
-          {patient.status === "archived" && (
-            <span className="rounded bg-neutral-200 px-1.5 py-0.5 text-[11px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
-              archivado
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-panel text-xs font-semibold text-ink-2">
+          {(patient.full_name ?? "?").charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium">
+              {patient.full_name ?? "Sin nombre"}
             </span>
-          )}
-          {patient.openAlerts > 0 && (
-            <span className="rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
-              {patient.openAlerts} alerta{patient.openAlerts > 1 ? "s" : ""}
-            </span>
+            {patient.status === "archived" && (
+              <span className="chip">archivado</span>
+            )}
+            {patient.openAlerts > 0 && (
+              <span className="rounded-sm bg-danger-soft px-1.5 py-px text-xs font-semibold text-danger">
+                {patient.openAlerts} alerta{patient.openAlerts > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+          {patient.tags.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {patient.tags.map((t) => (
+                <span key={t} className="chip">
+                  {t}
+                </span>
+              ))}
+            </div>
           )}
         </div>
-        {patient.tags.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {patient.tags.map((t) => (
-              <span
-                key={t}
-                className="rounded-full bg-black/[.05] px-2 py-0.5 text-[11px] text-neutral-600 dark:bg-white/[.08] dark:text-neutral-300"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
-      <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-neutral-500">
+      <div className="flex flex-wrap gap-x-6 gap-y-1 pl-11 text-xs sm:pl-0">
         <Stat label="Tareas pendientes" value={String(patient.pendingTasks)} />
         <Stat label="Próxima cita" value={formatDateTime(patient.nextAppointment)} />
         <Stat label="Última actividad" value={formatDate(patient.lastActivity)} />
@@ -202,11 +213,11 @@ function PatientRow({ patient }: { patient: PatientOverview }) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <span className="flex flex-col">
-      <span className="text-[10px] uppercase tracking-wide text-neutral-400">
+    <span className="flex flex-col gap-0.5">
+      <span className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
         {label}
       </span>
-      <span className="text-neutral-700 dark:text-neutral-200">{value}</span>
+      <span className="text-ink-2">{value}</span>
     </span>
   );
 }

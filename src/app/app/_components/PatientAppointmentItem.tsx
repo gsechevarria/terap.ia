@@ -32,14 +32,18 @@ export function PatientAppointmentItem({
   }
 
   return (
-    <li
-      className={`rounded-xl border border-black/[.08] p-4 dark:border-white/[.12] ${
-        cancelled ? "opacity-60" : ""
-      }`}
-    >
+    <li className={`card p-4 ${cancelled ? "opacity-60" : ""}`}>
       <div className="flex items-center justify-between">
-        <span className="font-medium">{formatDateTime(appt.starts_at)}</span>
-        <span className="rounded bg-black/[.05] px-1.5 py-0.5 text-[11px] text-neutral-600 dark:bg-white/[.08] dark:text-neutral-300">
+        <span className="text-sm font-medium">
+          {formatDateTime(appt.starts_at)}
+        </span>
+        <span
+          className={
+            appt.status === "confirmed"
+              ? "rounded-sm bg-accent-soft px-1.5 py-px text-xs font-medium text-accent"
+              : "chip"
+          }
+        >
           {STATUS[appt.status] ?? appt.status}
         </span>
       </div>
@@ -49,14 +53,14 @@ export function PatientAppointmentItem({
             href={appt.video_link}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sky-600 underline"
+            className="font-medium text-accent hover:underline"
           >
             Videollamada
           </a>
         )}
         <a
           href={`/appointments/${appt.id}/ics`}
-          className="text-neutral-500 underline"
+          className="text-ink-3 underline underline-offset-2 hover:text-ink"
         >
           Añadir al calendario (.ics)
         </a>
@@ -68,7 +72,7 @@ export function PatientAppointmentItem({
               type="button"
               disabled={pending}
               onClick={() => respond("confirm")}
-              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+              className="btn-primary"
             >
               Confirmar
             </button>
@@ -77,7 +81,7 @@ export function PatientAppointmentItem({
             type="button"
             disabled={pending}
             onClick={() => respond("cancel")}
-            className="rounded-lg border border-black/[.12] px-3 py-1.5 text-sm font-medium disabled:opacity-60 dark:border-white/[.16]"
+            className="btn-ghost"
           >
             Cancelar
           </button>

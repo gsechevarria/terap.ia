@@ -98,7 +98,7 @@ export function PushToggle() {
 
   if (!supported) {
     return (
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-ink-2">
         Este dispositivo o navegador no admite notificaciones push.
       </p>
     );
@@ -110,7 +110,7 @@ export function PushToggle() {
         type="button"
         onClick={subscribed ? unsubscribe : subscribe}
         disabled={busy}
-        className="self-start rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+        className={`self-start ${subscribed ? "btn-ghost" : "btn-primary"}`}
       >
         {busy
           ? "…"
@@ -118,7 +118,7 @@ export function PushToggle() {
             ? "Desactivar notificaciones"
             : "Activar notificaciones en este dispositivo"}
       </button>
-      {msg && <p className="text-sm text-neutral-500">{msg}</p>}
+      {msg && <p className="text-sm text-ink-2">{msg}</p>}
     </div>
   );
 }

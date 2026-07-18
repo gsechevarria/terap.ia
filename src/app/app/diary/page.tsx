@@ -12,41 +12,35 @@ export default async function PatientDiaryPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
-      <Link href="/app" className="text-sm text-neutral-500 hover:underline">
+      <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
         ← Inicio
       </Link>
 
       <MoodLogger />
 
       {entries.length > 0 && (
-        <section className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
+        <section className="card p-4">
           <h2 className="mb-3 text-sm font-semibold">Tu evolución (1-5)</h2>
           <ScoreChart points={points} max={5} severity={[]} title="Ánimo" />
         </section>
       )}
 
       <section>
-        <h2 className="mb-2 text-lg font-semibold">Tu historial</h2>
+        <h2 className="mb-2 text-base font-semibold">Tu historial</h2>
         {entries.length === 0 ? (
-          <p className="text-sm text-neutral-500">
-            Aún no has registrado tu ánimo.
-          </p>
+          <p className="text-sm text-ink-2">Aún no has registrado tu ánimo.</p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="card divide-y divide-line">
             {entries.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
+                className="flex items-start justify-between gap-4 px-4 py-3"
               >
-                <div>
-                  <span className="font-medium">{e.mood_value}/5</span>
-                  {e.note && (
-                    <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-                      {e.note}
-                    </p>
-                  )}
+                <div className="min-w-0">
+                  <span className="text-sm font-medium">{e.mood_value}/5</span>
+                  {e.note && <p className="mt-1 text-sm text-ink-2">{e.note}</p>}
                 </div>
-                <span className="text-xs text-neutral-400">
+                <span className="shrink-0 text-xs text-ink-3">
                   {formatDate(e.entry_date)}
                 </span>
               </li>

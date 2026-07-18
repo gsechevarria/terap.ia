@@ -16,20 +16,23 @@ export default async function InvitePage({
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-black/[.08] bg-white p-8 text-center shadow-sm dark:border-white/[.12] dark:bg-neutral-900">
+      <div className="card w-full max-w-md p-8 text-center">
         {!preview ? (
           <>
-            <h1 className="text-xl font-semibold">Invitación no encontrada</h1>
-            <p className="mt-2 text-sm text-neutral-500">
-              El enlace no es válido. Pide a tu profesional que te envíe uno nuevo.
+            <h1 className="text-xl font-semibold tracking-[-0.01em]">
+              Invitación no encontrada
+            </h1>
+            <p className="mt-2 text-sm text-ink-2">
+              El enlace no es válido. Pide a tu profesional que te envíe uno
+              nuevo.
             </p>
           </>
         ) : valid ? (
           <>
-            <h1 className="text-xl font-semibold tracking-tight">
+            <h1 className="text-xl font-semibold tracking-[-0.01em]">
               Te han invitado a terap.ia
             </h1>
-            <p className="mt-2 text-sm text-neutral-500">
+            <p className="mt-2 text-sm text-ink-2">
               {preview.professional_name
                 ? `${preview.professional_name} quiere acompañarte en terap.ia.`
                 : "Tu profesional quiere acompañarte en terap.ia."}{" "}
@@ -37,20 +40,23 @@ export default async function InvitePage({
             </p>
             <Link
               href={`/login?invite=${token}`}
-              className="mt-6 inline-flex rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+              className="btn-primary mt-6 h-9 px-5"
             >
               Acceder para aceptar
             </Link>
-            <p className="mt-3 text-xs text-neutral-400">
+            <p className="mt-3 text-xs text-ink-3">
               Recibirás un enlace por correo; ábrelo en este dispositivo para
               completar tu alta.
             </p>
           </>
         ) : (
           <>
-            <h1 className="text-xl font-semibold">Invitación caducada</h1>
-            <p className="mt-2 text-sm text-neutral-500">
-              Este enlace ya se usó o ha caducado. Pide uno nuevo a tu profesional.
+            <h1 className="text-xl font-semibold tracking-[-0.01em]">
+              Invitación caducada
+            </h1>
+            <p className="mt-2 text-sm text-ink-2">
+              Este enlace ya se usó o ha caducado. Pide uno nuevo a tu
+              profesional.
             </p>
           </>
         )}

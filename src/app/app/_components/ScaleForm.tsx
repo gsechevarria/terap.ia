@@ -50,11 +50,11 @@ export function ScaleForm({
     return (
       <div className="mx-auto max-w-md">
         {result.flagged ? (
-          <div className="rounded-2xl border border-red-300 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950">
-            <h1 className="text-xl font-semibold text-red-800 dark:text-red-200">
+          <div className="rounded-lg border border-danger/25 bg-danger-soft p-6">
+            <h1 className="text-xl font-semibold tracking-[-0.01em] text-danger">
               Gracias por compartirlo
             </h1>
-            <p className="mt-2 text-sm text-red-800 dark:text-red-200">
+            <p className="mt-2 text-sm leading-relaxed text-ink">
               Si estás pasando por un momento difícil o piensas en hacerte daño,
               no estás solo/a. Puedes pedir ayuda ahora mismo:
             </p>
@@ -64,41 +64,35 @@ export function ScaleForm({
                   {l.phone ? (
                     <a
                       href={`tel:${l.phone}`}
-                      className="flex items-center justify-between rounded-lg bg-red-600 px-4 py-3 font-semibold text-white"
+                      className="flex items-center justify-between rounded bg-danger px-4 py-3 font-semibold text-white transition-opacity hover:opacity-90"
                     >
                       <span>{l.label}</span>
                       <span>{l.phone}</span>
                     </a>
                   ) : (
-                    <span className="block rounded-lg bg-white/60 px-4 py-3 text-sm dark:bg-white/10">
+                    <span className="block rounded bg-canvas px-4 py-3 text-sm">
                       {l.label}
                     </span>
                   )}
                 </li>
               ))}
             </ul>
-            <p className="mt-4 text-xs text-red-700 dark:text-red-300">
+            <p className="mt-4 text-xs text-ink-2">
               Tu profesional también podrá verlo y acompañarte.
             </p>
-            <Link
-              href="/app"
-              className="mt-5 inline-flex rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-800 dark:border-red-800 dark:text-red-200"
-            >
+            <Link href="/app" className="btn-ghost mt-5">
               Volver al inicio
             </Link>
           </div>
         ) : (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center dark:border-emerald-900 dark:bg-emerald-950">
-            <h1 className="text-xl font-semibold text-emerald-800 dark:text-emerald-200">
-              Gracias 🌿
+          <div className="rounded-lg border border-accent/25 bg-accent-soft p-6 text-center">
+            <h1 className="text-xl font-semibold tracking-[-0.01em] text-accent">
+              Gracias
             </h1>
-            <p className="mt-2 text-sm text-emerald-800 dark:text-emerald-200">
+            <p className="mt-2 text-sm text-ink">
               Hemos registrado tus respuestas. Tu profesional podrá verlas.
             </p>
-            <Link
-              href="/app"
-              className="mt-5 inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
-            >
+            <Link href="/app" className="btn-primary mt-5">
               Volver al inicio
             </Link>
           </div>
@@ -109,12 +103,12 @@ export function ScaleForm({
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="text-xl font-semibold tracking-tight">{scaleCode}</h1>
-      <p className="mt-1 text-sm text-neutral-500">
+      <h1 className="text-xl font-semibold tracking-[-0.01em]">{scaleCode}</h1>
+      <p className="mt-1 text-sm text-ink-2">
         Durante las últimas 2 semanas, ¿con qué frecuencia te ha molestado…?
       </p>
 
-      <div className="mt-5 flex flex-col gap-5">
+      <div className="mt-6 flex flex-col gap-6">
         {definition.items.map((it) => (
           <fieldset key={it.id} className="flex flex-col gap-2">
             <legend className="text-sm font-medium">
@@ -126,10 +120,10 @@ export function ScaleForm({
                 return (
                   <label
                     key={opt.value}
-                    className={`cursor-pointer rounded-lg border px-3 py-2 text-sm transition-colors ${
+                    className={`cursor-pointer rounded border px-3 py-2 text-sm transition-colors duration-100 ${
                       checked
-                        ? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900"
-                        : "border-black/[.12] hover:bg-black/[.03] dark:border-white/[.16] dark:hover:bg-white/[.06]"
+                        ? "border-accent bg-accent-soft font-medium text-accent"
+                        : "border-line text-ink-2 hover:bg-wash"
                     }`}
                   >
                     <input
@@ -151,7 +145,7 @@ export function ScaleForm({
       </div>
 
       {error && (
-        <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
+        <p className="mt-4 rounded bg-danger-soft p-3 text-sm text-danger">
           {error}
         </p>
       )}
@@ -160,7 +154,7 @@ export function ScaleForm({
         type="button"
         onClick={submit}
         disabled={pending || !allAnswered}
-        className="mt-5 w-full rounded-lg bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+        className="btn-primary mt-6 h-11 w-full text-[15px]"
       >
         {pending ? "Enviando…" : "Enviar respuestas"}
       </button>

@@ -25,26 +25,34 @@ export default async function PatientLayout({ children }: { children: ReactNode 
   return (
     <NativeGate>
     <div className="flex min-h-full flex-col">
-      <header className="flex items-center justify-between border-b border-black/[.08] px-4 py-3 dark:border-white/[.12]">
-        <span className="font-semibold">terap.ia</span>
-        <div className="flex items-center gap-3">
-          <a
-            href="tel:024"
-            className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-red-700"
-          >
-            Emergencia · 024
-          </a>
+      <header className="sticky top-0 z-10 border-b border-line bg-canvas/95 backdrop-blur-sm">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2">
           <Link
-            href="/app/settings"
-            className="text-sm text-neutral-500 hover:underline"
-            aria-label="Ajustes"
+            href="/app"
+            className="inline-flex items-baseline gap-1 text-[15px] font-semibold tracking-[-0.01em] text-ink"
           >
-            Ajustes
+            terap.ia
+            <span aria-hidden className="size-1.5 self-center rounded-full bg-accent" />
           </Link>
-          <SignOutForm />
+          <div className="flex items-center gap-1.5">
+            <a
+              href="tel:024"
+              className="inline-flex h-7 items-center rounded bg-danger px-2.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Emergencia · 024
+            </a>
+            <Link
+              href="/app/settings"
+              className="btn-subtle h-7 px-2 text-xs"
+              aria-label="Ajustes"
+            >
+              Ajustes
+            </Link>
+            <SignOutForm />
+          </div>
         </div>
       </header>
-      <main className="flex-1 p-4">{children}</main>
+      <main className="mx-auto w-full max-w-md flex-1 px-4 py-6">{children}</main>
       <ServiceWorkerRegister />
     </div>
     </NativeGate>

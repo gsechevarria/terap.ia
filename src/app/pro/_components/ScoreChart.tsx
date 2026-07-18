@@ -49,20 +49,20 @@ export function ScoreChart({
         {severity.map((s) => {
           const yy = y(s.max);
           return (
-            <g key={s.label} className="text-neutral-300 dark:text-neutral-700">
+            <g key={s.label}>
               <line
                 x1={padL}
                 x2={padL + plotW}
                 y1={yy}
                 y2={yy}
-                stroke="currentColor"
+                stroke="var(--line)"
                 strokeWidth={1}
                 strokeDasharray="3 3"
               />
               <text
                 x={padL + plotW + 6}
                 y={yy + 3}
-                className="fill-neutral-400"
+                fill="var(--ink-3)"
                 style={{ fontSize: 10 }}
               >
                 {s.label} (≤{s.max})
@@ -77,21 +77,19 @@ export function ScoreChart({
           x2={padL}
           y1={padT}
           y2={padT + plotH}
-          className="text-neutral-300 dark:text-neutral-700"
-          stroke="currentColor"
+          stroke="var(--line)"
         />
         <line
           x1={padL}
           x2={padL + plotW}
           y1={padT + plotH}
           y2={padT + plotH}
-          className="text-neutral-300 dark:text-neutral-700"
-          stroke="currentColor"
+          stroke="var(--line)"
         />
-        <text x={4} y={padT + 4} className="fill-neutral-400" style={{ fontSize: 10 }}>
+        <text x={4} y={padT + 4} fill="var(--ink-3)" style={{ fontSize: 10 }}>
           {max}
         </text>
-        <text x={10} y={padT + plotH} className="fill-neutral-400" style={{ fontSize: 10 }}>
+        <text x={10} y={padT + plotH} fill="var(--ink-3)" style={{ fontSize: 10 }}>
           0
         </text>
 
@@ -100,7 +98,7 @@ export function ScoreChart({
           <polyline
             points={linePath}
             fill="none"
-            stroke="#3b82f6"
+            stroke="var(--accent)"
             strokeWidth={2}
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -112,8 +110,8 @@ export function ScoreChart({
               cx={x(i)}
               cy={y(p.score)}
               r={5}
-              fill="#3b82f6"
-              stroke="var(--background, #fff)"
+              fill="var(--accent)"
+              stroke="var(--canvas, #fff)"
               strokeWidth={2}
             />
             <title>
@@ -128,7 +126,7 @@ export function ScoreChart({
           <text
             x={x(0)}
             y={padT + plotH + 16}
-            className="fill-neutral-400"
+            fill="var(--ink-3)"
             style={{ fontSize: 10 }}
             textAnchor="middle"
           >
@@ -139,7 +137,7 @@ export function ScoreChart({
           <text
             x={x(points.length - 1)}
             y={padT + plotH + 16}
-            className="fill-neutral-400"
+            fill="var(--ink-3)"
             style={{ fontSize: 10 }}
             textAnchor="middle"
           >

@@ -7,15 +7,15 @@ export default async function PatientAppointmentsPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <Link href="/app" className="text-sm text-neutral-500 hover:underline">
+      <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
         ← Inicio
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Mis citas</h1>
+      <h1 className="page-title mt-3">Mis citas</h1>
 
-      <section className="mt-5">
-        <h2 className="mb-2 text-sm font-semibold text-neutral-500">Próximas</h2>
+      <section className="mt-6">
+        <h2 className="section-label mb-2">Próximas</h2>
         {upcoming.length === 0 ? (
-          <p className="text-sm text-neutral-500">No tienes citas próximas.</p>
+          <p className="text-sm text-ink-2">No tienes citas próximas.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {upcoming.map((a) => (
@@ -26,8 +26,8 @@ export default async function PatientAppointmentsPage() {
       </section>
 
       {past.length > 0 && (
-        <section className="mt-6">
-          <h2 className="mb-2 text-sm font-semibold text-neutral-500">Anteriores</h2>
+        <section className="mt-8">
+          <h2 className="section-label mb-2">Anteriores</h2>
           <ul className="flex flex-col gap-2">
             {past.map((a) => (
               <PatientAppointmentItem key={a.id} appt={a} canRespond={false} />

@@ -14,8 +14,8 @@ export default async function PatientHome() {
   if (!patient) {
     return (
       <div className="mx-auto max-w-md text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Hola 👋</h1>
-        <p className="mt-3 rounded-xl border border-dashed border-black/[.15] p-4 text-sm text-neutral-500 dark:border-white/[.15]">
+        <h1 className="page-title">Hola</h1>
+        <p className="mt-4 rounded-lg border border-dashed border-line p-5 text-sm text-ink-2">
           Todavía no estás vinculado a un profesional. Abre el enlace de
           invitación que te hayan enviado para darte de alta.
         </p>
@@ -33,24 +33,26 @@ export default async function PatientHome() {
   const firstName = patient.full_name?.split(" ")[0] ?? "";
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Hola{firstName ? `, ${firstName}` : ""} 🌿
+        <h1 className="page-title">
+          Hola{firstName ? `, ${firstName}` : ""}
         </h1>
       </header>
 
       <MoodLogger />
 
-      <section className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-        <h2 className="text-sm font-semibold text-neutral-500">Próxima cita</h2>
+      <section className="card p-4">
+        <h2 className="section-label">Próxima cita</h2>
         {nextAppt ? (
-          <div className="mt-1 flex items-center justify-between">
-            <span className="font-medium">{formatDateTime(nextAppt.starts_at)}</span>
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-sm font-medium">
+              {formatDateTime(nextAppt.starts_at)}
+            </span>
             {nextAppt.video_link && (
               <Link
                 href={nextAppt.video_link}
-                className="text-sm text-sky-600 underline"
+                className="text-sm font-medium text-accent hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -59,11 +61,11 @@ export default async function PatientHome() {
             )}
           </div>
         ) : (
-          <p className="mt-1 text-sm text-neutral-500">Sin citas próximas.</p>
+          <p className="mt-2 text-sm text-ink-2">Sin citas próximas.</p>
         )}
         <Link
           href="/app/appointments"
-          className="mt-3 inline-block text-sm text-sky-600 hover:underline"
+          className="mt-3 inline-block text-sm font-medium text-accent hover:underline"
         >
           Ver todas mis citas →
         </Link>
@@ -72,20 +74,18 @@ export default async function PatientHome() {
       {(pay.debtCents > 0 || pay.packRemaining > 0) && (
         <Link
           href="/app/payments"
-          className="flex items-center justify-between rounded-xl border border-black/[.08] p-4 transition-colors hover:bg-black/[.02] dark:border-white/[.12] dark:hover:bg-white/[.04]"
+          className="card row-hover flex items-center justify-between p-4"
         >
-          <span className="text-sm text-neutral-500">Pagos</span>
+          <span className="section-label">Pagos</span>
           <span className="text-sm">
             {pay.debtCents > 0 && (
-              <span className="font-medium text-amber-600">
+              <span className="font-medium text-warn">
                 {formatCurrency(pay.debtCents)} pendiente
               </span>
             )}
             {pay.debtCents > 0 && pay.packRemaining > 0 && " · "}
             {pay.packRemaining > 0 && (
-              <span className="text-neutral-600 dark:text-neutral-300">
-                bono: {pay.packRemaining}
-              </span>
+              <span className="text-ink-2">bono: {pay.packRemaining}</span>
             )}
           </span>
         </Link>
@@ -93,20 +93,20 @@ export default async function PatientHome() {
 
       {scales.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">Cuestionarios</h2>
+          <h2 className="text-base font-semibold">Cuestionarios</h2>
           {scales.map((s) => (
             <Link
               key={s.id}
               href={`/app/scales/${s.id}`}
-              className="flex items-center justify-between rounded-xl border border-black/[.08] p-4 transition-colors hover:bg-black/[.02] dark:border-white/[.12] dark:hover:bg-white/[.04]"
+              className="card row-hover flex items-center justify-between p-4"
             >
               <div>
-                <span className="font-medium">{s.code}</span>
-                <span className="ml-2 text-xs text-neutral-500">
+                <span className="text-sm font-medium">{s.code}</span>
+                <span className="chip ml-2">
                   {s.assignmentType === "recurring" ? "recurrente" : "puntual"}
                 </span>
               </div>
-              <span className="text-sm text-sky-600">Responder →</span>
+              <span className="text-sm font-medium text-accent">Responder →</span>
             </Link>
           ))}
         </section>
@@ -114,16 +114,13 @@ export default async function PatientHome() {
 
       <PatientTasks tasks={tasks} />
 
-      <div className="flex gap-3">
-        <Link
-          href="/app/diary"
-          className="flex-1 rounded-xl border border-black/[.08] p-4 text-center text-sm font-medium transition-colors hover:bg-black/[.02] dark:border-white/[.12] dark:hover:bg-white/[.04]"
-        >
+      <div className="grid grid-cols-2 gap-3">
+        <Link href="/app/diary" className="card row-hover p-4 text-center text-sm font-medium">
           Mi diario
         </Link>
         <Link
           href="/app/resources"
-          className="flex-1 rounded-xl border border-black/[.08] p-4 text-center text-sm font-medium transition-colors hover:bg-black/[.02] dark:border-white/[.12] dark:hover:bg-white/[.04]"
+          className="card row-hover p-4 text-center text-sm font-medium"
         >
           Recursos
         </Link>

@@ -12,36 +12,29 @@ export function PatientTasks({ tasks }: { tasks: TaskWithCompletion[] }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Tus tareas</h2>
+      <h2 className="text-base font-semibold">Tus tareas</h2>
       {pending.length === 0 ? (
-        <p className="text-sm text-neutral-500">
-          No tienes tareas pendientes. 🌿
-        </p>
+        <p className="text-sm text-ink-2">No tienes tareas pendientes.</p>
       ) : (
         pending.map((t) => <PendingTask key={t.id} task={t} />)
       )}
 
       {done.length > 0 && (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-sm text-neutral-500">
+        <details className="mt-1">
+          <summary className="cursor-pointer text-sm text-ink-3 hover:text-ink">
             Completadas ({done.length})
           </summary>
-          <ul className="mt-2 flex flex-col gap-2">
+          <ul className="card mt-2 divide-y divide-line">
             {done.map((t) => (
-              <li
-                key={t.id}
-                className="rounded-lg border border-black/[.06] p-3 text-sm text-neutral-500 dark:border-white/[.1]"
-              >
+              <li key={t.id} className="px-4 py-3 text-sm text-ink-2">
                 <span className="line-through">{t.title}</span>
                 {t.lastCompletion && (
-                  <span className="ml-2 text-xs text-neutral-400">
+                  <span className="ml-2 text-xs text-ink-3">
                     {formatDateTime(t.lastCompletion.completed_at)}
                   </span>
                 )}
                 {t.lastCompletion?.response_text && (
-                  <p className="mt-1 not-italic">
-                    “{t.lastCompletion.response_text}”
-                  </p>
+                  <p className="mt-1">“{t.lastCompletion.response_text}”</p>
                 )}
               </li>
             ))}
@@ -77,27 +70,27 @@ function PendingTask({ task }: { task: TaskWithCompletion }) {
   }
 
   return (
-    <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
+    <div className="card p-4">
       <div className="flex items-center gap-2">
-        <span className="font-medium">{task.title}</span>
+        <span className="text-sm font-medium">{task.title}</span>
         {due === "today" && (
-          <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[11px] font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+          <span className="rounded-sm bg-info-soft px-1.5 py-px text-xs font-medium text-info">
             para hoy
           </span>
         )}
         {due === "overdue" && (
-          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+          <span className="rounded-sm bg-warn-soft px-1.5 py-px text-xs font-medium text-warn">
             vencida
           </span>
         )}
       </div>
       {task.description && (
-        <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-300">
+        <p className="mt-1 text-sm whitespace-pre-wrap text-ink-2">
           {task.description}
         </p>
       )}
       {task.due_date && (
-        <p className="mt-1 text-xs text-neutral-400">
+        <p className="mt-1 text-xs text-ink-3">
           Fecha límite: {formatDate(task.due_date)}
         </p>
       )}
@@ -108,16 +101,16 @@ function PendingTask({ task }: { task: TaskWithCompletion }) {
           onChange={(e) => setText(e.target.value)}
           rows={2}
           placeholder="Escribe algo si quieres (opcional)…"
-          className="mt-3 w-full rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/[.16]"
+          className="field mt-3"
         />
       )}
 
-      <div className="mt-3 flex items-center gap-3">
+      <div className="mt-3 flex items-center gap-2">
         <button
           type="button"
           onClick={complete}
           disabled={pending}
-          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "…" : "Marcar hecha"}
         </button>
@@ -125,9 +118,9 @@ function PendingTask({ task }: { task: TaskWithCompletion }) {
           <button
             type="button"
             onClick={() => setShowText(true)}
-            className="text-sm text-neutral-500 underline"
+            className="btn-subtle"
           >
-            añadir nota
+            Añadir nota
           </button>
         )}
       </div>

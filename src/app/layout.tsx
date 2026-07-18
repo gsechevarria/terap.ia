@@ -1,11 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
 import "./globals.css";
-
-const geist = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "terap.ia",
@@ -27,11 +21,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${geist.variable} h-full antialiased`}>
+    <html lang="es" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
         {/* Banner permanente: mientras no exista DPA + base jurídica RGPD art. 9,
             solo se usan datos ficticios. */}
-        <div className="bg-amber-100 px-4 py-1.5 text-center text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+        <div className="flex items-center justify-center gap-1.5 border-b border-line bg-warn-soft px-4 py-1 text-center text-xs font-medium text-warn">
+          <span aria-hidden className="text-[8px]">
+            ●
+          </span>
           Entorno de demostración — datos ficticios
         </div>
         {children}

@@ -36,8 +36,7 @@ export function BarChart({
           x2={W - padX}
           y1={padT + plotH}
           y2={padT + plotH}
-          className="text-neutral-300 dark:text-neutral-700"
-          stroke="currentColor"
+          stroke="var(--line)"
         />
         {data.map((d, i) => {
           const cx = padX + slot * i + slot / 2;
@@ -51,13 +50,13 @@ export function BarChart({
                 width={barW}
                 height={Math.max(h, 0)}
                 rx={4}
-                fill="#3b82f6"
+                fill="var(--accent)"
               />
               <text
                 x={cx}
                 y={y - 5}
                 textAnchor="middle"
-                className="fill-neutral-500"
+                fill="var(--ink-2)"
                 style={{ fontSize: 10 }}
               >
                 {valueLabel ? valueLabel(d.value) : d.value}
@@ -66,7 +65,7 @@ export function BarChart({
                 x={cx}
                 y={padT + plotH + 16}
                 textAnchor="middle"
-                className="fill-neutral-400"
+                fill="var(--ink-3)"
                 style={{ fontSize: 10 }}
               >
                 {d.label}

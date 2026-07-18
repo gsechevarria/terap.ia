@@ -6,9 +6,6 @@ import { createAppointmentAction } from "@/lib/actions/appointments";
 
 type Freq = "none" | "weekly" | "biweekly" | "monthly";
 
-const inputCls =
-  "rounded-lg border border-black/[.12] bg-transparent px-3 py-2 text-sm outline-none focus:border-black/40 dark:border-white/[.16]";
-
 export function NewAppointment({
   patients,
   defaultPatientId,
@@ -75,13 +72,13 @@ export function NewAppointment({
   }
 
   return (
-    <div className="rounded-xl border border-black/[.08] p-4 dark:border-white/[.12]">
-      <h3 className="text-sm font-semibold">Nueva cita</h3>
+    <div className="card bg-panel p-4">
+      <h3 className="section-label">Nueva cita</h3>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <select
           value={patientId || patients[0]?.id || ""}
           onChange={(e) => setPatientId(e.target.value)}
-          className={`${inputCls} sm:col-span-2`}
+          className="field sm:col-span-2"
         >
           {patients.length === 0 && <option value="">Sin pacientes activos</option>}
           {patients.map((p) => (
@@ -90,36 +87,36 @@ export function NewAppointment({
             </option>
           ))}
         </select>
-        <label className="flex flex-col gap-1 text-xs text-neutral-500">
-          Inicio
+        <label className="block">
+          <span className="field-label">Inicio</span>
           <input
             type="datetime-local"
             value={start}
             onChange={(e) => onStart(e.target.value)}
-            className={inputCls}
+            className="field"
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-neutral-500">
-          Fin
+        <label className="block">
+          <span className="field-label">Fin</span>
           <input
             type="datetime-local"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
-            className={inputCls}
+            className="field"
           />
         </label>
         <input
           value={videoLink}
           onChange={(e) => setVideoLink(e.target.value)}
           placeholder="Link de videollamada (Meet/Zoom)"
-          className={`${inputCls} sm:col-span-2`}
+          className="field sm:col-span-2"
         />
-        <label className="flex items-center gap-2 text-xs text-neutral-500">
+        <label className="flex items-center gap-2 text-xs font-medium text-ink-2">
           Repetición
           <select
             value={freq}
             onChange={(e) => setFreq(e.target.value as Freq)}
-            className={inputCls}
+            className="field w-auto"
           >
             <option value="none">Puntual</option>
             <option value="weekly">Semanal</option>
@@ -128,13 +125,13 @@ export function NewAppointment({
           </select>
         </label>
         {freq !== "none" && (
-          <label className="flex items-center gap-2 text-xs text-neutral-500">
+          <label className="flex items-center gap-2 text-xs font-medium text-ink-2">
             Hasta
             <input
               type="date"
               value={until}
               onChange={(e) => setUntil(e.target.value)}
-              className={inputCls}
+              className="field w-auto"
             />
           </label>
         )}
@@ -143,17 +140,15 @@ export function NewAppointment({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notas (opcional)"
           rows={2}
-          className={`${inputCls} sm:col-span-2`}
+          className="field sm:col-span-2"
         />
       </div>
-      {error && (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
       <button
         type="button"
         onClick={submit}
         disabled={pending}
-        className="mt-3 rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-neutral-900"
+        className="btn-primary mt-3"
       >
         {pending ? "Creando…" : "Crear cita"}
       </button>
