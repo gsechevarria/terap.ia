@@ -477,5 +477,41 @@ src/
 - Sesión 11: seed idempotente (2 profesionales, 8-10 pacientes, 3 meses de
   histórico) + deploy Vercel + landing + guion de demo + Lighthouse.
 
+### Sesión 11 — Seed + deploy + pulido ✅ (completada; deploy/Lighthouse documentados)
+
+**Hecho:**
+- **Seed idempotente** (`scripts/seed.mjs`, `npm run seed`) **ejecutado y
+  verificado** en el remoto: 2 profesionales, **10 pacientes**, ~3 meses de
+  histórico → **130 citas** (con asistencia/no-shows), **76 pagos pagados + 20
+  pendientes**, 3 bonos, **66 respuestas** de escala (**1 con alerta ítem 9**:
+  paciente "Ana Nadal"), **261 entradas de diario**, tareas. Re-ejecutar no
+  duplica (omite si el profesional ya tiene pacientes).
+  - Parametrizable: `SEED_PRO_EMAIL=tu-correo npm run seed` para entrar por enlace
+    mágico y ver la consulta.
+- **Landing** `/` pulida (propuesta de valor + CTA "Acceder"). Banner permanente
+  de demo ya presente desde Sesión 0.
+- **Docs**: `docs/GUION_DEMO.md` (guion de 7-8 min: alta → tarea → cita .ics →
+  escala opt-in → alerta ítem 9 → diario → pagos → analítica) y `docs/DEPLOY.md`
+  (Vercel + variables de entorno + Redirect URLs + cron + Lighthouse).
+- Verificación: `build`/`lint`/`typecheck` OK; seed verificado por conteos vía
+  Management API.
+
+**Límite del entorno (honesto):**
+- **Deploy a Vercel y Lighthouse no se ejecutaron aquí** (sin token de Vercel ni
+  Chrome). Pasos exactos en `docs/DEPLOY.md`. La URL pública del cierre se obtiene
+  al desplegar con esos pasos.
+
+---
+
+## Resumen del proyecto (plan v2)
+
+Sesiones 0-9 y 11 **completas y verificadas** (build/lint/typecheck + tests contra
+Supabase real). Sesión 10 (Capacitor) con código/config/docs listos; build nativo
+pendiente de toolchains. Pendiente de ejecución manual (documentado): deploy Vercel,
+build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
+
+**Tests (todos verdes):** `test:rls` `test:pro` `test:onboarding` `test:scales`
+`test:agenda` `test:payments` `test:wellbeing` `test:notifications` `test:analytics`.
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md
