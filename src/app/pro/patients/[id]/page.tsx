@@ -12,6 +12,8 @@ import {
   getScaleAssignments,
   getUpcomingAppointments,
 } from "@/lib/queries/patient-detail";
+import { getScaleCatalog, getFlaggedCountForPatient } from "@/lib/queries/scales";
+import { ScalesPanel } from "@/app/pro/_components/ScalesPanel";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { StatusButton } from "@/app/pro/_components/StatusButton";
 import { TagsEditor } from "@/app/pro/_components/TagsEditor";
@@ -46,6 +48,7 @@ export default async function PatientDetailPage({
   if (!patient) notFound();
 
   const invitation = await getActiveInvitation(id);
+  const alertCount = await getFlaggedCountForPatient(id);
 
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "http";
@@ -57,6 +60,19 @@ export default async function PatientDetailPage({
       <Link href="/pro" className="text-sm text-neutral-500 hover:underline">
         ← Pacientes
       </Link>
+
+      {alertCount > 0 && (
+        <div className="mt-3 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+          ⚠️ Este paciente tiene {alertCount} respuesta
+          {alertCount > 1 ? "s" : ""} con el ítem de riesgo marcado.{" "}
+          <Link
+            href={`/pro/patients/${id}?tab=escalas`}
+            className="font-medium underline"
+          >
+            Ver escalas
+          </Link>
+        </div>
+      )}
 
       {/* Cabecera */}
       <div className="mt-2 flex flex-col gap-3 border-b border-black/[.08] pb-5 dark:border-white/[.12] sm:flex-row sm:items-start sm:justify-between">
@@ -137,47 +153,16 @@ function FutureNote({ children }: { children: React.ReactNode }) {
 }
 
 async function ScalesTab({ patientId }: { patientId: string }) {
-  const assignments = await getScaleAssignments(patientId);
+  const [assignments, catalog] = await Promise.all([
+    getScaleAssignments(patientId),
+    getScaleCatalog(),
+  ]);
   return (
-    <div>
-      {assignments.length === 0 ? (
-        <p className="text-sm text-neutral-500">
-          Ninguna escala activada. Las escalas son opt-in: sin activación, el
-          paciente no ve ninguna.
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {assignments.map((a) => (
-            <li
-              key={a.id}
-              className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
-            >
-              <div>
-                <span className="font-medium">{a.scaleCode}</span>
-                <span className="ml-2 text-xs text-neutral-500">
-                  {a.assignment_type === "recurring" ? "recurrente" : "puntual"}
-                  {a.active ? "" : " · inactiva"}
-                </span>
-              </div>
-              <div className="text-right text-sm">
-                {a.latestScore != null ? (
-                  <>
-                    <span className="font-semibold">{a.latestScore}</span>{" "}
-                    <span className="text-neutral-500">{a.latestSeverity}</span>
-                    <div className="text-xs text-neutral-400">
-                      {formatDate(a.latestAt)}
-                    </div>
-                  </>
-                ) : (
-                  <span className="text-xs text-neutral-400">Sin respuestas</span>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      <FutureNote>La activación de escalas se gestiona en la Sesión 4.</FutureNote>
-    </div>
+    <ScalesPanel
+      patientId={patientId}
+      catalog={catalog}
+      assignments={assignments}
+    />
   );
 }
 

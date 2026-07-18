@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentPatient } from "@/lib/queries/identity";
 import { getTasksForPatient } from "@/lib/queries/tasks";
 import { getUpcomingAppointments } from "@/lib/queries/patient-detail";
+import { getMyActiveAssignments } from "@/lib/queries/scales";
 import { formatDateTime } from "@/lib/format";
 import { PatientTasks } from "@/app/app/_components/PatientTasks";
 
@@ -20,9 +21,10 @@ export default async function PatientHome() {
     );
   }
 
-  const [tasks, appts] = await Promise.all([
+  const [tasks, appts, scales] = await Promise.all([
     getTasksForPatient(patient.id),
     getUpcomingAppointments(patient.id),
+    getMyActiveAssignments(),
   ]);
   const nextAppt = appts[0] ?? null;
   const firstName = patient.full_name?.split(" ")[0] ?? "";
@@ -55,6 +57,27 @@ export default async function PatientHome() {
           <p className="mt-1 text-sm text-neutral-500">Sin citas próximas.</p>
         )}
       </section>
+
+      {scales.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold">Cuestionarios</h2>
+          {scales.map((s) => (
+            <Link
+              key={s.id}
+              href={`/app/scales/${s.id}`}
+              className="flex items-center justify-between rounded-xl border border-black/[.08] p-4 transition-colors hover:bg-black/[.02] dark:border-white/[.12] dark:hover:bg-white/[.04]"
+            >
+              <div>
+                <span className="font-medium">{s.code}</span>
+                <span className="ml-2 text-xs text-neutral-500">
+                  {s.assignmentType === "recurring" ? "recurrente" : "puntual"}
+                </span>
+              </div>
+              <span className="text-sm text-sky-600">Responder →</span>
+            </Link>
+          ))}
+        </section>
+      )}
 
       <PatientTasks tasks={tasks} />
     </div>

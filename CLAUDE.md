@@ -250,5 +250,38 @@ src/
 - Sesión 4: escalas clínicas opt-in (activación por el profesional, formulario en
   la PWA, puntuación + severidad, alerta ítem 9, gráfica + export).
 
+### Sesión 4 — Escalas clínicas (opt-in) ✅ (completada)
+
+**Hecho:**
+- **Activación por el profesional** (ficha, pestaña Escalas): `ScalesPanel` activa
+  PHQ-9/GAD-7 (puntual o recurrente con intervalo), activa/desactiva sin borrar
+  histórico. Sin activación el paciente no ve nada (reforzado por RLS).
+- **Formulario en la PWA** (`/app/scales/[assignmentId]`): el paciente ve solo sus
+  escalas activas (sección "Cuestionarios" en el home), responde con validación.
+- **Puntuación + severidad** por el trigger de BD; se muestran al **profesional**
+  (no se muestra interpretación al paciente, solo confirmación).
+- **Alerta ítem 9 PHQ-9 (>0)**: al paciente, pantalla inmediata con **recursos de
+  emergencia** (024/112 + los del profesional); al profesional, banner destacado
+  en el dashboard y en la ficha.
+- **Evolución** (`/pro/patients/[id]/scales/[assignmentId]`): gráfica SVG de una
+  serie (`ScoreChart`, tema-aware, bandas de severidad como referencia neutra) +
+  tabla de respuestas + **export CSV** (route handler con BOM).
+- Verificación: `build`/`lint`/`typecheck` OK; **`npm run test:scales` 12/12**
+  (activar → responder → puntuar/severidad → alerta ítem 9 → desactivar bloquea).
+  `test:rls` 24/24, `test:pro` 16/16, `test:onboarding` 8/8.
+
+**Decisiones / notas:**
+- No se creó migración (el esquema de escalas ya estaba completo desde Sesión 1).
+- **Al paciente no se le muestra su severidad/puntuación** (evita autointerpretación
+  sin guía); sí ve recursos de emergencia si marca el ítem de riesgo. El profesional
+  ve puntuación/severidad/gráfica/CSV. Nada interpreta ni recomienda clínicamente.
+- Gráfica hecha con la skill dataviz: serie única (sin leyenda), tabla acompañante,
+  tooltips nativos `<title>`; color de serie fijo `#3b82f6`.
+
+**Pendiente / al empezar la Sesión 5:**
+- Probar en navegador el ciclo visual (activar → responder en PWA → gráfica/alerta);
+  la lógica está verificada por `test:scales`.
+- Sesión 5: agenda y citas (CRM) — calendario, recurrencia, .ics, asistencia.
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md

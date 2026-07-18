@@ -45,6 +45,25 @@ export default async function ProDashboard({
         </Link>
       </div>
 
+      {patients.some((p) => p.openAlerts > 0) && (
+        <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+          ⚠️ Pacientes con alertas:{" "}
+          {patients
+            .filter((p) => p.openAlerts > 0)
+            .map((p, i, arr) => (
+              <span key={p.id}>
+                <Link
+                  href={`/pro/patients/${p.id}?tab=escalas`}
+                  className="font-medium underline"
+                >
+                  {p.full_name ?? "Sin nombre"}
+                </Link>
+                {i < arr.length - 1 ? ", " : ""}
+              </span>
+            ))}
+        </div>
+      )}
+
       {/* Filtro por estado */}
       <div className="mt-6 flex flex-wrap items-center gap-2">
         <StatusTab label="Activos" value="active" current={status} tag={tag} />
