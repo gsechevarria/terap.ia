@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
@@ -31,6 +32,13 @@ export default async function PatientLayout({ children }: { children: ReactNode 
           >
             Emergencia · 024
           </a>
+          <Link
+            href="/app/settings"
+            className="text-sm text-neutral-500 hover:underline"
+            aria-label="Ajustes"
+          >
+            Ajustes
+          </Link>
           <SignOutForm />
         </div>
       </header>

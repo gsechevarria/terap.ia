@@ -35,6 +35,9 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
             <Link href="/pro/pagos" className="text-neutral-600 hover:underline dark:text-neutral-300">
               Pagos
             </Link>
+            <Link href="/pro/ajustes" className="text-neutral-600 hover:underline dark:text-neutral-300">
+              Ajustes
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">

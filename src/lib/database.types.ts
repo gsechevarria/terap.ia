@@ -393,6 +393,36 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          appointment_reminders: boolean
+          email_fallback: boolean
+          new_appointment: boolean
+          new_scale: boolean
+          new_task: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          appointment_reminders?: boolean
+          email_fallback?: boolean
+          new_appointment?: boolean
+          new_scale?: boolean
+          new_task?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          appointment_reminders?: boolean
+          email_fallback?: boolean
+          new_appointment?: boolean
+          new_scale?: boolean
+          new_task?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -690,6 +720,33 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
           user_id?: string
         }
         Relationships: []

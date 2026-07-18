@@ -384,5 +384,44 @@ src/
 - Probar en navegador la subida/descarga real de archivos y el diario.
 - Sesión 8: notificaciones y recordatorios (Web Push VAPID + Edge Functions/cron).
 
+### Sesión 8 — Notificaciones y recordatorios ✅ (completada)
+
+**Hecho:**
+- Migración `…015`: `push_subscriptions` + `notification_preferences` (RLS: cada
+  usuario lo suyo).
+- **Web Push (VAPID)**: `web-push` (dep), claves VAPID en `.env.local`
+  (`NEXT_PUBLIC_VAPID_PUBLIC_KEY` pública; `VAPID_PRIVATE_KEY` privada). Service
+  worker con handlers `push` + `notificationclick` (abre la app en la URL).
+- **Suscripción y preferencias**: `PushToggle` (suscribir/desuscribir el
+  dispositivo) + `NotificationPreferences` (qué recibir); páginas `/app/settings`
+  y `/pro/ajustes` (+ enlaces en nav/header).
+- **Encolado por evento**: al crear cita (Sesión 5), tarea o escala se inserta una
+  notificación `queued` para el paciente.
+- **Envío programado**: route handler **`/api/cron/notifications`** (Node,
+  service_role, protegido por `CRON_SECRET`): genera **recordatorios de cita en la
+  ventana 24-48 h** (idempotente por `payload.appointment_id`) y **envía** las
+  encoladas por Web Push, **filtrando por preferencias**; limpia suscripciones
+  caducadas (404/410). Programado con **Vercel Cron** (`vercel.json`, horario).
+- Verificación: `build`/`lint`/`typecheck` OK; **`npm run test:notifications`
+  9/9** (RLS de suscripciones/preferencias + encolado/lectura); **smoke del cron**
+  (401 sin secreto; 200 con resumen JSON, pipeline completo sin errores). Resto
+  de tests verdes.
+
+**Decisiones / notas:**
+- Se implementó el envío con **Vercel Cron + route handler** (Next/Vercel) en vez
+  de Edge Functions Deno: misma finalidad, más verificable en este stack.
+- Filtrado por preferencias en el envío (no en el encolado): el profesional no
+  puede leer las preferencias del paciente (RLS), así que decide el cron.
+- **Fallback email**: preferencia modelada; el envío por email queda pendiente de
+  proveedor (Resend/SMTP) — hoy, sin push, la notificación se marca `failed`.
+- La **entrega real a un dispositivo** requiere navegador (suscripción push) +
+  despliegue con `CRON_SECRET`/VAPID en el entorno.
+
+**Pendiente / al empezar la Sesión 9:**
+- Probar en navegador: activar push, recibir un recordatorio/tarea.
+- Configurar en Vercel las envs (VAPID, CRON_SECRET, SERVICE_ROLE) para el cron.
+- Sesión 9: analítica de consulta (ocupación, no-shows, ingresos, activos vs
+  archivados; evolución agregada de escalas).
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md

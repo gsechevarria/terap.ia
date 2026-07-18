@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfessional } from "@/lib/queries/identity";
+import { enqueuePatientNotification } from "@/lib/notifications";
 
 /** El profesional activa una escala para su paciente (opt-in). */
 export async function createScaleAssignmentAction(input: {
@@ -25,6 +26,23 @@ export async function createScaleAssignmentAction(input: {
     active: true,
   });
   if (error) throw new Error(error.message);
+
+  const { data: patient } = await supabase
+    .from("patients")
+    .select("user_id")
+    .eq("id", input.patientId)
+    .maybeSingle();
+  if (patient?.user_id) {
+    await enqueuePatientNotification(supabase, {
+      userId: patient.user_id,
+      professionalId: pro.id,
+      patientId: input.patientId,
+      type: "new_scale",
+      title: "Nuevo cuestionario",
+      body: "Tu profesional te ha asignado un cuestionario para responder.",
+      payload: { kind: "scale" },
+    });
+  }
   revalidatePath(`/pro/patients/${input.patientId}`);
 }
 

@@ -15,6 +15,7 @@
     "test:agenda": "node --env-file=.env.local scripts/test-agenda.mjs",
     "test:payments": "node --env-file=.env.local scripts/test-payments.mjs",
     "test:wellbeing": "node --env-file=.env.local scripts/test-wellbeing.mjs",
+    "test:notifications": "node --env-file=.env.local scripts/test-notifications.mjs",
     "db:push": "supabase db push",
     "gen:types": "supabase gen types typescript --project-id levufuoigdlexscpvlgk --schema public > src/lib/database.types.ts",
     "gen:icons": "node scripts/gen-icons.mjs"
@@ -24,13 +25,15 @@
     "@supabase/supabase-js": "^2.110.7",
     "next": "16.2.10",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "supabase": "^2.109.1",

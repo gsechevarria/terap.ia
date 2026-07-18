@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfessional } from "@/lib/queries/identity";
+import { enqueuePatientNotification } from "@/lib/notifications";
 
 export async function createTaskAction(input: {
   patientId: string;
@@ -24,6 +25,23 @@ export async function createTaskAction(input: {
     due_date: input.dueDate || null,
   });
   if (error) throw new Error(error.message);
+
+  const { data: patient } = await supabase
+    .from("patients")
+    .select("user_id")
+    .eq("id", input.patientId)
+    .maybeSingle();
+  if (patient?.user_id) {
+    await enqueuePatientNotification(supabase, {
+      userId: patient.user_id,
+      professionalId: pro.id,
+      patientId: input.patientId,
+      type: "new_task",
+      title: "Nueva tarea",
+      body: `Tu profesional te ha asignado una tarea: ${title}.`,
+      payload: { kind: "task" },
+    });
+  }
   revalidatePath(`/pro/patients/${input.patientId}`);
 }
 
