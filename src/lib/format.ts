@@ -17,6 +17,15 @@ export function formatDateTime(iso: string | null | undefined): string {
   });
 }
 
+/** ISO → valor para <input type="datetime-local"> en hora local. */
+export function toDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`;
+}
+
 export function formatCurrency(cents: number, currency = "EUR"): string {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency }).format(
     cents / 100,

@@ -283,5 +283,40 @@ src/
   la lógica está verificada por `test:scales`.
 - Sesión 5: agenda y citas (CRM) — calendario, recurrencia, .ics, asistencia.
 
+### Sesión 5 — Agenda y citas (CRM) ✅ (completada)
+
+**Hecho:**
+- Migración `…013` (`agenda_blocks` para bloqueos/vacaciones, RLS solo profesional).
+- **Agenda del profesional** (`/pro/agenda`, con nav en el layout): crear cita
+  (con selector de paciente, link de videollamada, **recurrencia** puntual/
+  semanal/quincenal/mensual con fecha fin, cap 26), editar, cancelar, eliminar;
+  **registro de asistencia** (acudió/no acudió/canceló tarde → status completada);
+  bloqueos (crear/eliminar); vista por día.
+- **Al crear cita → notificación** encolada al paciente (tabla `notifications`) +
+  **archivo `.ics`** descargable (`/appointments/[id]/ics`, RLS: profesional o
+  paciente).
+- **Paciente** (`/app/appointments`, link desde el home): ver próximas/anteriores,
+  **confirmar/cancelar**, descargar `.ics`, abrir videollamada.
+- Ficha Citas: enlace "Nueva cita en la agenda" (prefill paciente) + `.ics`.
+- Verificación: `build`/`lint`/`typecheck` OK; **`npm run test:agenda` 12/12**
+  (crear → ver/confirmar/cancelar → asistencia → notificación → bloqueo privado →
+  aislamiento). test:rls 24/24, test:pro 16/16, test:onboarding 8/8, test:scales 12/12.
+
+**Decisiones / notas:**
+- Fechas: el cliente convierte `datetime-local` (hora local) → ISO/UTC antes de
+  enviar (el servidor no debe interpretar la zona). `.ics` en UTC (`...Z`).
+- Recurrencia: se generan N filas con `parent_appointment_id` (no expansión
+  virtual); tope 26 ocurrencias.
+- Paciente puede `UPDATE` sus citas (confirmar/cancelar) por RLS; control por
+  columnas queda pendiente (server actions ya limitan la UI).
+- `next` de `datetime-local` y "ahora" se calculan fuera del render (regla de
+  pureza de React): split de citas en la capa de queries.
+
+**Pendiente / al empezar la Sesión 6:**
+- Probar en navegador el ciclo cita↔paciente y abrir el `.ics` en Google/Apple
+  Calendar; la lógica está verificada por `test:agenda`.
+- Sesión 6: seguimiento de pagos (precios, pagos, bonos, deuda, export) SIN
+  facturación.
+
 <!-- Reglas del agente para esta versión de Next.js -->
 @AGENTS.md

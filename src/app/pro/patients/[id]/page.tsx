@@ -170,6 +170,12 @@ async function AppointmentsTab({ patientId }: { patientId: string }) {
   const appts = await getUpcomingAppointments(patientId);
   return (
     <div>
+      <Link
+        href={`/pro/agenda?patient=${patientId}`}
+        className="mb-3 inline-flex rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-white dark:text-neutral-900"
+      >
+        Nueva cita en la agenda
+      </Link>
       {appts.length === 0 ? (
         <p className="text-sm text-neutral-500">Sin próximas citas.</p>
       ) : (
@@ -180,12 +186,19 @@ async function AppointmentsTab({ patientId }: { patientId: string }) {
               className="flex items-center justify-between rounded-lg border border-black/[.08] p-3 dark:border-white/[.12]"
             >
               <span className="text-sm">{formatDateTime(a.starts_at)}</span>
-              <span className="text-xs text-neutral-500">{a.status}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-neutral-500">{a.status}</span>
+                <a
+                  href={`/appointments/${a.id}/ics`}
+                  className="text-xs text-neutral-500 underline"
+                >
+                  .ics
+                </a>
+              </div>
             </li>
           ))}
         </ul>
       )}
-      <FutureNote>La agenda completa se gestiona en la Sesión 5.</FutureNote>
     </div>
   );
 }

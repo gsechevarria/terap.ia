@@ -56,6 +56,12 @@ export default async function PatientHome() {
         ) : (
           <p className="mt-1 text-sm text-neutral-500">Sin citas próximas.</p>
         )}
+        <Link
+          href="/app/appointments"
+          className="mt-3 inline-block text-sm text-sky-600 hover:underline"
+        >
+          Ver todas mis citas →
+        </Link>
       </section>
 
       {scales.length > 0 && (
