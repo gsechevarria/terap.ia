@@ -537,6 +537,15 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
   botones se comparte por grupo de selectores.
 - Landing `/` rediseñada: hero + maqueta CSS del panel (`AppWindow`) + grid de
   funcionalidades + principios + cierre. Sin JS de cliente.
+- **Agenda con calendario (jul 2026):** `/pro/agenda` = calendario con vistas
+  **día/semana/mes** (query params `?view=&date=`, navegación ‹ Hoy › por
+  links server-rendered; ventana temporal resuelta en `src/lib/agenda-window.ts`,
+  datos por rango con `getProfessionalAgendaRange`). Componente cliente
+  `AgendaCalendar.tsx`: grid mensual (chips + "+N más"), rejilla horaria 7-21 h
+  (solapes por carriles, línea de "ahora", bloqueos rayados), **popup** al
+  pinchar una cita (vista previa + Ver paciente + Modificar) y **modal de
+  edición** (horario, video, notas, asistencia, cancelar/eliminar).
+  `AppointmentItem`/`BlockItem` eliminados (sustituidos por el calendario).
 - Nav del panel con estado activo: `src/app/pro/_components/ProNav.tsx` (client).
 - Acciones secundarias en listas aparecen en hover/focus (patrón Notion,
   `group-hover` + `group-focus-within`).

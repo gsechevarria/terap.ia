@@ -49,6 +49,43 @@ export async function getProfessionalAgenda(): Promise<{
   return { appointments, blocks: (blockRes.data ?? []) as AgendaBlock[] };
 }
 
+/**
+ * Agenda del profesional en un rango [from, to): citas y bloqueos que solapan
+ * el rango (para el calendario con vistas de día/semana/mes).
+ */
+export async function getProfessionalAgendaRange(
+  fromISO: string,
+  toISO: string,
+): Promise<{ appointments: AgendaAppointment[]; blocks: AgendaBlock[] }> {
+  const supabase = await createClient();
+
+  const [apptRes, blockRes] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select(
+        "id, professional_id, patient_id, starts_at, ends_at, status, attendance, video_link, recurrence_freq, recurrence_until, parent_appointment_id, notes, created_at, updated_at, patients(full_name)",
+      )
+      .lt("starts_at", toISO)
+      .gt("ends_at", fromISO)
+      .order("starts_at", { ascending: true }),
+    supabase
+      .from("agenda_blocks")
+      .select("id, starts_at, ends_at, reason")
+      .lt("starts_at", toISO)
+      .gt("ends_at", fromISO)
+      .order("starts_at", { ascending: true }),
+  ]);
+
+  const appointments: AgendaAppointment[] = (apptRes.data ?? []).map((a) => {
+    const { patients, ...rest } = a as typeof a & {
+      patients: { full_name: string | null } | null;
+    };
+    return { ...(rest as Appointment), patientName: patients?.full_name ?? null };
+  });
+
+  return { appointments, blocks: (blockRes.data ?? []) as AgendaBlock[] };
+}
+
 /** Pacientes activos del profesional (para el selector al crear cita). */
 export async function getPatientsForSelect(): Promise<
   { id: string; full_name: string | null }[]

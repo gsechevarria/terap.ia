@@ -1,77 +1,100 @@
+import Link from "next/link";
 import {
   getPatientsForSelect,
-  getProfessionalAgenda,
-  type AgendaAppointment,
+  getProfessionalAgendaRange,
 } from "@/lib/queries/appointments";
+import { resolveAgendaWindow } from "@/lib/agenda-window";
+import {
+  AgendaCalendar,
+  type CalendarView,
+} from "@/app/pro/_components/AgendaCalendar";
 import { NewAppointment } from "@/app/pro/_components/NewAppointment";
 import { NewBlock } from "@/app/pro/_components/NewBlock";
-import { AppointmentItem } from "@/app/pro/_components/AppointmentItem";
-import { BlockItem } from "@/app/pro/_components/BlockItem";
 
-function dayKey(iso: string): string {
-  return new Date(iso).toLocaleDateString("es-ES", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-  });
-}
+const VIEWS: { key: CalendarView; label: string }[] = [
+  { key: "day", label: "Día" },
+  { key: "week", label: "Semana" },
+  { key: "month", label: "Mes" },
+];
 
 export default async function AgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ patient?: string }>;
+  searchParams: Promise<{ patient?: string; view?: string; date?: string }>;
 }) {
-  const { patient } = await searchParams;
+  const { patient, view: viewRaw, date: dateRaw } = await searchParams;
+  const w = resolveAgendaWindow(viewRaw, dateRaw);
+
   const [{ appointments, blocks }, patients] = await Promise.all([
-    getProfessionalAgenda(),
+    getProfessionalAgendaRange(w.fromISO, w.toISO),
     getPatientsForSelect(),
   ]);
 
-  const byDay = new Map<string, AgendaAppointment[]>();
-  for (const a of appointments) {
-    const k = dayKey(a.starts_at);
-    if (!byDay.has(k)) byDay.set(k, []);
-    byDay.get(k)!.push(a);
-  }
+  const href = (view: CalendarView, dateYMD: string) => {
+    const p = new URLSearchParams();
+    if (view !== "week") p.set("view", view);
+    p.set("date", dateYMD);
+    if (patient) p.set("patient", patient);
+    return `/pro/agenda?${p.toString()}`;
+  };
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl">
       <h1 className="page-title">Agenda</h1>
-      <p className="mt-1 text-sm text-ink-2">
-        Próximas citas y disponibilidad desde hoy.
-      </p>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <NewAppointment patients={patients} defaultPatientId={patient} />
-        <NewBlock />
+      {/* Toolbar: navegación + vista */}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1">
+          <Link
+            href={href(w.view, w.prevYMD)}
+            aria-label="Anterior"
+            className="btn-ghost h-7 w-7 px-0"
+          >
+            ‹
+          </Link>
+          <Link href={href(w.view, w.todayYMD)} className="btn-ghost h-7 px-2.5 text-xs">
+            Hoy
+          </Link>
+          <Link
+            href={href(w.view, w.nextYMD)}
+            aria-label="Siguiente"
+            className="btn-ghost h-7 w-7 px-0"
+          >
+            ›
+          </Link>
+          <span className="ml-2 text-sm font-semibold capitalize">{w.label}</span>
+        </div>
+        <div className="flex rounded bg-panel p-0.5">
+          {VIEWS.map((v) => (
+            <Link
+              key={v.key}
+              href={href(v.key, w.dateYMD)}
+              className={`rounded px-3 py-1 text-sm font-medium transition-colors duration-100 ${
+                w.view === v.key
+                  ? "bg-canvas text-ink shadow-[0_1px_2px_rgba(15,15,15,0.08)]"
+                  : "text-ink-2 hover:text-ink"
+              }`}
+            >
+              {v.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
-      <div className="mt-10">
-        {appointments.length === 0 ? (
-          <p className="text-sm text-ink-2">No hay citas próximas.</p>
-        ) : (
-          [...byDay.entries()].map(([day, appts]) => (
-            <div key={day} className="mb-8">
-              <h2 className="section-label mb-2 capitalize">{day}</h2>
-              <ul className="card divide-y divide-line">
-                {appts.map((a) => (
-                  <AppointmentItem key={a.id} appt={a} />
-                ))}
-              </ul>
-            </div>
-          ))
-        )}
+      {/* Calendario */}
+      <div className="mt-4">
+        <AgendaCalendar
+          view={w.view}
+          dateYMD={w.dateYMD}
+          appointments={appointments}
+          blocks={blocks}
+        />
+      </div>
 
-        {blocks.length > 0 && (
-          <div className="mt-4">
-            <h2 className="section-label mb-2">Bloqueos</h2>
-            <ul className="card divide-y divide-line">
-              {blocks.map((b) => (
-                <BlockItem key={b.id} block={b} />
-              ))}
-            </ul>
-          </div>
-        )}
+      {/* Crear cita / bloqueo */}
+      <div className="mt-10 grid gap-4 lg:grid-cols-2">
+        <NewAppointment patients={patients} defaultPatientId={patient} />
+        <NewBlock />
       </div>
     </div>
   );
