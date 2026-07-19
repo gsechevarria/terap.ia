@@ -74,11 +74,11 @@ export function NewAppointment({
   return (
     <div className="card bg-panel p-4">
       <h3 className="section-label">Nueva cita</h3>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+      <div className="mt-3 grid gap-2.5">
         <select
           value={patientId || patients[0]?.id || ""}
           onChange={(e) => setPatientId(e.target.value)}
-          className="field sm:col-span-2"
+          className="field"
         >
           {patients.length === 0 && <option value="">Sin pacientes activos</option>}
           {patients.map((p) => (
@@ -109,7 +109,7 @@ export function NewAppointment({
           value={videoLink}
           onChange={(e) => setVideoLink(e.target.value)}
           placeholder="Link de videollamada (Meet/Zoom)"
-          className="field sm:col-span-2"
+          className="field"
         />
         <label className="flex items-center gap-2 text-xs font-medium text-ink-2">
           Repetición
@@ -140,7 +140,7 @@ export function NewAppointment({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notas (opcional)"
           rows={2}
-          className="field sm:col-span-2"
+          className="field"
         />
       </div>
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}

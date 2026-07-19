@@ -546,6 +546,10 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
   pinchar una cita (vista previa + Ver paciente + Modificar) y **modal de
   edición** (horario, video, notas, asistencia, cancelar/eliminar).
   `AppointmentItem`/`BlockItem` eliminados (sustituidos por el calendario).
+  Distribución: calendario a la izquierda; columna derecha con "Nueva cita",
+  botón **"Ver todas las citas"** → `/pro/agenda/citas` (listado completo
+  pasadas+futuras con filtros GET por cuándo/estado/paciente,
+  `listProfessionalAppointments`) y "Nuevo bloqueo" plegado en `<details>`.
 - Nav del panel con estado activo: `src/app/pro/_components/ProNav.tsx` (client).
 - Acciones secundarias en listas aparecen en hover/focus (patrón Notion,
   `group-hover` + `group-focus-within`).

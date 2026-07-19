@@ -36,9 +36,8 @@ export function NewBlock() {
   }
 
   return (
-    <div className="card bg-panel p-4">
-      <h3 className="section-label">Nuevo bloqueo (vacaciones / no disponible)</h3>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+    <div>
+      <div className="grid gap-2 sm:grid-cols-2">
         <label className="block">
           <span className="field-label">Inicio</span>
           <input
