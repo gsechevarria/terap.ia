@@ -11,7 +11,7 @@ export default async function PatientSettingsPage() {
         <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
           ← Inicio
         </Link>
-        <h1 className="page-title mt-3">Notificaciones</h1>
+        <h1 className="page-title mt-3">Ajustes</h1>
       </div>
 
       <section className="flex flex-col gap-2">
@@ -22,6 +22,13 @@ export default async function PatientSettingsPage() {
       <section className="flex flex-col gap-2">
         <h2 className="section-label">¿Qué quieres recibir?</h2>
         <NotificationPreferences initial={prefs} />
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="section-label">Cuenta</h2>
+        <Link href="/account/password" className="btn-ghost self-start">
+          Establecer o cambiar contraseña
+        </Link>
       </section>
     </div>
   );

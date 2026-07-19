@@ -38,7 +38,13 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 ## Arquitectura de autenticación y roles
 
 - Dos áreas: **`/pro`** (panel profesional) y **`/app`** (paciente).
-- Auth por **email + magic link** (sin contraseña) vía `@supabase/ssr`.
+- Auth vía `@supabase/ssr` con **dos métodos**: email + **contraseña**
+  (`signInWithPassword`, solo cuentas existentes) y email + **magic link**
+  (crea la cuenta y fija el rol en el primer acceso). Recuperación/creación de
+  contraseña: `resetPasswordForEmail` → `/auth/confirm` → **`/account/password`**
+  (`updateUser({ password })`; enlazada desde Ajustes de ambas áreas).
+  Pendiente: wizard de registro solo para psicólogos (sustituirá al primer
+  acceso por enlace mágico del profesional).
 - Clientes Supabase centralizados:
   - `src/lib/supabase/client.ts` — browser (`createBrowserClient`).
   - `src/lib/supabase/server.ts` — server components / route handlers (async `cookies()`).
