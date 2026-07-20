@@ -551,6 +551,9 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
   pasadas+futuras con filtros GET por cuándo/estado/paciente,
   `listProfessionalAppointments`) y "Nuevo bloqueo" plegado en `<details>`.
 - Nav del panel con estado activo: `src/app/pro/_components/ProNav.tsx` (client).
+  **Sidebar izquierda en escritorio** (`ProNav`, layout en rejilla
+  `md:flex-row` con `<aside md:w-56>` fija + wordmark arriba y email/cerrar
+  sesión abajo); en móvil, barra superior con nav horizontal (`ProNavMobile`).
 - Acciones secundarias en listas aparecen en hover/focus (patrón Notion,
   `group-hover` + `group-focus-within`).
 - **Refactor de sistema visual (jul 2026, revisado en artifact):** neutros a

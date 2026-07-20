@@ -4,11 +4,24 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { SignOutForm } from "@/components/SignOutForm";
-import { ProNav } from "@/app/pro/_components/ProNav";
+import { ProNav, ProNavMobile } from "@/app/pro/_components/ProNav";
+
+function Brand() {
+  return (
+    <Link
+      href="/pro"
+      className="inline-flex shrink-0 items-baseline gap-1 text-[15px] font-semibold tracking-[-0.01em] text-ink"
+    >
+      terap.ia
+      <span aria-hidden className="size-1.5 self-center rounded-full bg-accent" />
+    </Link>
+  );
+}
 
 /**
  * Layout del panel profesional. Verificación de autorización definitiva
- * (el proxy solo hace redirección optimista).
+ * (el proxy solo hace redirección optimista). Navegación lateral (sidebar) en
+ * escritorio; barra superior con nav horizontal en móvil.
  */
 export default async function ProLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -22,33 +35,38 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
   if (role !== ROLES.PROFESSIONAL) redirect("/login?error=sin-rol");
 
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="sticky top-0 z-10 border-b border-line bg-canvas/95 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
-          <div className="flex min-w-0 items-center gap-4">
-            <Link
-              href="/pro"
-              className="inline-flex shrink-0 items-baseline gap-1 text-[15px] font-semibold tracking-[-0.01em] text-ink"
-            >
-              terap.ia
-              <span
-                aria-hidden
-                className="size-1.5 self-center rounded-full bg-accent"
-              />
-            </Link>
+    <div className="flex min-h-full flex-col md:flex-row">
+      {/* Sidebar (escritorio) */}
+      <aside className="hidden shrink-0 border-r border-line bg-panel md:block md:w-56">
+        <div className="sticky top-0 flex h-screen flex-col gap-4 p-3">
+          <div className="px-1.5 pt-1">
+            <Brand />
+          </div>
+          <div className="flex-1 overflow-y-auto">
             <ProNav />
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="hidden text-xs text-ink-3 md:inline">
+          <div className="border-t border-line px-1.5 pt-3">
+            <p className="mb-1.5 truncate text-xs text-ink-3" title={user.email}>
               {user.email}
-            </span>
+            </p>
             <SignOutForm />
           </div>
         </div>
+      </aside>
+
+      {/* Barra superior (móvil) */}
+      <header className="sticky top-0 z-10 border-b border-line bg-canvas/95 backdrop-blur-sm md:hidden">
+        <div className="flex items-center justify-between gap-4 px-4 py-2">
+          <Brand />
+          <SignOutForm />
+        </div>
+        <div className="px-2 pb-2">
+          <ProNavMobile />
+        </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-        {children}
-      </main>
+
+      {/* Contenido */}
+      <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">{children}</main>
     </div>
   );
 }
