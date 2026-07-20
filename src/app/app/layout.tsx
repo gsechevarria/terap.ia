@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Phone, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { SignOutForm } from "@/components/SignOutForm";
@@ -37,16 +38,18 @@ export default async function PatientLayout({ children }: { children: ReactNode 
           <div className="flex items-center gap-1.5">
             <a
               href="tel:024"
-              className="inline-flex h-7 items-center rounded bg-danger px-2.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+              className="inline-flex h-7 items-center gap-1 rounded-md bg-danger px-2.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
             >
+              <Phone className="size-3.5" strokeWidth={2.25} aria-hidden />
               Emergencia · 024
             </a>
             <Link
               href="/app/settings"
-              className="btn-subtle h-7 px-2 text-xs"
+              className="btn-subtle h-7 gap-1 px-2 text-xs"
               aria-label="Ajustes"
             >
-              Ajustes
+              <Settings className="size-3.5" strokeWidth={2} aria-hidden />
+              <span className="hidden sm:inline">Ajustes</span>
             </Link>
             <SignOutForm />
           </div>

@@ -6,6 +6,7 @@ import {
 } from "@/lib/queries/appointments";
 import type { Appointment } from "@/lib/types";
 import { formatDateTime } from "@/lib/format";
+import { Status, type StatusTone } from "@/components/ui/Status";
 
 const STATUS_LABEL: Record<string, string> = {
   scheduled: "programada",
@@ -20,6 +21,12 @@ const ATTENDANCE_LABEL: Record<string, string> = {
   late_cancel: "canceló tarde",
 };
 const STATUSES = ["scheduled", "confirmed", "completed", "cancelled"] as const;
+const STATUS_TONE: Record<string, StatusTone> = {
+  scheduled: "info",
+  confirmed: "accent",
+  completed: "neutral",
+  cancelled: "neutral",
+};
 
 /** Día local (no UTC) para enlazar con la vista de día del calendario. */
 function localYMD(iso: string): string {
@@ -165,17 +172,9 @@ export default async function AllAppointmentsPage({
                       </Link>
                     </td>
                     <td>
-                      <span
-                        className={
-                          a.status === "confirmed"
-                            ? "rounded-sm bg-accent-soft px-1.5 py-px text-xs font-medium text-accent"
-                            : a.status === "scheduled"
-                              ? "rounded-sm bg-info-soft px-1.5 py-px text-xs font-medium text-info"
-                              : "chip"
-                        }
-                      >
+                      <Status tone={STATUS_TONE[a.status] ?? "neutral"}>
                         {STATUS_LABEL[a.status] ?? a.status}
-                      </span>
+                      </Status>
                     </td>
                     <td className="text-ink-2">
                       {ATTENDANCE_LABEL[a.attendance] ?? a.attendance}

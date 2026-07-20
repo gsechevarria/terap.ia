@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Angry, Frown, Meh, Smile, Laugh } from "lucide-react";
 
 /**
  * Landing pública, estructura tipo notion.com:
@@ -545,14 +546,16 @@ function PhoneMock() {
             <div className="mt-3 rounded-xl border border-line p-3">
               <p className="text-[11px] font-semibold">¿Cómo estás hoy?</p>
               <div className="mt-2 flex justify-between">
-                {["😞", "🙁", "😐", "🙂", "😄"].map((f, i) => (
+                {[Angry, Frown, Meh, Smile, Laugh].map((Face, i) => (
                   <span
-                    key={f}
-                    className={`flex size-9 items-center justify-center rounded-lg text-base ${
-                      i === 3 ? "border border-accent bg-accent-soft" : ""
+                    key={i}
+                    className={`flex size-9 items-center justify-center rounded-lg ${
+                      i === 3
+                        ? "border border-accent bg-accent-soft text-accent"
+                        : "text-ink-3"
                     }`}
                   >
-                    {f}
+                    <Face className="size-5" strokeWidth={1.75} />
                   </span>
                 ))}
               </div>

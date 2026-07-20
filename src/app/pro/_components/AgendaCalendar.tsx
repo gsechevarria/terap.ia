@@ -11,6 +11,7 @@ import {
   updateAppointmentAction,
 } from "@/lib/actions/appointments";
 import { toDatetimeLocal } from "@/lib/format";
+import { Status, type StatusTone } from "@/components/ui/Status";
 import type { AgendaAppointment, AgendaBlock } from "@/lib/queries/appointments";
 
 export type CalendarView = "day" | "week" | "month";
@@ -63,6 +64,11 @@ const ATTENDANCE_LABEL: Record<string, string> = {
   no_show: "no acudió",
   late_cancel: "canceló tarde",
 };
+function statusTone(status: string): StatusTone {
+  if (status === "confirmed") return "accent";
+  if (status === "scheduled") return "info";
+  return "neutral"; // completed / cancelled
+}
 /** Colores del evento según estado (borde izquierdo + fondo suave). */
 function statusClasses(status: string): string {
   switch (status) {
@@ -591,9 +597,9 @@ function ApptPreview({
     <div>
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-semibold">{appt.patientName ?? "Sin nombre"}</p>
-        <span className="chip shrink-0">
+        <Status tone={statusTone(appt.status)}>
           {STATUS_LABEL[appt.status] ?? appt.status}
-        </span>
+        </Status>
       </div>
       <p className="mt-1 text-sm text-ink-2 capitalize">{day}</p>
       <p className="text-sm text-ink-2">

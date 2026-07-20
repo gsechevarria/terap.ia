@@ -156,11 +156,7 @@ export function ResourcesPanel({
               <div className="min-w-0">
                 <span className="font-medium">{r.title}</span>
                 <span className="chip ml-2">{r.kind}</span>
-                {r.patient_id === null && (
-                  <span className="ml-1 rounded-sm bg-info-soft px-1.5 py-px text-xs font-medium text-info">
-                    general
-                  </span>
-                )}
+                {r.patient_id === null && <span className="chip ml-1">general</span>}
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 {r.kind === "link" && r.url ? (

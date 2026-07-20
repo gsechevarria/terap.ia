@@ -4,13 +4,14 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { respondAppointmentAction } from "@/lib/actions/appointments";
 import { formatDateTime } from "@/lib/format";
+import { Status, type StatusTone } from "@/components/ui/Status";
 import type { Appointment } from "@/lib/types";
 
-const STATUS: Record<string, string> = {
-  scheduled: "por confirmar",
-  confirmed: "confirmada",
-  cancelled: "cancelada",
-  completed: "realizada",
+const STATUS: Record<string, { label: string; tone: StatusTone }> = {
+  scheduled: { label: "por confirmar", tone: "info" },
+  confirmed: { label: "confirmada", tone: "accent" },
+  cancelled: { label: "cancelada", tone: "neutral" },
+  completed: { label: "realizada", tone: "neutral" },
 };
 
 export function PatientAppointmentItem({
@@ -37,15 +38,9 @@ export function PatientAppointmentItem({
         <span className="text-sm font-medium">
           {formatDateTime(appt.starts_at)}
         </span>
-        <span
-          className={
-            appt.status === "confirmed"
-              ? "rounded-sm bg-accent-soft px-1.5 py-px text-xs font-medium text-accent"
-              : "chip"
-          }
-        >
-          {STATUS[appt.status] ?? appt.status}
-        </span>
+        <Status tone={(STATUS[appt.status] ?? { tone: "neutral" as const }).tone}>
+          {(STATUS[appt.status] ?? { label: appt.status }).label}
+        </Status>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
         {appt.video_link && (

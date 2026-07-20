@@ -553,4 +553,18 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
 - Nav del panel con estado activo: `src/app/pro/_components/ProNav.tsx` (client).
 - Acciones secundarias en listas aparecen en hover/focus (patrón Notion,
   `group-hover` + `group-focus-within`).
+- **Refactor de sistema visual (jul 2026, revisado en artifact):** neutros a
+  **zinc frío** (canvas `#FBFBFA`, ink `#1F1F23`, `line-strong` para bordes de
+  control, `sunken` para hundidos); radios **6/10/12** (inputs 6, cards 10,
+  modales 12); semánticos **desaturados** + `success` propio distinto del acento;
+  `page-title` a peso **600**. Nuevas clases: `btn-lg`, `tabs/tab/tab-active`,
+  `modal/modal-header/-body/-footer`, `toast`, `empty`, `skeleton`, y el sistema
+  de **estados** `st` (punto+etiqueta) con `dot d-{tone}` (+`halo`) y `st-solid`
+  (crítico, único con relleno). Componente `src/components/ui/Status.tsx`
+  (`Status` + `StatusCritical`) usado en dashboard, ficha, agenda (popup), citas,
+  citas del paciente y tareas.
+- **Iconos: `lucide-react`** (dependencia) a grosor/tamaño uniforme (16 denso /
+  ~20 PWA). **Sin emojis en la UI:** el `MoodLogger` y la maqueta de la landing
+  usan caras Lucide (`Angry/Frown/Meh/Smile/Laugh`). Nav, botones clave (`Plus`),
+  cabeceras y alertas (`TriangleAlert`) con iconos Lucide.
 @AGENTS.md

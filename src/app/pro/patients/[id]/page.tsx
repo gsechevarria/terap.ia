@@ -19,7 +19,9 @@ import { PaymentsPanel } from "@/app/pro/_components/PaymentsPanel";
 import { ResourcesPanel } from "@/app/pro/_components/ResourcesPanel";
 import { DocumentsPanel } from "@/app/pro/_components/DocumentsPanel";
 import { ScoreChart } from "@/app/pro/_components/ScoreChart";
+import { TriangleAlert } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { Status, type StatusTone } from "@/components/ui/Status";
 import { StatusButton } from "@/app/pro/_components/StatusButton";
 import { TagsEditor } from "@/app/pro/_components/TagsEditor";
 import { InvitePanel } from "@/app/pro/_components/InvitePanel";
@@ -68,8 +70,8 @@ export default async function PatientDetailPage({
       </Link>
 
       {alertCount > 0 && (
-        <div className="mt-4 flex items-start gap-2.5 rounded border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
-          <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full bg-danger" />
+        <div className="mt-4 flex items-start gap-2.5 rounded-md border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
           <p>
             Este paciente tiene {alertCount} respuesta
             {alertCount > 1 ? "s" : ""} con el ítem de riesgo marcado.{" "}
@@ -171,6 +173,13 @@ async function ScalesTab({ patientId }: { patientId: string }) {
   );
 }
 
+const APPT_STATUS: Record<string, { label: string; tone: StatusTone }> = {
+  scheduled: { label: "por confirmar", tone: "info" },
+  confirmed: { label: "confirmada", tone: "accent" },
+  cancelled: { label: "cancelada", tone: "neutral" },
+  completed: { label: "completada", tone: "neutral" },
+};
+
 async function AppointmentsTab({ patientId }: { patientId: string }) {
   const appts = await getUpcomingAppointments(patientId);
   return (
@@ -185,23 +194,26 @@ async function AppointmentsTab({ patientId }: { patientId: string }) {
         <p className="text-sm text-ink-2">Sin próximas citas.</p>
       ) : (
         <ul className="card divide-y divide-line">
-          {appts.map((a) => (
-            <li
-              key={a.id}
-              className="flex items-center justify-between px-4 py-3"
-            >
-              <span className="text-sm">{formatDateTime(a.starts_at)}</span>
-              <div className="flex items-center gap-3">
-                <span className="chip">{a.status}</span>
-                <a
-                  href={`/appointments/${a.id}/ics`}
-                  className="text-xs text-ink-3 underline underline-offset-2 hover:text-ink"
-                >
-                  .ics
-                </a>
-              </div>
-            </li>
-          ))}
+          {appts.map((a) => {
+            const st = APPT_STATUS[a.status] ?? { label: a.status, tone: "neutral" as const };
+            return (
+              <li
+                key={a.id}
+                className="flex items-center justify-between px-4 py-3"
+              >
+                <span className="text-sm">{formatDateTime(a.starts_at)}</span>
+                <div className="flex items-center gap-3">
+                  <Status tone={st.tone}>{st.label}</Status>
+                  <a
+                    href={`/appointments/${a.id}/ics`}
+                    className="text-xs text-ink-3 underline underline-offset-2 hover:text-ink"
+                  >
+                    .ics
+                  </a>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

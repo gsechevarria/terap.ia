@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { completeTaskAction } from "@/lib/actions/patient-tasks";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { Status } from "@/components/ui/Status";
 import type { TaskWithCompletion } from "@/lib/queries/tasks";
 
 export function PatientTasks({ tasks }: { tasks: TaskWithCompletion[] }) {
@@ -73,15 +74,11 @@ function PendingTask({ task }: { task: TaskWithCompletion }) {
     <div className="card p-4">
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">{task.title}</span>
-        {due === "today" && (
-          <span className="rounded-sm bg-info-soft px-1.5 py-px text-xs font-medium text-info">
-            para hoy
-          </span>
-        )}
+        {due === "today" && <Status tone="info">para hoy</Status>}
         {due === "overdue" && (
-          <span className="rounded-sm bg-warn-soft px-1.5 py-px text-xs font-medium text-warn">
+          <Status tone="warn" halo>
             vencida
-          </span>
+          </Status>
         )}
       </div>
       {task.description && (

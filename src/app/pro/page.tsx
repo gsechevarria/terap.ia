@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { Plus, TriangleAlert } from "lucide-react";
 import {
   listPatientsWithOverview,
   listPatientTags,
   type PatientOverview,
 } from "@/lib/queries/patients";
 import type { PatientStatus } from "@/lib/types";
+import { StatusCritical } from "@/components/ui/Status";
 import { formatDate, formatDateTime } from "@/lib/format";
 
 type SP = { status?: string; tag?: string };
@@ -40,13 +42,13 @@ export default async function ProDashboard({
           </p>
         </div>
         <Link href="/pro/patients/new" className="btn-primary">
-          Nuevo paciente
+          <Plus className="size-4" strokeWidth={2} /> Nuevo paciente
         </Link>
       </div>
 
       {withAlerts.length > 0 && (
-        <div className="mt-5 flex items-start gap-2.5 rounded border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
-          <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full bg-danger" />
+        <div className="mt-5 flex items-start gap-2.5 rounded-md border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
           <p>
             <span className="font-semibold">Alertas por revisar:</span>{" "}
             {withAlerts.map((p, i) => (
@@ -186,9 +188,9 @@ function PatientRow({ patient }: { patient: PatientOverview }) {
               <span className="chip">archivado</span>
             )}
             {patient.openAlerts > 0 && (
-              <span className="rounded-sm bg-danger-soft px-1.5 py-px text-xs font-semibold text-danger">
+              <StatusCritical>
                 {patient.openAlerts} alerta{patient.openAlerts > 1 ? "s" : ""}
-              </span>
+              </StatusCritical>
             )}
           </div>
           {patient.tags.length > 0 && (

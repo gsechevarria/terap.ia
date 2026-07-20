@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ComponentType } from "react";
 import { useRouter } from "next/navigation";
+import { Angry, Frown, Meh, Smile, Laugh, Check } from "lucide-react";
 import { addMoodEntryAction } from "@/lib/actions/mood";
 
-const FACES = [
-  { value: 1, emoji: "😞", label: "Muy mal" },
-  { value: 2, emoji: "🙁", label: "Mal" },
-  { value: 3, emoji: "😐", label: "Normal" },
-  { value: 4, emoji: "🙂", label: "Bien" },
-  { value: 5, emoji: "😄", label: "Muy bien" },
+type Face = { value: number; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; label: string };
+
+const FACES: Face[] = [
+  { value: 1, Icon: Angry, label: "Muy mal" },
+  { value: 2, Icon: Frown, label: "Mal" },
+  { value: 3, Icon: Meh, label: "Normal" },
+  { value: 4, Icon: Smile, label: "Bien" },
+  { value: 5, Icon: Laugh, label: "Muy bien" },
 ];
 
 export function MoodLogger() {
@@ -34,21 +37,22 @@ export function MoodLogger() {
   return (
     <section className="card p-4">
       <h2 className="text-base font-semibold">¿Cómo estás hoy?</h2>
-      <div className="mt-3 flex justify-between gap-1">
-        {FACES.map((f) => (
+      <div className="mt-3 flex justify-between gap-1.5">
+        {FACES.map(({ value: v, Icon, label }) => (
           <button
-            key={f.value}
+            key={v}
             type="button"
-            onClick={() => setValue(f.value)}
-            aria-label={f.label}
-            className={`flex flex-1 cursor-pointer flex-col items-center gap-1 rounded border py-2 transition-colors duration-100 ${
-              value === f.value
-                ? "border-accent bg-accent-soft"
-                : "border-transparent hover:bg-wash"
+            onClick={() => setValue(v)}
+            aria-label={label}
+            aria-pressed={value === v}
+            className={`flex min-h-11 flex-1 cursor-pointer flex-col items-center gap-1 rounded-md border py-2 transition-colors duration-150 ${
+              value === v
+                ? "border-accent bg-accent-soft text-accent"
+                : "border-line text-ink-3 hover:bg-wash hover:text-ink-2"
             }`}
           >
-            <span className="text-2xl">{f.emoji}</span>
-            <span className="text-[10px] text-ink-2">{f.label}</span>
+            <Icon className="size-6" strokeWidth={1.75} />
+            <span className="text-[10px] font-medium">{label}</span>
           </button>
         ))}
       </div>
@@ -73,7 +77,11 @@ export function MoodLogger() {
         </div>
       )}
 
-      {done && <p className="mt-3 text-sm font-medium text-accent">Registrado</p>}
+      {done && (
+        <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-accent">
+          <Check className="size-4" strokeWidth={2.5} /> Registrado
+        </p>
+      )}
     </section>
   );
 }

@@ -8,6 +8,7 @@ import {
   deleteTaskAction,
 } from "@/lib/actions/tasks";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { Status } from "@/components/ui/Status";
 import type { TaskWithCompletion } from "@/lib/queries/tasks";
 
 type Draft = { title: string; description: string; dueDate: string };
@@ -175,13 +176,9 @@ export function TasksPanel({
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{t.title}</span>
                       {t.completed ? (
-                        <span className="rounded-sm bg-accent-soft px-1.5 py-px text-xs font-medium text-accent">
-                          hecha
-                        </span>
+                        <Status tone="success">hecha</Status>
                       ) : (
-                        <span className="rounded-sm bg-warn-soft px-1.5 py-px text-xs font-medium text-warn">
-                          pendiente
-                        </span>
+                        <Status tone="warn">pendiente</Status>
                       )}
                     </div>
                     {t.description && (
