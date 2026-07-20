@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfessional } from "@/lib/queries/identity";
 import { DEFAULT_SESSION_TYPE } from "@/lib/queries/payments";
+import { isPaymentMethod } from "@/lib/payment-methods";
 
 const eurosToCents = (euros: number) => Math.round(euros * 100);
 
@@ -52,11 +53,12 @@ export async function addPackAction(
   revalidatePath(`/pro/patients/${patientId}`);
 }
 
-/** Registra un pago manual (sin vincular a cita). */
+/** Registra un pago manual (sin vincular a cita), con método opcional. */
 export async function registerPaymentAction(
   patientId: string,
   amountEuros: number,
   status: "paid" | "pending",
+  method?: string | null,
 ) {
   const pro = await getCurrentProfessional();
   if (!pro) throw new Error("No autenticado.");
@@ -69,8 +71,28 @@ export async function registerPaymentAction(
     amount_cents: eurosToCents(amountEuros),
     currency: "EUR",
     status,
+    method: method && isPaymentMethod(method) ? method : null,
     paid_at: status === "paid" ? new Date().toISOString() : null,
   });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/pro/patients/${patientId}`);
+  revalidatePath("/pro/pagos");
+}
+
+/** Fija/cambia el método de pago de un registro (transferencia/bizum/efectivo). */
+export async function setPaymentMethodAction(
+  paymentId: string,
+  patientId: string,
+  method: string | null,
+) {
+  const pro = await getCurrentProfessional();
+  if (!pro) throw new Error("No autenticado.");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("payments")
+    .update({ method: method && isPaymentMethod(method) ? method : null })
+    .eq("id", paymentId);
   if (error) throw new Error(error.message);
   revalidatePath(`/pro/patients/${patientId}`);
   revalidatePath("/pro/pagos");

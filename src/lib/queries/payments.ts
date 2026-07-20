@@ -4,10 +4,13 @@ import type { Payment, PaymentSetting, SessionPack } from "@/lib/types";
 
 export const DEFAULT_SESSION_TYPE = "individual";
 
+/** Pago + fecha de la sesión (cita) que lo originó, si la hay. */
+export type PaymentWithSession = Payment & { sessionAt: string | null };
+
 export type PatientPaymentDetail = {
   price: PaymentSetting | null;
   packs: SessionPack[];
-  payments: Payment[];
+  payments: PaymentWithSession[];
   debtCents: number;
   packRemaining: number;
 };
@@ -31,12 +34,17 @@ export async function getPatientPaymentDetail(
       .order("purchased_at", { ascending: false }),
     supabase
       .from("payments")
-      .select("*")
+      .select("*, appointments(starts_at)")
       .eq("patient_id", patientId)
       .order("created_at", { ascending: false }),
   ]);
 
-  const payments = payRes.data ?? [];
+  const payments: PaymentWithSession[] = (payRes.data ?? []).map((row) => {
+    const { appointments, ...rest } = row as typeof row & {
+      appointments: { starts_at: string } | null;
+    };
+    return { ...(rest as Payment), sessionAt: appointments?.starts_at ?? null };
+  });
   const packs = packRes.data ?? [];
   const debtCents = payments
     .filter((p) => p.status === "pending")

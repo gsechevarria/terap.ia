@@ -6,11 +6,13 @@ import {
   addPackAction,
   deletePaymentAction,
   registerPaymentAction,
+  setPaymentMethodAction,
   setPaymentStatusAction,
   upsertPriceAction,
 } from "@/lib/actions/payments";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import type { PatientPaymentDetail } from "@/lib/queries/payments";
+import { PAYMENT_METHODS, paymentMethodLabel } from "@/lib/payment-methods";
 
 export function PaymentsPanel({
   patientId,
@@ -34,6 +36,7 @@ export function PaymentsPanel({
   const [packPrice, setPackPrice] = useState("");
   const [payAmount, setPayAmount] = useState("");
   const [payStatus, setPayStatus] = useState<"paid" | "pending">("pending");
+  const [payMethod, setPayMethod] = useState("");
 
   return (
     <div className="flex flex-col gap-5">
@@ -132,9 +135,9 @@ export function PaymentsPanel({
         </div>
       </div>
 
-      {/* Pagos */}
+      {/* Sesiones y pagos */}
       <div className="card bg-panel p-4">
-        <h3 className="section-label">Pagos</h3>
+        <h3 className="section-label">Sesiones y pagos</h3>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <input
             type="number"
@@ -145,6 +148,18 @@ export function PaymentsPanel({
             placeholder="Importe €"
             className="field w-32"
           />
+          <select
+            value={payMethod}
+            onChange={(e) => setPayMethod(e.target.value)}
+            className="field w-auto"
+          >
+            <option value="">Método…</option>
+            {PAYMENT_METHODS.map((m) => (
+              <option key={m} value={m}>
+                {paymentMethodLabel(m)}
+              </option>
+            ))}
+          </select>
           <select
             value={payStatus}
             onChange={(e) => setPayStatus(e.target.value as "paid" | "pending")}
@@ -158,8 +173,14 @@ export function PaymentsPanel({
             disabled={pending || !payAmount}
             onClick={() =>
               run(async () => {
-                await registerPaymentAction(patientId, Number(payAmount) || 0, payStatus);
+                await registerPaymentAction(
+                  patientId,
+                  Number(payAmount) || 0,
+                  payStatus,
+                  payMethod || null,
+                );
                 setPayAmount("");
+                setPayMethod("");
               })
             }
             className="btn-primary"
@@ -169,55 +190,100 @@ export function PaymentsPanel({
         </div>
 
         {detail.payments.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-2">Sin pagos registrados.</p>
+          <p className="mt-3 text-sm text-ink-2">Sin sesiones ni pagos registrados.</p>
         ) : (
-          <ul className="card mt-3 divide-y divide-line">
-            {detail.payments.map((p) => (
-              <li
-                key={p.id}
-                className="group flex items-center justify-between px-3 py-2 text-sm"
-              >
-                <span>
-                  {formatCurrency(p.amount_cents, p.currency)}
-                  {p.method ? ` · ${p.method}` : ""}
-                  <span className="ml-2 text-xs text-ink-3">
-                    {formatDate(p.created_at)}
-                  </span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() =>
-                      run(() =>
-                        setPaymentStatusAction(
-                          p.id,
-                          patientId,
-                          p.status === "paid" ? "pending" : "paid",
-                        ),
-                      )
-                    }
-                    title="Cambiar estado"
-                    className={`rounded-sm px-1.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 ${
-                      p.status === "paid"
-                        ? "bg-accent-soft text-accent"
-                        : "bg-warn-soft text-warn"
-                    }`}
-                  >
-                    {p.status === "paid" ? "pagado" : "pendiente"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => run(() => deletePaymentAction(p.id, patientId))}
-                    className="btn-danger btn-sm opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100"
-                  >
-                    Eliminar
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-3 overflow-x-auto">
+            <table className="table-base">
+              <thead>
+                <tr>
+                  <th>Sesión</th>
+                  <th>Importe</th>
+                  <th>Método de pago</th>
+                  <th>Estado</th>
+                  <th className="w-0" />
+                </tr>
+              </thead>
+              <tbody>
+                {detail.payments.map((p) => (
+                  <tr key={p.id} className="group">
+                    <td className="whitespace-nowrap">
+                      {p.sessionAt ? (
+                        formatDateTime(p.sessionAt)
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          {formatDate(p.created_at)}
+                          <span className="chip">manual</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="tabular-nums whitespace-nowrap">
+                      {formatCurrency(p.amount_cents, p.currency)}
+                    </td>
+                    <td>
+                      {p.session_pack_id ? (
+                        <span className="chip">Bono</span>
+                      ) : (
+                        <select
+                          value={p.method ?? ""}
+                          disabled={pending}
+                          onChange={(e) =>
+                            run(() =>
+                              setPaymentMethodAction(
+                                p.id,
+                                patientId,
+                                e.target.value || null,
+                              ),
+                            )
+                          }
+                          className="field w-auto"
+                          aria-label="Método de pago"
+                        >
+                          <option value="">— Sin especificar</option>
+                          {PAYMENT_METHODS.map((m) => (
+                            <option key={m} value={m}>
+                              {paymentMethodLabel(m)}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() =>
+                          run(() =>
+                            setPaymentStatusAction(
+                              p.id,
+                              patientId,
+                              p.status === "paid" ? "pending" : "paid",
+                            ),
+                          )
+                        }
+                        title="Cambiar estado"
+                        className="st rounded px-1 py-0.5 transition-colors hover:bg-wash"
+                      >
+                        <span
+                          className={`dot ${p.status === "paid" ? "d-success" : "d-warn"}`}
+                        />
+                        {p.status === "paid" ? "Pagado" : "Pendiente"}
+                      </button>
+                    </td>
+                    <td className="text-right">
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => run(() => deletePaymentAction(p.id, patientId))}
+                        className="btn-danger btn-sm opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
