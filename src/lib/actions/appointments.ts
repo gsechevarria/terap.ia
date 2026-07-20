@@ -18,7 +18,15 @@ function nextOccurrence(d: Date, freq: Freq): Date {
   return n;
 }
 
-/** Crea una cita (y sus repeticiones si es recurrente) + notifica al paciente. */
+export type CreateAppointmentResult =
+  | { ok: true }
+  | { ok: false; conflict: string };
+
+/**
+ * Crea una cita (y sus repeticiones si es recurrente) + notifica al paciente.
+ * Si detecta un solape con otra cita o un bloqueo y `force` no es true, NO crea
+ * nada y devuelve un aviso para que el profesional confirme.
+ */
 export async function createAppointmentAction(input: {
   patientId: string;
   startsAt: string; // ISO (UTC), convertido en el cliente desde hora local
@@ -27,18 +35,40 @@ export async function createAppointmentAction(input: {
   freq: Freq;
   until?: string | null;
   notes?: string;
-}) {
+  force?: boolean;
+}): Promise<CreateAppointmentResult> {
   const pro = await getCurrentProfessional();
   if (!pro) throw new Error("No autenticado.");
 
   const start = new Date(input.startsAt);
   const end = new Date(input.endsAt);
   if (!(end.getTime() > start.getTime())) {
-    throw new Error("La hora de fin debe ser posterior al inicio.");
+    throw new Error("La duración debe ser mayor que cero.");
   }
   const durationMs = end.getTime() - start.getTime();
 
   const supabase = await createClient();
+
+  // Todas las ocurrencias (la principal + las repeticiones).
+  const occurrences: { start: Date; end: Date }[] = [{ start, end }];
+  if (input.freq !== "none") {
+    const until = input.until ? new Date(input.until) : null;
+    let cur = nextOccurrence(start, input.freq);
+    let count = 0;
+    while (count < RECURRENCE_CAP) {
+      if (until && cur.getTime() > until.getTime()) break;
+      occurrences.push({ start: cur, end: new Date(cur.getTime() + durationMs) });
+      cur = nextOccurrence(cur, input.freq);
+      count++;
+    }
+  }
+
+  // Detección de solapes (a menos que el profesional ya haya confirmado).
+  if (!input.force) {
+    const conflict = await findConflict(supabase, pro.id, occurrences);
+    if (conflict) return { ok: false, conflict };
+  }
+
   const base = {
     professional_id: pro.id,
     patient_id: input.patientId,
@@ -55,22 +85,13 @@ export async function createAppointmentAction(input: {
     .single();
   if (error) throw new Error(error.message);
 
-  if (input.freq !== "none") {
-    const until = input.until ? new Date(input.until) : null;
-    const rows: TablesInsert<"appointments">[] = [];
-    let cur = nextOccurrence(start, input.freq);
-    let count = 0;
-    while (count < RECURRENCE_CAP) {
-      if (until && cur.getTime() > until.getTime()) break;
-      rows.push({
-        ...base,
-        starts_at: cur.toISOString(),
-        ends_at: new Date(cur.getTime() + durationMs).toISOString(),
-        parent_appointment_id: first.id,
-      });
-      cur = nextOccurrence(cur, input.freq);
-      count++;
-    }
+  if (occurrences.length > 1) {
+    const rows: TablesInsert<"appointments">[] = occurrences.slice(1).map((o) => ({
+      ...base,
+      starts_at: o.start.toISOString(),
+      ends_at: o.end.toISOString(),
+      parent_appointment_id: first.id,
+    }));
     if (rows.length) {
       const { error: e2 } = await supabase.from("appointments").insert(rows);
       if (e2) throw new Error(e2.message);
@@ -98,6 +119,93 @@ export async function createAppointmentAction(input: {
 
   revalidatePath("/pro/agenda");
   revalidatePath(`/pro/patients/${input.patientId}`);
+  return { ok: true };
+}
+
+/**
+ * Busca el primer solape de cualquier ocurrencia con una cita (no cancelada) o
+ * un bloqueo del profesional. Devuelve un mensaje de aviso, o null si no hay.
+ */
+async function findConflict(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  professionalId: string,
+  occurrences: { start: Date; end: Date }[],
+): Promise<string | null> {
+  const windowStart = occurrences[0].start.toISOString();
+  const windowEnd = occurrences[occurrences.length - 1].end.toISOString();
+
+  const [apptRes, blockRes] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select("starts_at, ends_at, patients(full_name)")
+      .eq("professional_id", professionalId)
+      .neq("status", "cancelled")
+      .lt("starts_at", windowEnd)
+      .gt("ends_at", windowStart),
+    supabase
+      .from("agenda_blocks")
+      .select("starts_at, ends_at, reason")
+      .eq("professional_id", professionalId)
+      .lt("starts_at", windowEnd)
+      .gt("ends_at", windowStart),
+  ]);
+
+  const overlaps = (aStart: Date, aEnd: Date, bStart: string, bEnd: string) =>
+    new Date(bStart).getTime() < aEnd.getTime() &&
+    new Date(bEnd).getTime() > aStart.getTime();
+
+  const appts = (apptRes.data ?? []) as {
+    starts_at: string;
+    ends_at: string;
+    patients: { full_name: string | null } | null;
+  }[];
+  const blocks = (blockRes.data ?? []) as {
+    starts_at: string;
+    ends_at: string;
+    reason: string | null;
+  }[];
+
+  type Hit = { occ: Date; kind: "appt" | "block"; label: string };
+  const hits: Hit[] = [];
+  for (const o of occurrences) {
+    for (const a of appts) {
+      if (overlaps(o.start, o.end, a.starts_at, a.ends_at)) {
+        hits.push({
+          occ: o.start,
+          kind: "appt",
+          label: `la cita de ${a.patients?.full_name ?? "otro paciente"}`,
+        });
+        break;
+      }
+    }
+    if (hits.some((h) => h.occ === o.start)) continue;
+    for (const b of blocks) {
+      if (overlaps(o.start, o.end, b.starts_at, b.ends_at)) {
+        hits.push({
+          occ: o.start,
+          kind: "block",
+          label: b.reason ? `un bloqueo (${b.reason})` : "un bloqueo",
+        });
+        break;
+      }
+    }
+  }
+
+  if (hits.length === 0) return null;
+
+  const first = hits[0];
+  const when = first.occ.toLocaleString("es-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  let msg = `Esta cita se solapa con ${first.label} (${when}).`;
+  if (hits.length > 1) {
+    msg += ` Hay ${hits.length - 1} solape${hits.length - 1 > 1 ? "s" : ""} más en la serie.`;
+  }
+  return msg;
 }
 
 export async function updateAppointmentAction(input: {
