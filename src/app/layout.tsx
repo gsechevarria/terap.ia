@@ -26,7 +26,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         {/* Banner permanente: mientras no exista DPA + base jurídica RGPD art. 9,
             solo se usan datos ficticios. */}
-        <div className="flex items-center justify-center gap-1.5 border-b border-line bg-warn-soft px-4 py-1 text-center text-xs font-medium text-warn">
+        <div className="flex h-[var(--banner-h)] items-center justify-center gap-1.5 border-b border-line bg-warn-soft px-4 text-center text-xs font-medium text-warn">
           <span aria-hidden className="text-[8px]">
             ●
           </span>

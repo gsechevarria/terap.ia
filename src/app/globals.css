@@ -40,6 +40,9 @@
   --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
   --shadow-menu: 0 8px 24px -12px rgba(24, 24, 27, 0.28),
     0 2px 6px -3px rgba(24, 24, 27, 0.16);
+
+  /* Alto del banner de demo permanente (se descuenta a la sidebar fija). */
+  --banner-h: 1.75rem;
 }
 
 @media (prefers-color-scheme: dark) {
