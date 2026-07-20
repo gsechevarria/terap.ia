@@ -1,10 +1,14 @@
 /**
  * Marca de terap.ia: emblema (imagen) + wordmark de texto.
  *
- * El emblema se pinta como `background-image` de `/logo-mark.svg` (versión
- * vectorial de la marca). Para usar un logo propio en mapa de bits, sustituye
- * ese archivo o cambia la URL a `/logo-mark.png`.
+ * `/logo-mark.png` es el logotipo completo (emblema + palabra, con margen). Se
+ * pinta como `background-image` ampliado y reencuadrado para mostrar SOLO el
+ * emblema circular dentro del recorte redondo. Si cambias la imagen y el
+ * encuadre no cuadra, ajusta MARK_ZOOM / MARK_POS.
  */
+const MARK_ZOOM = "434%";
+const MARK_POS = "49.5% 39%";
+
 export function Brandmark({
   size = 24,
   showText = true,
@@ -20,11 +24,13 @@ export function Brandmark({
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <span
         aria-hidden
-        className="shrink-0 rounded-full bg-contain bg-center bg-no-repeat"
+        className="shrink-0 rounded-full bg-no-repeat"
         style={{
           width: size,
           height: size,
-          backgroundImage: "url(/logo-mark.svg)",
+          backgroundImage: "url(/logo-mark.png)",
+          backgroundSize: MARK_ZOOM,
+          backgroundPosition: MARK_POS,
         }}
       />
       {showText ? (
