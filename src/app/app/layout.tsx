@@ -30,7 +30,7 @@ export default async function PatientLayout({ children }: { children: ReactNode 
       <header className="sticky top-0 z-10 border-b border-line bg-canvas/95 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2">
           <Link href="/app" className="inline-flex items-center">
-            <Brandmark size={24} />
+            <Brandmark height={30} />
           </Link>
           <div className="flex items-center gap-1.5">
             <a

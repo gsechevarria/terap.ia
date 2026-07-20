@@ -77,10 +77,7 @@ function SiteNav() {
 function Wordmark({ small = false }: { small?: boolean }) {
   return (
     <Link href="/" className="inline-flex items-center">
-      <Brandmark
-        size={small ? 22 : 28}
-        textClassName={`font-bold tracking-[-0.02em] ${small ? "text-base" : "text-xl"}`}
-      />
+      <Brandmark height={small ? 28 : 40} />
     </Link>
   );
 }

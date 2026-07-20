@@ -1,47 +1,33 @@
 /**
- * Marca de terap.ia: emblema (imagen) + wordmark de texto.
- *
- * `/logo-mark.png` es el logotipo completo (emblema + palabra, con margen). Se
- * pinta como `background-image` ampliado y reencuadrado para mostrar SOLO el
- * emblema circular dentro del recorte redondo. Si cambias la imagen y el
- * encuadre no cuadra, ajusta MARK_ZOOM / MARK_POS.
+ * Logotipo de terap.ia: muestra el logo completo subido (`/logo-mark.png`,
+ * emblema + palabra), recortando los márgenes sobrantes de la imagen para que
+ * el lockup ocupe la caja. Controlado por `height` (px); el ancho sigue la
+ * proporción del contenido. Si cambias la imagen y el encuadre no cuadra,
+ * ajusta CONTENT_RATIO / MARK_ZOOM / MARK_POS.
  */
-const MARK_ZOOM = "434%";
-const MARK_POS = "49.5% 39%";
+const CONTENT_RATIO = 1.3; // ancho/alto del contenido del logo (emblema+texto)
+const MARK_ZOOM = "231%"; // ampliación para recortar el margen de la imagen
+const MARK_POS = "50% 47%"; // centro del contenido dentro de la imagen
 
 export function Brandmark({
-  size = 24,
-  showText = true,
-  textClassName = "text-[15px]",
+  height = 40,
   className = "",
 }: {
-  size?: number;
-  showText?: boolean;
-  textClassName?: string;
+  height?: number;
   className?: string;
 }) {
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span
-        aria-hidden
-        className="shrink-0 rounded-full bg-no-repeat"
-        style={{
-          width: size,
-          height: size,
-          backgroundImage: "url(/logo-mark.png)",
-          backgroundSize: MARK_ZOOM,
-          backgroundPosition: MARK_POS,
-        }}
-      />
-      {showText ? (
-        <span
-          className={`font-semibold tracking-[-0.01em] text-ink ${textClassName}`}
-        >
-          terap.ia
-        </span>
-      ) : (
-        <span className="sr-only">terap.ia</span>
-      )}
-    </span>
+    <span
+      role="img"
+      aria-label="terap.ia"
+      className={`inline-block shrink-0 bg-no-repeat ${className}`}
+      style={{
+        height,
+        width: Math.round(height * CONTENT_RATIO),
+        backgroundImage: "url(/logo-mark.png)",
+        backgroundSize: MARK_ZOOM,
+        backgroundPosition: MARK_POS,
+      }}
+    />
   );
 }

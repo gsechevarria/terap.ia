@@ -10,7 +10,7 @@ import { ProNav, ProNavMobile } from "@/app/pro/_components/ProNav";
 function Brand() {
   return (
     <Link href="/pro" className="inline-flex shrink-0 items-center">
-      <Brandmark size={24} />
+      <Brandmark height={44} />
     </Link>
   );
 }
