@@ -100,7 +100,10 @@ export async function listProfessionalAppointments(filter: {
   fromISO?: string;
   /** Límite superior del rango (ISO, exclusivo) sobre starts_at. */
   toISO?: string;
-}): Promise<AgendaAppointment[]> {
+  /** Paginación: página 1-based y tamaño de página. */
+  page?: number;
+  pageSize?: number;
+}): Promise<{ rows: AgendaAppointment[]; total: number }> {
   const supabase = await createClient();
   const nowISO = new Date().toISOString();
 
@@ -108,6 +111,7 @@ export async function listProfessionalAppointments(filter: {
     .from("appointments")
     .select(
       "id, professional_id, patient_id, starts_at, ends_at, status, attendance, video_link, recurrence_freq, recurrence_until, parent_appointment_id, notes, created_at, updated_at, patients(full_name)",
+      { count: "exact" },
     );
 
   if (filter.scope === "upcoming") {
@@ -123,13 +127,18 @@ export async function listProfessionalAppointments(filter: {
   if (filter.status) q = q.eq("status", filter.status);
   if (filter.patientId) q = q.eq("patient_id", filter.patientId);
 
-  const { data } = await q;
-  return (data ?? []).map((a) => {
+  const pageSize = filter.pageSize ?? 25;
+  const page = Math.max(1, filter.page ?? 1);
+  q = q.range((page - 1) * pageSize, page * pageSize - 1);
+
+  const { data, count } = await q;
+  const rows = (data ?? []).map((a) => {
     const { patients, ...rest } = a as typeof a & {
       patients: { full_name: string | null } | null;
     };
     return { ...(rest as Appointment), patientName: patients?.full_name ?? null };
   });
+  return { rows, total: count ?? rows.length };
 }
 
 /** Pacientes activos del profesional (para el selector al crear cita). */

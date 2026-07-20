@@ -60,6 +60,7 @@ export default async function AllAppointmentsPage({
     patient?: string;
     from?: string;
     to?: string;
+    page?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -68,17 +69,36 @@ export default async function AllAppointmentsPage({
   const patientId = sp.patient || undefined;
   const from = isValidYMD(sp.from) ? sp.from : undefined;
   const to = isValidYMD(sp.to) ? sp.to : undefined;
+  const PAGE_SIZE = 25;
+  const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
 
-  const [appointments, patients] = await Promise.all([
+  const [{ rows: appointments, total }, patients] = await Promise.all([
     listProfessionalAppointments({
       scope,
       status,
       patientId,
       fromISO: from ? fromDateToISO(from) : undefined,
       toISO: to ? toDateToISO(to) : undefined,
+      page,
+      pageSize: PAGE_SIZE,
     }),
     getPatientsForSelect(),
   ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const firstRow = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const lastRow = Math.min(page * PAGE_SIZE, total);
+  const pageHref = (n: number) => {
+    const p = new URLSearchParams();
+    if (scope !== "all") p.set("scope", scope);
+    if (status) p.set("status", status);
+    if (patientId) p.set("patient", patientId);
+    if (from) p.set("from", from);
+    if (to) p.set("to", to);
+    if (n > 1) p.set("page", String(n));
+    const qs = p.toString();
+    return qs ? `/pro/agenda/citas?${qs}` : "/pro/agenda/citas";
+  };
 
   // "Hoy" fuera del render de JSX: presets calculados en el cuerpo del server component.
   const now = new Date();
@@ -118,7 +138,7 @@ export default async function AllAppointmentsPage({
         <div>
           <h1 className="page-title">Todas las citas</h1>
           <p className="mt-1 text-sm text-ink-2">
-            {appointments.length} {appointments.length === 1 ? "cita" : "citas"}
+            {total} {total === 1 ? "cita" : "citas"}
             {scope === "upcoming"
               ? " próximas"
               : scope === "past"
@@ -290,6 +310,40 @@ export default async function AllAppointmentsPage({
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Paginación */}
+      {total > 0 && (
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <p className="text-xs text-ink-3">
+            {firstRow}–{lastRow} de {total}
+          </p>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              {page > 1 ? (
+                <Link href={pageHref(page - 1)} className="btn-ghost btn-sm" rel="prev">
+                  ← Anterior
+                </Link>
+              ) : (
+                <span className="btn-ghost btn-sm cursor-not-allowed opacity-45">
+                  ← Anterior
+                </span>
+              )}
+              <span className="px-1 text-xs text-ink-2">
+                Página {page} de {totalPages}
+              </span>
+              {page < totalPages ? (
+                <Link href={pageHref(page + 1)} className="btn-ghost btn-sm" rel="next">
+                  Siguiente →
+                </Link>
+              ) : (
+                <span className="btn-ghost btn-sm cursor-not-allowed opacity-45">
+                  Siguiente →
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
