@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Angry, Frown, Meh, Smile, Laugh } from "lucide-react";
+import { Brandmark } from "@/components/ui/Brandmark";
 
 /**
  * Landing pública, estructura tipo notion.com:
@@ -75,14 +76,11 @@ function SiteNav() {
 
 function Wordmark({ small = false }: { small?: boolean }) {
   return (
-    <Link
-      href="/"
-      className={`inline-flex items-baseline gap-1 font-bold tracking-[-0.02em] text-ink ${
-        small ? "text-base" : "text-xl"
-      }`}
-    >
-      terap.ia
-      <span aria-hidden className="size-1.5 self-center rounded-full bg-accent" />
+    <Link href="/" className="inline-flex items-center">
+      <Brandmark
+        size={small ? 22 : 28}
+        textClassName={`font-bold tracking-[-0.02em] ${small ? "text-base" : "text-xl"}`}
+      />
     </Link>
   );
 }

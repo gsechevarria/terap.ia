@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Phone, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { Brandmark } from "@/components/ui/Brandmark";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { SignOutForm } from "@/components/SignOutForm";
 import { ServiceWorkerRegister } from "@/app/app/_components/ServiceWorkerRegister";
@@ -28,12 +29,8 @@ export default async function PatientLayout({ children }: { children: ReactNode 
     <div className="flex min-h-full flex-col">
       <header className="sticky top-0 z-10 border-b border-line bg-canvas/95 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2">
-          <Link
-            href="/app"
-            className="inline-flex items-baseline gap-1 text-[15px] font-semibold tracking-[-0.01em] text-ink"
-          >
-            terap.ia
-            <span aria-hidden className="size-1.5 self-center rounded-full bg-accent" />
+          <Link href="/app" className="inline-flex items-center">
+            <Brandmark size={24} />
           </Link>
           <div className="flex items-center gap-1.5">
             <a

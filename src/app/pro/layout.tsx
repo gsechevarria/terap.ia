@@ -4,16 +4,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { SignOutForm } from "@/components/SignOutForm";
+import { Brandmark } from "@/components/ui/Brandmark";
 import { ProNav, ProNavMobile } from "@/app/pro/_components/ProNav";
 
 function Brand() {
   return (
-    <Link
-      href="/pro"
-      className="inline-flex shrink-0 items-baseline gap-1 text-[15px] font-semibold tracking-[-0.01em] text-ink"
-    >
-      terap.ia
-      <span aria-hidden className="size-1.5 self-center rounded-full bg-accent" />
+    <Link href="/pro" className="inline-flex shrink-0 items-center">
+      <Brandmark size={24} />
     </Link>
   );
 }
