@@ -11,7 +11,7 @@ export default async function LoginPage({
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
       <Link href="/" className="inline-flex items-center">
-        <Brandmark height={64} />
+        <Brandmark height={120} />
       </Link>
       <LoginForm invite={invite} />
     </main>
