@@ -5,8 +5,15 @@ import {
   type AppointmentScope,
 } from "@/lib/queries/appointments";
 import type { Appointment } from "@/lib/types";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { Status, type StatusTone } from "@/components/ui/Status";
+import {
+  PRESETS,
+  presetRange,
+  isValidYMD,
+  fromDateToISO,
+  toDateToISO,
+} from "@/lib/date-ranges";
 
 const STATUS_LABEL: Record<string, string> = {
   scheduled: "programada",
@@ -47,17 +54,60 @@ function resolveStatus(raw?: string): Appointment["status"] | undefined {
 export default async function AllAppointmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ scope?: string; status?: string; patient?: string }>;
+  searchParams: Promise<{
+    scope?: string;
+    status?: string;
+    patient?: string;
+    from?: string;
+    to?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const scope = resolveScope(sp.scope);
   const status = resolveStatus(sp.status);
   const patientId = sp.patient || undefined;
+  const from = isValidYMD(sp.from) ? sp.from : undefined;
+  const to = isValidYMD(sp.to) ? sp.to : undefined;
 
   const [appointments, patients] = await Promise.all([
-    listProfessionalAppointments({ scope, status, patientId }),
+    listProfessionalAppointments({
+      scope,
+      status,
+      patientId,
+      fromISO: from ? fromDateToISO(from) : undefined,
+      toISO: to ? toDateToISO(to) : undefined,
+    }),
     getPatientsForSelect(),
   ]);
+
+  // "Hoy" fuera del render de JSX: presets calculados en el cuerpo del server component.
+  const now = new Date();
+  const presetHref = (fromYMD: string, toYMD: string) => {
+    const p = new URLSearchParams();
+    if (status) p.set("status", status);
+    if (patientId) p.set("patient", patientId);
+    p.set("from", fromYMD);
+    p.set("to", toYMD);
+    return `/pro/agenda/citas?${p.toString()}`;
+  };
+  const presets = PRESETS.map((preset) => {
+    const r = presetRange(preset.key, now);
+    return {
+      ...preset,
+      href: presetHref(r.from, r.to),
+      active: from === r.from && to === r.to,
+    };
+  });
+
+  const hasFilters = scope !== "all" || !!status || !!patientId || !!from || !!to;
+  const rangeLabel =
+    from && to
+      ? `del ${formatDate(from)} al ${formatDate(to)}`
+      : from
+        ? `desde ${formatDate(from)}`
+        : to
+          ? `hasta ${formatDate(to)}`
+          : "";
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -74,14 +124,32 @@ export default async function AllAppointmentsPage({
               : scope === "past"
                 ? " pasadas"
                 : ""}
+            {rangeLabel ? ` · ${rangeLabel}` : ""}
           </p>
         </div>
+      </div>
+
+      {/* Presets rápidos de rango (GET, sin JS) */}
+      <div className="mt-5 flex flex-wrap items-center gap-1.5">
+        {presets.map((p) => (
+          <Link
+            key={p.key}
+            href={p.href}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-150 ${
+              p.active
+                ? "bg-accent-soft text-accent"
+                : "bg-panel text-ink-2 hover:bg-wash-2 hover:text-ink"
+            }`}
+          >
+            {p.label}
+          </Link>
+        ))}
       </div>
 
       {/* Filtros (GET, sin JS) */}
       <form
         method="get"
-        className="mt-5 flex flex-wrap items-end gap-2 rounded-lg bg-panel p-3"
+        className="mt-2.5 flex flex-wrap items-end gap-2 rounded-lg bg-panel p-3"
       >
         <label className="block">
           <span className="field-label">Cuándo</span>
@@ -90,6 +158,26 @@ export default async function AllAppointmentsPage({
             <option value="upcoming">Próximas</option>
             <option value="past">Pasadas</option>
           </select>
+        </label>
+        <label className="block">
+          <span className="field-label">Desde</span>
+          <input
+            type="date"
+            name="from"
+            defaultValue={from ?? ""}
+            max={to ?? undefined}
+            className="field w-auto"
+          />
+        </label>
+        <label className="block">
+          <span className="field-label">Hasta</span>
+          <input
+            type="date"
+            name="to"
+            defaultValue={to ?? ""}
+            min={from ?? undefined}
+            className="field w-auto"
+          />
         </label>
         <label className="block">
           <span className="field-label">Estado</span>
@@ -120,7 +208,7 @@ export default async function AllAppointmentsPage({
         <button type="submit" className="btn-primary">
           Filtrar
         </button>
-        {(scope !== "all" || status || patientId) && (
+        {hasFilters && (
           <Link href="/pro/agenda/citas" className="btn-subtle">
             Limpiar
           </Link>

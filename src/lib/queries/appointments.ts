@@ -96,6 +96,10 @@ export async function listProfessionalAppointments(filter: {
   scope: AppointmentScope;
   status?: Appointment["status"];
   patientId?: string;
+  /** Límite inferior del rango (ISO, inclusivo) sobre starts_at. */
+  fromISO?: string;
+  /** Límite superior del rango (ISO, exclusivo) sobre starts_at. */
+  toISO?: string;
 }): Promise<AgendaAppointment[]> {
   const supabase = await createClient();
   const nowISO = new Date().toISOString();
@@ -113,6 +117,9 @@ export async function listProfessionalAppointments(filter: {
   } else {
     q = q.order("starts_at", { ascending: false });
   }
+  // Rango de fechas explícito (independiente del scope): acota starts_at.
+  if (filter.fromISO) q = q.gte("starts_at", filter.fromISO);
+  if (filter.toISO) q = q.lt("starts_at", filter.toISO);
   if (filter.status) q = q.eq("status", filter.status);
   if (filter.patientId) q = q.eq("patient_id", filter.patientId);
 
