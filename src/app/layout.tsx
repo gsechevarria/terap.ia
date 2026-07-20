@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description:
     "Espacio de bienestar mental entre profesional y paciente de consulta privada.",
   appleWebApp: { capable: true, title: "terap.ia", statusBarStyle: "default" },
-  icons: { icon: "/logo-mark.png", apple: "/logo-mark.png" },
+  icons: { icon: "/logo-mark.svg", apple: "/logo-mark.svg" },
 };
 
 export const viewport: Viewport = {

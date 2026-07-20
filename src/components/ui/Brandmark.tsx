@@ -1,10 +1,9 @@
 /**
  * Marca de terap.ia: emblema (imagen) + wordmark de texto.
  *
- * El emblema se pinta como `background-image` de `/logo-mark.png` para que, si
- * el archivo aún no está en `public/`, degrade a un hueco vacío (sin icono de
- * imagen rota) en lugar de romper la cabecera. Coloca el logo recortado al
- * círculo en `public/logo-mark.png`.
+ * El emblema se pinta como `background-image` de `/logo-mark.svg` (versión
+ * vectorial de la marca). Para usar un logo propio en mapa de bits, sustituye
+ * ese archivo o cambia la URL a `/logo-mark.png`.
  */
 export function Brandmark({
   size = 24,
@@ -25,7 +24,7 @@ export function Brandmark({
         style={{
           width: size,
           height: size,
-          backgroundImage: "url(/logo-mark.png)",
+          backgroundImage: "url(/logo-mark.svg)",
         }}
       />
       {showText ? (
