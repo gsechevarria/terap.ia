@@ -130,18 +130,22 @@ async function findConflict(
   supabase: Awaited<ReturnType<typeof createClient>>,
   professionalId: string,
   occurrences: { start: Date; end: Date }[],
+  excludeId?: string,
 ): Promise<string | null> {
   const windowStart = occurrences[0].start.toISOString();
   const windowEnd = occurrences[occurrences.length - 1].end.toISOString();
 
+  let apptQuery = supabase
+    .from("appointments")
+    .select("starts_at, ends_at, patients(full_name)")
+    .eq("professional_id", professionalId)
+    .neq("status", "cancelled")
+    .lt("starts_at", windowEnd)
+    .gt("ends_at", windowStart);
+  if (excludeId) apptQuery = apptQuery.neq("id", excludeId);
+
   const [apptRes, blockRes] = await Promise.all([
-    supabase
-      .from("appointments")
-      .select("starts_at, ends_at, patients(full_name)")
-      .eq("professional_id", professionalId)
-      .neq("status", "cancelled")
-      .lt("starts_at", windowEnd)
-      .gt("ends_at", windowStart),
+    apptQuery,
     supabase
       .from("agenda_blocks")
       .select("starts_at, ends_at, reason")
@@ -215,13 +219,27 @@ export async function updateAppointmentAction(input: {
   endsAt: string;
   videoLink?: string;
   notes?: string;
-}) {
+  force?: boolean;
+}): Promise<CreateAppointmentResult> {
+  const pro = await getCurrentProfessional();
+  if (!pro) throw new Error("No autenticado.");
   const start = new Date(input.startsAt);
   const end = new Date(input.endsAt);
   if (!(end.getTime() > start.getTime())) {
-    throw new Error("La hora de fin debe ser posterior al inicio.");
+    throw new Error("La duración debe ser mayor que cero.");
   }
   const supabase = await createClient();
+
+  if (!input.force) {
+    const conflict = await findConflict(
+      supabase,
+      pro.id,
+      [{ start, end }],
+      input.id,
+    );
+    if (conflict) return { ok: false, conflict };
+  }
+
   const { error } = await supabase
     .from("appointments")
     .update({
@@ -233,6 +251,7 @@ export async function updateAppointmentAction(input: {
     .eq("id", input.id);
   if (error) throw new Error(error.message);
   revalidatePath("/pro/agenda");
+  return { ok: true };
 }
 
 export async function cancelAppointmentAction(id: string) {

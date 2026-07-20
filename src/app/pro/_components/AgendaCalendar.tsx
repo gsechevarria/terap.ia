@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { TriangleAlert } from "lucide-react";
 import {
   cancelAppointmentAction,
   deleteAppointmentAction,
@@ -22,6 +23,7 @@ const HOUR_START = 7;
 const HOUR_END = 21;
 const HOUR_PX = 48;
 const GRID_H = (HOUR_END - HOUR_START) * HOUR_PX;
+const DURATIONS = [30, 45, 60, 90] as const;
 
 function parseYMD(s: string): Date {
   const [y, m, d] = s.split("-").map(Number);
@@ -697,12 +699,28 @@ function EditModal({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const initialMin = Math.round(
+    (new Date(appt.ends_at).getTime() - new Date(appt.starts_at).getTime()) /
+      60_000,
+  );
+  const initialPreset = (DURATIONS as readonly number[]).includes(initialMin);
   const [start, setStart] = useState(toDatetimeLocal(appt.starts_at));
-  const [end, setEnd] = useState(toDatetimeLocal(appt.ends_at));
+  const [duration, setDuration] = useState(initialPreset ? initialMin : 60);
+  const [customMode, setCustomMode] = useState(!initialPreset);
+  const [customMin, setCustomMin] = useState(String(initialMin || 60));
   const [videoLink, setVideoLink] = useState(appt.video_link ?? "");
   const [notes, setNotes] = useState(appt.notes ?? "");
   const [attendance, setAttendance] = useState(appt.attendance);
   const [error, setError] = useState("");
+  const [conflict, setConflict] = useState("");
+
+  const minutes = customMode
+    ? Math.max(5, parseInt(customMin, 10) || 0)
+    : duration;
+
+  function clearConflict() {
+    if (conflict) setConflict("");
+  }
 
   function run(fn: () => Promise<void>, close = true) {
     setError("");
@@ -717,18 +735,42 @@ function EditModal({
     });
   }
 
-  async function save() {
-    await updateAppointmentAction({
-      id: appt.id,
-      patientId: appt.patient_id,
-      startsAt: new Date(start).toISOString(),
-      endsAt: new Date(end).toISOString(),
-      videoLink,
-      notes,
-    });
-    if (attendance !== appt.attendance) {
-      await setAttendanceAction(appt.id, attendance);
+  function save(force = false) {
+    if (!start) {
+      setError("Indica la fecha y hora de la sesión.");
+      return;
     }
+    if (!minutes || minutes < 5) {
+      setError("La duración debe ser de al menos 5 minutos.");
+      return;
+    }
+    setError("");
+    const startDate = new Date(start);
+    const endsAt = new Date(startDate.getTime() + minutes * 60_000).toISOString();
+    startTransition(async () => {
+      try {
+        const res = await updateAppointmentAction({
+          id: appt.id,
+          patientId: appt.patient_id,
+          startsAt: startDate.toISOString(),
+          endsAt,
+          videoLink,
+          notes,
+          force,
+        });
+        if (!res.ok) {
+          setConflict(res.conflict);
+          return;
+        }
+        if (attendance !== appt.attendance) {
+          await setAttendanceAction(appt.id, attendance);
+        }
+        router.refresh();
+        onClose();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Error.");
+      }
+    });
   }
 
   return (
@@ -753,24 +795,75 @@ function EditModal({
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <label className="block">
-            <span className="field-label">Inicio</span>
+          <label className="block sm:col-span-2">
+            <span className="field-label">Fecha y hora de la sesión</span>
             <input
               type="datetime-local"
               value={start}
-              onChange={(e) => setStart(e.target.value)}
+              onChange={(e) => {
+                setStart(e.target.value);
+                clearConflict();
+              }}
               className="field"
             />
           </label>
-          <label className="block">
-            <span className="field-label">Fin</span>
-            <input
-              type="datetime-local"
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
-              className="field"
-            />
-          </label>
+          <div className="sm:col-span-2">
+            <span className="field-label">Duración</span>
+            <div className="flex flex-wrap gap-1.5">
+              {DURATIONS.map((d) => {
+                const active = !customMode && duration === d;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => {
+                      setCustomMode(false);
+                      setDuration(d);
+                      clearConflict();
+                    }}
+                    className={`rounded-md border px-2.5 py-1 text-sm font-medium transition-colors duration-150 ${
+                      active
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line-strong bg-canvas text-ink-2 hover:bg-wash hover:text-ink"
+                    }`}
+                  >
+                    {d} min
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomMode(true);
+                  clearConflict();
+                }}
+                className={`rounded-md border px-2.5 py-1 text-sm font-medium transition-colors duration-150 ${
+                  customMode
+                    ? "border-accent bg-accent-soft text-accent"
+                    : "border-line-strong bg-canvas text-ink-2 hover:bg-wash hover:text-ink"
+                }`}
+              >
+                Personalizado
+              </button>
+            </div>
+            {customMode && (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={5}
+                  step={5}
+                  value={customMin}
+                  onChange={(e) => {
+                    setCustomMin(e.target.value);
+                    clearConflict();
+                  }}
+                  className="field w-24"
+                  aria-label="Duración personalizada en minutos"
+                />
+                <span className="text-sm text-ink-2">minutos</span>
+              </div>
+            )}
+          </div>
           <label className="block sm:col-span-2">
             <span className="field-label">Link de videollamada</span>
             <input
@@ -814,6 +907,13 @@ function EditModal({
           </p>
         )}
 
+        {conflict && (
+          <div className="mt-3 flex items-start gap-2 rounded-md border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
+            <p>{conflict}</p>
+          </div>
+        )}
+
         <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
           <div className="flex gap-1">
             {appt.status !== "cancelled" && (
@@ -839,14 +939,34 @@ function EditModal({
               Eliminar
             </button>
           </div>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => run(save)}
-            className="btn-primary"
-          >
-            {pending ? "Guardando…" : "Guardar cambios"}
-          </button>
+          {conflict ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConflict("")}
+                className="btn-subtle btn-sm"
+              >
+                Revisar
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => save(true)}
+                className="btn-primary"
+              >
+                {pending ? "Guardando…" : "Guardar de todos modos"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => save(false)}
+              className="btn-primary"
+            >
+              {pending ? "Guardando…" : "Guardar cambios"}
+            </button>
+          )}
         </div>
       </div>
     </div>
