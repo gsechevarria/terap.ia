@@ -1,13 +1,13 @@
 /**
- * Logotipo de terap.ia: muestra el logo completo subido (`/logo-mark.png`,
- * emblema + palabra), recortando los márgenes sobrantes de la imagen para que
- * el lockup ocupe la caja. Controlado por `height` (px); el ancho sigue la
- * proporción del contenido. Si cambias la imagen y el encuadre no cuadra,
- * ajusta CONTENT_RATIO / MARK_ZOOM / MARK_POS.
+ * Logotipo de terap.ia: muestra el logo completo subido (`/logo.png`, PNG con
+ * fondo transparente: emblema + palabra), recortando el margen transparente
+ * para que el lockup ocupe la caja. Controlado por `height` (px); el ancho
+ * sigue la proporción del contenido. Si cambias la imagen y el encuadre no
+ * cuadra, ajusta CONTENT_RATIO / MARK_ZOOM / MARK_POS.
  */
-const CONTENT_RATIO = 1.3; // ancho/alto del contenido del logo (emblema+texto)
-const MARK_ZOOM = "231%"; // ampliación para recortar el margen de la imagen
-const MARK_POS = "50% 47%"; // centro del contenido dentro de la imagen
+const CONTENT_RATIO = 1.24; // ancho/alto del contenido del logo (emblema+texto)
+const MARK_ZOOM = "225%"; // ampliación para recortar el margen de la imagen
+const MARK_POS = "49% 47%"; // centro del contenido dentro de la imagen
 
 export function Brandmark({
   height = 40,
@@ -24,7 +24,7 @@ export function Brandmark({
       style={{
         height,
         width: Math.round(height * CONTENT_RATIO),
-        backgroundImage: "url(/logo-mark.png)",
+        backgroundImage: "url(/logo.png)",
         backgroundSize: MARK_ZOOM,
         backgroundPosition: MARK_POS,
       }}
