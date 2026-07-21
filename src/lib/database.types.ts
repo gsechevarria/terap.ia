@@ -14,166 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      bienes_inversion: {
-        Row: {
-          anios_amortizacion: number | null
-          created_at: string
-          descripcion: string
-          fecha_adquisicion: string
-          gasto_id: string | null
-          id: string
-          porcentaje_amortizacion: number
-          professional_id: string
-          valor_adquisicion_cents: number
-        }
-        Insert: {
-          anios_amortizacion?: number | null
-          created_at?: string
-          descripcion: string
-          fecha_adquisicion: string
-          gasto_id?: string | null
-          id?: string
-          porcentaje_amortizacion: number
-          professional_id: string
-          valor_adquisicion_cents: number
-        }
-        Update: {
-          anios_amortizacion?: number | null
-          created_at?: string
-          descripcion?: string
-          fecha_adquisicion?: string
-          gasto_id?: string | null
-          id?: string
-          porcentaje_amortizacion?: number
-          professional_id?: string
-          valor_adquisicion_cents?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bienes_inversion_gasto_id_fkey"
-            columns: ["gasto_id"]
-            isOneToOne: false
-            referencedRelation: "gastos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bienes_inversion_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      configuracion_fiscal: {
-        Row: {
-          aplica_retencion_default: boolean
-          created_at: string
-          epigrafe_iae: string | null
-          fecha_alta_actividad: string | null
-          id: string
-          professional_id: string
-          regimen: string
-          situacion_iva: string
-          updated_at: string
-        }
-        Insert: {
-          aplica_retencion_default?: boolean
-          created_at?: string
-          epigrafe_iae?: string | null
-          fecha_alta_actividad?: string | null
-          id?: string
-          professional_id: string
-          regimen?: string
-          situacion_iva?: string
-          updated_at?: string
-        }
-        Update: {
-          aplica_retencion_default?: boolean
-          created_at?: string
-          epigrafe_iae?: string | null
-          fecha_alta_actividad?: string | null
-          id?: string
-          professional_id?: string
-          regimen?: string
-          situacion_iva?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "configuracion_fiscal_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: true
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gastos: {
-        Row: {
-          adjunto_path: string | null
-          base_cents: number
-          categoria_deducible: string
-          concepto: string | null
-          created_at: string
-          cuota_iva_cents: number
-          es_bien_inversion: boolean
-          fecha: string
-          id: string
-          porcentaje_afectacion: number
-          professional_id: string
-          proveedor_nif: string | null
-          proveedor_nombre: string | null
-          tipo_iva: number
-          total_cents: number
-          updated_at: string
-        }
-        Insert: {
-          adjunto_path?: string | null
-          base_cents: number
-          categoria_deducible: string
-          concepto?: string | null
-          created_at?: string
-          cuota_iva_cents?: number
-          es_bien_inversion?: boolean
-          fecha: string
-          id?: string
-          porcentaje_afectacion?: number
-          professional_id: string
-          proveedor_nif?: string | null
-          proveedor_nombre?: string | null
-          tipo_iva?: number
-          total_cents: number
-          updated_at?: string
-        }
-        Update: {
-          adjunto_path?: string | null
-          base_cents?: number
-          categoria_deducible?: string
-          concepto?: string | null
-          created_at?: string
-          cuota_iva_cents?: number
-          es_bien_inversion?: boolean
-          fecha?: string
-          id?: string
-          porcentaje_afectacion?: number
-          professional_id?: string
-          proveedor_nif?: string | null
-          proveedor_nombre?: string | null
-          tipo_iva?: number
-          total_cents?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gastos_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       agenda_blocks: {
         Row: {
           created_at: string
@@ -277,6 +117,101 @@ export type Database = {
             foreignKeyName: "appointments_professional_id_fkey"
             columns: ["professional_id"]
             isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bienes_inversion: {
+        Row: {
+          anios_amortizacion: number | null
+          created_at: string
+          descripcion: string
+          fecha_adquisicion: string
+          gasto_id: string | null
+          id: string
+          porcentaje_amortizacion: number
+          professional_id: string
+          valor_adquisicion_cents: number
+        }
+        Insert: {
+          anios_amortizacion?: number | null
+          created_at?: string
+          descripcion: string
+          fecha_adquisicion: string
+          gasto_id?: string | null
+          id?: string
+          porcentaje_amortizacion: number
+          professional_id: string
+          valor_adquisicion_cents: number
+        }
+        Update: {
+          anios_amortizacion?: number | null
+          created_at?: string
+          descripcion?: string
+          fecha_adquisicion?: string
+          gasto_id?: string | null
+          id?: string
+          porcentaje_amortizacion?: number
+          professional_id?: string
+          valor_adquisicion_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bienes_inversion_gasto_id_fkey"
+            columns: ["gasto_id"]
+            isOneToOne: false
+            referencedRelation: "gastos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bienes_inversion_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      configuracion_fiscal: {
+        Row: {
+          aplica_retencion_default: boolean
+          created_at: string
+          epigrafe_iae: string | null
+          fecha_alta_actividad: string | null
+          id: string
+          professional_id: string
+          regimen: string
+          situacion_iva: string
+          updated_at: string
+        }
+        Insert: {
+          aplica_retencion_default?: boolean
+          created_at?: string
+          epigrafe_iae?: string | null
+          fecha_alta_actividad?: string | null
+          id?: string
+          professional_id: string
+          regimen?: string
+          situacion_iva?: string
+          updated_at?: string
+        }
+        Update: {
+          aplica_retencion_default?: boolean
+          created_at?: string
+          epigrafe_iae?: string | null
+          fecha_alta_actividad?: string | null
+          id?: string
+          professional_id?: string
+          regimen?: string
+          situacion_iva?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "configuracion_fiscal_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: true
             referencedRelation: "professionals"
             referencedColumns: ["id"]
           },
@@ -487,6 +422,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "emergency_links_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gastos: {
+        Row: {
+          adjunto_path: string | null
+          base_cents: number
+          categoria_deducible: string
+          concepto: string | null
+          created_at: string
+          cuota_iva_cents: number
+          es_bien_inversion: boolean
+          fecha: string
+          id: string
+          porcentaje_afectacion: number
+          professional_id: string
+          proveedor_nif: string | null
+          proveedor_nombre: string | null
+          tipo_iva: number
+          total_cents: number
+          updated_at: string
+        }
+        Insert: {
+          adjunto_path?: string | null
+          base_cents: number
+          categoria_deducible: string
+          concepto?: string | null
+          created_at?: string
+          cuota_iva_cents?: number
+          es_bien_inversion?: boolean
+          fecha: string
+          id?: string
+          porcentaje_afectacion?: number
+          professional_id: string
+          proveedor_nif?: string | null
+          proveedor_nombre?: string | null
+          tipo_iva?: number
+          total_cents: number
+          updated_at?: string
+        }
+        Update: {
+          adjunto_path?: string | null
+          base_cents?: number
+          categoria_deducible?: string
+          concepto?: string | null
+          created_at?: string
+          cuota_iva_cents?: number
+          es_bien_inversion?: boolean
+          fecha?: string
+          id?: string
+          porcentaje_afectacion?: number
+          professional_id?: string
+          proveedor_nif?: string | null
+          proveedor_nombre?: string | null
+          tipo_iva?: number
+          total_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastos_professional_id_fkey"
             columns: ["professional_id"]
             isOneToOne: false
             referencedRelation: "professionals"

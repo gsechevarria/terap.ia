@@ -307,7 +307,12 @@ const BIENES_SEED = [
   { m: 6, descripcion: "Mobiliario (sillón y diván)", proveedor: "Mobiliario Clínico", base: 850, iva: 21, afect: 100, amort: 10, anios: 10 },
 ];
 
-/** Siembra configuración fiscal + gastos + bienes de inversión (datos ficticios). */
+/**
+ * Siembra configuración fiscal + gastos + bienes de inversión (datos ficticios).
+ * Idempotente por su cuenta: la config se upsertea; los gastos solo se crean si
+ * el profesional aún no tiene ninguno (así funciona aunque el resto del seed ya
+ * se hubiera ejecutado antes).
+ */
 async function seedContabilidad(proId, variante) {
   // Configuración fiscal: ED simplificada, IVA exenta, alta hace ~1 año.
   await db.from("configuracion_fiscal").upsert(
@@ -321,6 +326,15 @@ async function seedContabilidad(proId, variante) {
     },
     { onConflict: "professional_id" },
   );
+
+  const { count: gCount } = await db
+    .from("gastos")
+    .select("id", { count: "exact", head: true })
+    .eq("professional_id", proId);
+  if ((gCount ?? 0) > 0) {
+    console.log("    · contabilidad: config ok; ya había gastos → se omite");
+    return;
+  }
 
   // Gastos corrientes.
   const rows = GASTOS_SEED.map((g) => {
@@ -381,6 +395,9 @@ async function seedContabilidad(proId, variante) {
 
 async function seedProfessional(email, name, nPatients, scales, startIdx) {
   const proId = await ensureProfessional(email, name);
+  // Contabilidad: idempotente por su cuenta; se siembra aunque los pacientes ya
+  // existieran de una ejecución previa del seed.
+  await seedContabilidad(proId, startIdx === 0 ? 0 : 1);
   const { count } = await db
     .from("patients")
     .select("id", { count: "exact", head: true })
@@ -403,7 +420,6 @@ async function seedProfessional(email, name, nPatients, scales, startIdx) {
     const pname = await seedPatient(proId, idx, scales, { flagItem9 });
     console.log(`    · ${pname}${flagItem9 ? " (con alerta ítem 9)" : ""}`);
   }
-  await seedContabilidad(proId, startIdx === 0 ? 0 : 1);
   console.log(`  ${name}: ${nPatients} pacientes sembrados.`);
 }
 

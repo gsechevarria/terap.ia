@@ -507,7 +507,7 @@ src/
   Chrome). Pasos exactos en `docs/DEPLOY.md`. La URL pública del cierre se obtiene
   al desplegar con esos pasos.
 
-### Módulo Contabilidad (agregador fiscal + exports) 🟡 (código completo; aplicar migración/gen types/seed/deploy pendiente de credenciales)
+### Módulo Contabilidad (agregador fiscal + exports) ✅ (aplicado y verificado; deploy Vercel vía git)
 
 Solicitado como "S6 — Contabilidad". Permite al psicólogo autónomo **registrar
 gastos deducibles, ver estimaciones fiscales ORIENTATIVAS y exportar los libros
@@ -536,10 +536,13 @@ quedar fuera de Verifactu / Ley Antifraude), no envía a la AEAT, sin OCR.
   `xlsx` (0.18.5, uso **solo de escritura** desde datos propios → los advisories
   de su parser no aplican) y `pdf-lib`.
 - Seed ampliado (`scripts/seed.mjs`): `configuracion_fiscal` + ~14 gastos + 1–2
-  bienes por profesional (datos ficticios). Test RLS `scripts/test-contabilidad.mjs`
-  (`npm run test:contabilidad`): aislamiento en las 3 tablas + vista con RLS
-  heredada + solo-cobrados.
-- Verificación en este entorno: **`build` + `typecheck` + `lint` OK**.
+  bienes por profesional (datos ficticios). **Idempotente por su cuenta** (se
+  siembra aunque los pacientes ya existieran de una ejecución previa).
+- **Aplicado y verificado en el remoto:** `supabase db push` (migración
+  `20260721090001` aplicada), `npm run gen:types` (tipos regenerados canónicos),
+  `npm run seed` (14 gastos + bienes por profesional), **`npm run test:contabilidad`
+  14/14** (aislamiento en las 3 tablas + vista con RLS heredada por
+  `security_invoker` + solo-cobrados). `build` + `typecheck` + `lint` OK.
 
 **Adaptaciones al schema/convenciones reales (prevalecen sobre el spec):**
 - `professional_id → professionals(id)` + `current_professional_id()` (el spec
@@ -550,12 +553,10 @@ quedar fuera de Verifactu / Ley Antifraude), no envía a la AEAT, sin OCR.
   (`/receipts`), no URL pública.
 
 **Límite del entorno (honesto):**
-- La CLI de Supabase **no está autenticada** aquí, así que **no se pudo**:
-  `supabase db push` (aplicar la migración), `npm run gen:types` (regenerar tipos
-  — **añadidos a mano** en `src/lib/database.types.ts` con las mismas formas que
-  generará la CLI), `npm run seed` ni `npm run test:contabilidad` (requieren la
-  migración aplicada), ni el deploy a Vercel. **Al retomar con credenciales:**
-  `supabase db push` → `npm run gen:types` → `npm run seed` → `npm run test:contabilidad`.
+- Migración/tipos/seed/test **ya ejecutados** contra el remoto (ver arriba). El
+  **deploy a Vercel** no se verificó aquí: si el proyecto de Vercel está conectado
+  al repo, el push a `main` lo dispara automáticamente; compruébalo en el
+  dashboard de Vercel (y que las envs VAPID/CRON/SERVICE estén configuradas).
 
 **⚠️ TODO_VERIFICAR (confirmar contra AEAT antes de dar cifras por buenas), en `src/lib/fiscal/parametros/2026.ts`:**
 - `gastosDificilJustificacionPct` (5% general; fue 7% excepcional en 2023) y
@@ -575,8 +576,8 @@ pendiente de toolchains. Pendiente de ejecución manual (documentado): deploy Ve
 build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
 
 **Tests (todos verdes):** `test:rls` `test:pro` `test:onboarding` `test:scales`
-`test:agenda` `test:payments` `test:wellbeing` `test:notifications` `test:analytics`.
-`test:contabilidad` escrito (requiere aplicar antes la migración de Contabilidad).
+`test:agenda` `test:payments` `test:wellbeing` `test:notifications` `test:analytics`
+`test:contabilidad`.
 
 <!-- Reglas del agente para esta versión de Next.js -->
 
