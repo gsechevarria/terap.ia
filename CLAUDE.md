@@ -507,6 +507,64 @@ src/
   Chrome). Pasos exactos en `docs/DEPLOY.md`. La URL pública del cierre se obtiene
   al desplegar con esos pasos.
 
+### Módulo Contabilidad (agregador fiscal + exports) 🟡 (código completo; aplicar migración/gen types/seed/deploy pendiente de credenciales)
+
+Solicitado como "S6 — Contabilidad". Permite al psicólogo autónomo **registrar
+gastos deducibles, ver estimaciones fiscales ORIENTATIVAS y exportar los libros
+registro para la gestoría**. **NUNCA emite facturas** (decisión de producto para
+quedar fuera de Verifactu / Ley Antifraude), no envía a la AEAT, sin OCR.
+
+**Hecho:**
+- Migración `20260721090001_contabilidad.sql`: tablas `configuracion_fiscal`,
+  `gastos`, `bienes_inversion` (todas con RLS `professional_id =
+  current_professional_id()`, idéntico al resto) + vista `v_ingresos_fiscales`
+  (deriva de `payments`, **`security_invoker = true`** para heredar la RLS; solo
+  ingresos `status='paid'`) + bucket privado de Storage **`receipts`** (ruta
+  `<professionalId>/<archivo>`, políticas por profesional).
+- **Motor fiscal** en `src/lib/fiscal/`: `parametros/{2026,index}.ts` (valores
+  aislados por ejercicio), `modelo130.ts`, `resumenAnual.ts` (4 pagos
+  fraccionados encadenados), `libros.ts` (libros registro), `calendario.ts`
+  (vencimientos/alertas), `helpers.ts`, `types.ts`. Funciones **puras** (reciben
+  "hoy"), trabajan en **euros** y redondean a céntimo. Math validada con `tsx`.
+- **UI bajo `/pro/contabilidad`** (dashboard con estimación 130 del trimestre +
+  vencimientos + descargo; `/gastos` alta/edición con justificante a Storage y
+  bienes de inversión; `/configuracion`; `/exportar`). Entrada en `ProNav`
+  (icono `Calculator`). Descargo **visible y no descartable** en todo output.
+- **Exports** en `/pro/contabilidad/export` (`?formato=xlsx|pdf|csv&ejercicio=&periodo=anual|1..4`):
+  **XLSX** (SheetJS) con 3 hojas de libros + hoja resumen; **PDF** (pdf-lib)
+  resumen legible; **CSV** (`;`, decimales con coma, BOM). Deps añadidas:
+  `xlsx` (0.18.5, uso **solo de escritura** desde datos propios → los advisories
+  de su parser no aplican) y `pdf-lib`.
+- Seed ampliado (`scripts/seed.mjs`): `configuracion_fiscal` + ~14 gastos + 1–2
+  bienes por profesional (datos ficticios). Test RLS `scripts/test-contabilidad.mjs`
+  (`npm run test:contabilidad`): aislamiento en las 3 tablas + vista con RLS
+  heredada + solo-cobrados.
+- Verificación en este entorno: **`build` + `typecheck` + `lint` OK**.
+
+**Adaptaciones al schema/convenciones reales (prevalecen sobre el spec):**
+- `professional_id → professionals(id)` + `current_professional_id()` (el spec
+  usaba `auth.users`); **dinero en céntimos int** y **porcentajes int** (evita el
+  quirk de PostgREST que serializa `numeric` como string). Rutas bajo **`/pro/`**
+  (no top-level) para heredar la guardia del `pro/layout` + proxy (evita hueco de
+  acceso de pacientes). Justificante = **ruta de Storage** servida por URL firmada
+  (`/receipts`), no URL pública.
+
+**Límite del entorno (honesto):**
+- La CLI de Supabase **no está autenticada** aquí, así que **no se pudo**:
+  `supabase db push` (aplicar la migración), `npm run gen:types` (regenerar tipos
+  — **añadidos a mano** en `src/lib/database.types.ts` con las mismas formas que
+  generará la CLI), `npm run seed` ni `npm run test:contabilidad` (requieren la
+  migración aplicada), ni el deploy a Vercel. **Al retomar con credenciales:**
+  `supabase db push` → `npm run gen:types` → `npm run seed` → `npm run test:contabilidad`.
+
+**⚠️ TODO_VERIFICAR (confirmar contra AEAT antes de dar cifras por buenas), en `src/lib/fiscal/parametros/2026.ts`:**
+- `gastosDificilJustificacionPct` (5% general; fue 7% excepcional en 2023) y
+  `gastosDificilJustificacionTope` (2000 €/año).
+- `retaTramos` 2026 (tabla de cuotas RETA por ingresos reales) — vacío, pendiente.
+
+**Fases futuras (fuera de alcance):** OCR de justificantes y facturación vía API
+certificada (opción B, Verifactu).
+
 ---
 
 ## Resumen del proyecto (plan v2)
@@ -518,6 +576,7 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
 
 **Tests (todos verdes):** `test:rls` `test:pro` `test:onboarding` `test:scales`
 `test:agenda` `test:payments` `test:wellbeing` `test:notifications` `test:analytics`.
+`test:contabilidad` escrito (requiere aplicar antes la migración de Contabilidad).
 
 <!-- Reglas del agente para esta versión de Next.js -->
 
@@ -570,4 +629,27 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
   ~20 PWA). **Sin emojis en la UI:** el `MoodLogger` y la maqueta de la landing
   usan caras Lucide (`Angry/Frown/Meh/Smile/Laugh`). Nav, botones clave (`Plus`),
   cabeceras y alertas (`TriangleAlert`) con iconos Lucide.
+- **Tareas — fecha límite visible (jul 2026):** en `TasksPanel` la fecha dejó de
+  ser texto gris al pie; ahora es una etiqueta con icono `CalendarDays` coloreada
+  por urgencia (vencida = `danger-soft`+`· vencida`; próxima ≤2 días = `warn-soft`;
+  resto neutra). "Hoy"/"pronto" se resuelven tras montar (mismo patrón que el
+  "ahora" de `AgendaCalendar`) para no romper la hidratación.
+- **Contabilidad (jul 2026):** nueva sección en el nav (`Calculator`) bajo
+  `/pro/contabilidad` con la estética de tokens del proyecto: tarjeta grande de la
+  estimación del modelo 130, tiles, tablas `table-base`, formularios con `field`/
+  `field-label`, y un componente `DescargoFiscal` (banner `Info`, no descartable)
+  presente en todas las vistas fiscales. Sin emojis (iconos Lucide).
+- **Pagos — histórico + analítica (jul 2026):** query `getProfessionalPayments`
+  (`src/lib/queries/payments.ts`) con filtros (rango de fechas, estado, método,
+  paciente) y agregados (`byMethod`, `byMonth`, totales/conteos) sobre el conjunto
+  filtrado; fecha efectiva = `paid_at ?? created_at`, filtro de rango en JS para
+  ser consistente con lo mostrado. Nueva página **`/pro/pagos/historico`** (mismo
+  patrón GET/presets que `/pro/agenda/citas`): filtros, tiles de resumen (cobrado/
+  pendiente/nº/importe medio), **BarChart** de ingresos por mes + **`MethodBreakdown`**
+  (barras por método), tabla paginada (25) y **Exportar CSV respetando filtros**
+  (`/pro/pagos/export` ahora lee searchParams). `/pro/pagos` rediseñada: tiles
+  clicables (Cobrado→histórico?status=paid, Pendiente→pending, Cobrado este mes,
+  Pacientes con deuda), analítica (BarChart+MethodBreakdown) y tabla "Detalle por
+  mes" con meses enlazados al histórico. Se eliminó `getAllPaymentsForExport`
+  (lo sustituye la nueva query). Sigue sin facturar.
 @AGENTS.md

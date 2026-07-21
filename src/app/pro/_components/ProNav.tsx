@@ -6,6 +6,7 @@ import {
   Users,
   CalendarDays,
   CreditCard,
+  Calculator,
   ChartColumnIncreasing,
   Settings,
   type LucideIcon,
@@ -15,6 +16,7 @@ const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "/pro", label: "Pacientes", Icon: Users },
   { href: "/pro/agenda", label: "Agenda", Icon: CalendarDays },
   { href: "/pro/pagos", label: "Pagos", Icon: CreditCard },
+  { href: "/pro/contabilidad", label: "Contabilidad", Icon: Calculator },
   { href: "/pro/analitica", label: "Analítica", Icon: ChartColumnIncreasing },
   { href: "/pro/ajustes", label: "Ajustes", Icon: Settings },
 ];

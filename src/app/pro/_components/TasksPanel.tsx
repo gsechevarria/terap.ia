@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { CalendarDays } from "lucide-react";
 import {
   createTaskAction,
   updateTaskAction,
@@ -15,6 +16,14 @@ type Draft = { title: string; description: string; dueDate: string };
 
 const EMPTY: Draft = { title: "", description: "", dueDate: "" };
 
+/** Fecha local en formato YYYY-MM-DD (comparable con `due_date` de la BD). */
+function localDayISO(offsetDays = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function TasksPanel({
   patientId,
   tasks,
@@ -27,6 +36,28 @@ export function TasksPanel({
   const [editDraft, setEditDraft] = useState<Draft>(EMPTY);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+
+  // "Hoy"/"pronto" se resuelven tras montar para no romper la hidratación
+  // (servidor y cliente pueden estar en husos/días distintos).
+  const [now, setNow] = useState<{ today: string; soon: string } | null>(null);
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!active) return;
+      setNow({ today: localDayISO(), soon: localDayISO(2) });
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  /** Color de la etiqueta de fecha según urgencia (solo tareas pendientes). */
+  function dueTone(t: TaskWithCompletion): string {
+    if (!t.due_date || t.completed || !now) return "";
+    if (t.due_date < now.today) return "bg-danger-soft text-danger";
+    if (t.due_date <= now.soon) return "bg-warn-soft text-warn";
+    return "";
+  }
 
   function create() {
     if (!creating.title.trim()) return;
@@ -186,14 +217,29 @@ export function TasksPanel({
                         {t.description}
                       </p>
                     )}
-                    <p className="mt-1 text-xs text-ink-3">
-                      {t.due_date
-                        ? `Límite: ${formatDate(t.due_date)}`
-                        : "Sin fecha límite"}
-                      {t.completed && t.lastCompletion
-                        ? ` · Completada ${formatDateTime(t.lastCompletion.completed_at)}`
-                        : ""}
-                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      {t.due_date ? (
+                        <span
+                          className={`chip ${dueTone(t)}`}
+                          title={`Fecha límite: ${formatDate(t.due_date)}`}
+                        >
+                          <CalendarDays className="size-3.5" />
+                          <span className="text-ink-3">Límite</span>
+                          {formatDate(t.due_date)}
+                          {!t.completed && now && t.due_date < now.today && (
+                            <span className="font-semibold">· vencida</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-ink-3">Sin fecha límite</span>
+                      )}
+                      {t.completed && t.lastCompletion && (
+                        <span className="text-ink-3">
+                          Completada{" "}
+                          {formatDateTime(t.lastCompletion.completed_at)}
+                        </span>
+                      )}
+                    </div>
                     {t.completed && t.lastCompletion?.response_text && (
                       <p className="mt-2 rounded bg-panel p-2.5 text-sm text-ink-2">
                         “{t.lastCompletion.response_text}”

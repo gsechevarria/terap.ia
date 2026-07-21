@@ -106,21 +106,148 @@ export async function getPaymentsOverview(): Promise<PaymentsOverview> {
   return { byMonth, totalPaidCents, totalPendingCents };
 }
 
-export type ExportPaymentRow = Payment & { patientName: string | null };
+/** Métodos filtrables en el histórico (incluye "none" = sin especificar). */
+export const PAYMENT_METHOD_FILTERS = [
+  "transferencia",
+  "bizum",
+  "efectivo",
+  "bono",
+  "none",
+] as const;
 
-/** Todos los pagos del profesional con nombre de paciente (para export CSV). */
-export async function getAllPaymentsForExport(): Promise<ExportPaymentRow[]> {
+export type PaymentFilters = {
+  /** Límite inferior inclusivo (ISO) sobre la fecha efectiva (paid_at ?? created_at). */
+  fromISO?: string;
+  /** Límite superior exclusivo (ISO) sobre la fecha efectiva. */
+  toISO?: string;
+  status?: "paid" | "pending";
+  /** Uno de PAYMENT_METHOD_FILTERS; "none" = método sin especificar. */
+  method?: string;
+  patientId?: string;
+};
+
+/** Fila del histórico: pago + nombre de paciente + fecha de sesión (si la hay). */
+export type PaymentHistoryRow = PaymentWithSession & { patientName: string | null };
+
+export type MethodBreakdown = {
+  method: string;
+  paidCents: number;
+  count: number;
+};
+
+export type PaymentHistory = {
+  rows: PaymentHistoryRow[];
+  totalPaidCents: number;
+  totalPendingCents: number;
+  paidCount: number;
+  pendingCount: number;
+  /** Reparto del cobrado por método (solo pagos "paid"), de mayor a menor. */
+  byMethod: MethodBreakdown[];
+  /** Ingresos cobrados por mes (YYYY-MM), de más reciente a más antiguo. */
+  byMonth: MonthIncome[];
+};
+
+const EMPTY_HISTORY: PaymentHistory = {
+  rows: [],
+  totalPaidCents: 0,
+  totalPendingCents: 0,
+  paidCount: 0,
+  pendingCount: 0,
+  byMethod: [],
+  byMonth: [],
+};
+
+/**
+ * Pagos del profesional con filtros (rango de fechas, estado, método, paciente)
+ * y agregados sobre el conjunto filtrado. La fecha efectiva de cada pago es
+ * `paid_at ?? created_at`; el filtro de rango se aplica en JS sobre ella para
+ * ser consistente con lo que se muestra. Para seguimiento, nunca facturación.
+ */
+export async function getProfessionalPayments(
+  filters: PaymentFilters = {},
+): Promise<PaymentHistory> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const pro = await getCurrentProfessional();
+  if (!pro) return EMPTY_HISTORY;
+
+  let q = supabase
     .from("payments")
-    .select("*, patients(full_name)")
-    .order("created_at", { ascending: false });
-  return (data ?? []).map((p) => {
-    const { patients, ...rest } = p as typeof p & {
+    .select("*, patients(full_name), appointments(starts_at)")
+    .eq("professional_id", pro.id);
+
+  if (filters.status) q = q.eq("status", filters.status);
+  if (filters.patientId) q = q.eq("patient_id", filters.patientId);
+  if (filters.method === "none") q = q.is("method", null);
+  else if (filters.method) q = q.eq("method", filters.method);
+
+  const { data } = await q;
+
+  const fromMs = filters.fromISO ? Date.parse(filters.fromISO) : null;
+  const toMs = filters.toISO ? Date.parse(filters.toISO) : null;
+  const effective = (p: Payment) => p.paid_at ?? p.created_at;
+
+  const rows: PaymentHistoryRow[] = [];
+  for (const row of data ?? []) {
+    const { patients, appointments, ...rest } = row as typeof row & {
       patients: { full_name: string | null } | null;
+      appointments: { starts_at: string } | null;
     };
-    return { ...(rest as Payment), patientName: patients?.full_name ?? null };
-  });
+    const payment = rest as Payment;
+    const whenMs = Date.parse(effective(payment));
+    if (fromMs !== null && whenMs < fromMs) continue;
+    if (toMs !== null && whenMs >= toMs) continue;
+    rows.push({
+      ...payment,
+      sessionAt: appointments?.starts_at ?? null,
+      patientName: patients?.full_name ?? null,
+    });
+  }
+
+  rows.sort((a, b) => Date.parse(effective(b)) - Date.parse(effective(a)));
+
+  let totalPaidCents = 0;
+  let totalPendingCents = 0;
+  let paidCount = 0;
+  let pendingCount = 0;
+  const methodMap = new Map<string, { paidCents: number; count: number }>();
+  const monthMap = new Map<string, { paidCents: number; count: number }>();
+
+  for (const p of rows) {
+    if (p.status === "paid") {
+      totalPaidCents += p.amount_cents;
+      paidCount += 1;
+      const mKey = p.method ?? "none";
+      const m = methodMap.get(mKey) ?? { paidCents: 0, count: 0 };
+      m.paidCents += p.amount_cents;
+      m.count += 1;
+      methodMap.set(mKey, m);
+      const month = effective(p).slice(0, 7); // YYYY-MM
+      const mm = monthMap.get(month) ?? { paidCents: 0, count: 0 };
+      mm.paidCents += p.amount_cents;
+      mm.count += 1;
+      monthMap.set(month, mm);
+    } else {
+      totalPendingCents += p.amount_cents;
+      pendingCount += 1;
+    }
+  }
+
+  const byMethod = [...methodMap.entries()]
+    .map(([method, v]) => ({ method, ...v }))
+    .sort((a, b) => b.paidCents - a.paidCents);
+  const byMonth = [...monthMap.entries()]
+    .map(([month, v]) => ({ month, ...v }))
+    .sort((a, b) => b.month.localeCompare(a.month));
+
+  return {
+    rows,
+    totalPaidCents,
+    totalPendingCents,
+    paidCount,
+    pendingCount,
+    byMethod,
+    byMonth,
+  };
 }
 
 export type MyPaymentSummary = {

@@ -23,4 +23,11 @@ export type ResourceRow = Tables<"resources">;
 export type DocumentRow = Tables<"documents">;
 export type PatientNote = Tables<"patient_notes">;
 
+// Contabilidad (Sesión 6)
+export type ConfiguracionFiscal = Tables<"configuracion_fiscal">;
+export type Gasto = Tables<"gastos">;
+export type BienInversion = Tables<"bienes_inversion">;
+export type IngresoFiscalRow =
+  Database["public"]["Views"]["v_ingresos_fiscales"]["Row"];
+
 export type PatientStatus = Database["public"]["Enums"]["patient_status"];

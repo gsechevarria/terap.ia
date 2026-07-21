@@ -31,3 +31,10 @@ export function formatCurrency(cents: number, currency = "EUR"): string {
     cents / 100,
   );
 }
+
+/** Importe ya en EUROS (no céntimos). Para el módulo fiscal (`lib/fiscal`). */
+export function formatEur(euros: number, currency = "EUR"): string {
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency }).format(
+    euros,
+  );
+}

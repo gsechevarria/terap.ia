@@ -280,6 +280,105 @@ async function seedPatient(proId, idx, scales, opts) {
   return name;
 }
 
+// Céntimos desde euros (dinero en int, como el resto del proyecto).
+const eurC = (e) => Math.round(e * 100);
+
+// Gastos ficticios repartidos por categorías y meses (dentro del ejercicio en curso).
+const GASTOS_SEED = [
+  { m: 0, categoria: "software", concepto: "Suscripción software de gestión", proveedor: "Software SL", base: 29, iva: 21, afect: 100 },
+  { m: 0, categoria: "alquiler_consulta", concepto: "Alquiler consulta (julio)", proveedor: "Inmobiliaria Centro", base: 500, iva: 21, afect: 100 },
+  { m: 1, categoria: "alquiler_consulta", concepto: "Alquiler consulta (junio)", proveedor: "Inmobiliaria Centro", base: 500, iva: 21, afect: 100 },
+  { m: 1, categoria: "suministros", concepto: "Electricidad y agua", proveedor: "Energía Ibérica", base: 65, iva: 21, afect: 50 },
+  { m: 2, categoria: "formacion", concepto: "Curso de terapia contextual", proveedor: "Instituto Formación", base: 240, iva: 21, afect: 100 },
+  { m: 2, categoria: "material", concepto: "Material de consulta", proveedor: "Papelería Técnica", base: 48, iva: 21, afect: 100 },
+  { m: 3, categoria: "gestoria", concepto: "Honorarios gestoría (trimestre)", proveedor: "Gestoría Fiscal", base: 80, iva: 21, afect: 100 },
+  { m: 3, categoria: "alquiler_consulta", concepto: "Alquiler consulta (abril)", proveedor: "Inmobiliaria Centro", base: 500, iva: 21, afect: 100 },
+  { m: 4, categoria: "desplazamiento", concepto: "Transporte a supervisión", proveedor: "Renfe", base: 32, iva: 10, afect: 100 },
+  { m: 4, categoria: "cuota_colegial", concepto: "Cuota colegial trimestral", proveedor: "Colegio de Psicología", base: 90, iva: 0, afect: 100 },
+  { m: 5, categoria: "seguro_rc", concepto: "Seguro de responsabilidad civil", proveedor: "Aseguradora Mutua", base: 320, iva: 0, afect: 100 },
+  { m: 5, categoria: "suministros", concepto: "Internet y teléfono", proveedor: "Telecom", base: 45, iva: 21, afect: 50 },
+  { m: 6, categoria: "otros", concepto: "Gastos varios de consulta", proveedor: "Varios", base: 22, iva: 21, afect: 100 },
+  { m: 6, categoria: "software", concepto: "Herramienta de videollamada", proveedor: "Video SaaS", base: 15, iva: 21, afect: 100 },
+];
+
+// Bienes de inversión (se registran como gasto marcado + ficha de amortización).
+const BIENES_SEED = [
+  { m: 5, descripcion: "Portátil de consulta", proveedor: "Tienda Informática", base: 1200, iva: 21, afect: 100, amort: 25, anios: 4 },
+  { m: 6, descripcion: "Mobiliario (sillón y diván)", proveedor: "Mobiliario Clínico", base: 850, iva: 21, afect: 100, amort: 10, anios: 10 },
+];
+
+/** Siembra configuración fiscal + gastos + bienes de inversión (datos ficticios). */
+async function seedContabilidad(proId, variante) {
+  // Configuración fiscal: ED simplificada, IVA exenta, alta hace ~1 año.
+  await db.from("configuracion_fiscal").upsert(
+    {
+      professional_id: proId,
+      regimen: "estimacion_directa_simplificada",
+      situacion_iva: "exenta",
+      epigrafe_iae: "776",
+      fecha_alta_actividad: dateOnly(now - 365 * DAY),
+      aplica_retencion_default: false,
+    },
+    { onConflict: "professional_id" },
+  );
+
+  // Gastos corrientes.
+  const rows = GASTOS_SEED.map((g) => {
+    const baseC = eurC(g.base);
+    const cuotaC = Math.round((baseC * g.iva) / 100);
+    return {
+      professional_id: proId,
+      fecha: dateOnly(now - g.m * 30 * DAY),
+      proveedor_nombre: g.proveedor,
+      proveedor_nif: "B" + String(10000000 + ((variante + g.m) % 89999999)),
+      categoria_deducible: g.categoria,
+      concepto: g.concepto,
+      base_cents: baseC,
+      tipo_iva: g.iva,
+      cuota_iva_cents: cuotaC,
+      total_cents: baseC + cuotaC,
+      porcentaje_afectacion: g.afect,
+      es_bien_inversion: false,
+    };
+  });
+  await db.from("gastos").insert(rows);
+
+  // Bienes de inversión: el 1er profesional lleva 2; el resto, 1.
+  const bienes = variante === 0 ? BIENES_SEED : BIENES_SEED.slice(0, 1);
+  for (const b of bienes) {
+    const baseC = eurC(b.base);
+    const cuotaC = Math.round((baseC * b.iva) / 100);
+    const fecha = dateOnly(now - b.m * 30 * DAY);
+    const { data: gasto } = await db
+      .from("gastos")
+      .insert({
+        professional_id: proId,
+        fecha,
+        proveedor_nombre: b.proveedor,
+        categoria_deducible: "material",
+        concepto: b.descripcion,
+        base_cents: baseC,
+        tipo_iva: b.iva,
+        cuota_iva_cents: cuotaC,
+        total_cents: baseC + cuotaC,
+        porcentaje_afectacion: b.afect,
+        es_bien_inversion: true,
+      })
+      .select("id")
+      .single();
+    await db.from("bienes_inversion").insert({
+      professional_id: proId,
+      gasto_id: gasto?.id ?? null,
+      descripcion: b.descripcion,
+      fecha_adquisicion: fecha,
+      valor_adquisicion_cents: baseC,
+      porcentaje_amortizacion: b.amort,
+      anios_amortizacion: b.anios,
+    });
+  }
+  console.log(`    · contabilidad: ${rows.length} gastos + ${bienes.length} bien(es) de inversión`);
+}
+
 async function seedProfessional(email, name, nPatients, scales, startIdx) {
   const proId = await ensureProfessional(email, name);
   const { count } = await db
@@ -304,6 +403,7 @@ async function seedProfessional(email, name, nPatients, scales, startIdx) {
     const pname = await seedPatient(proId, idx, scales, { flagItem9 });
     console.log(`    · ${pname}${flagItem9 ? " (con alerta ítem 9)" : ""}`);
   }
+  await seedContabilidad(proId, startIdx === 0 ? 0 : 1);
   console.log(`  ${name}: ${nPatients} pacientes sembrados.`);
 }
 
