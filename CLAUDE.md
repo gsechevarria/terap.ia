@@ -422,6 +422,11 @@ src/
   proveedor (Resend/SMTP) — hoy, sin push, la notificación se marca `failed`.
 - La **entrega real a un dispositivo** requiere navegador (suscripción push) +
   despliegue con `CRON_SECRET`/VAPID en el entorno.
+- **Vercel Hobby solo permite cron DIARIO.** `vercel.json` usa `0 8 * * *` (una
+  vez/día, 08:00 UTC); una expresión horaria (`0 * * * *`) hace **fallar el
+  deploy** en Hobby. Es correcto: la ventana de recordatorio 24-48 h da ventanas
+  diarias contiguas → cada cita recibe 1 recordatorio (idempotente por
+  `appointment_id`). Con plan Pro puede volver a ponerse horario.
 
 **Pendiente / al empezar la Sesión 9:**
 - Probar en navegador: activar push, recibir un recordatorio/tarea.
