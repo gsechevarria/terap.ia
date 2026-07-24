@@ -702,4 +702,15 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
   Pacientes con deuda), analítica (BarChart+MethodBreakdown) y tabla "Detalle por
   mes" con meses enlazados al histórico. Se eliminó `getAllPaymentsForExport`
   (lo sustituye la nueva query). Sigue sin facturar.
+- **Selector de fecha propio (jul 2026):** `src/components/ui/DateField.tsx`
+  (client) sustituye al calendario nativo de `<input type="date">` (que **no es
+  estilizable** por CSS). Disparador con estética `.field` + calendario emergente
+  con los tokens de la app: navegación de mes (‹ ›), **saltos rápidos de mes/año**
+  por `<select>` (año: 120 atrás — cómodo para fechas de nacimiento), semana
+  lunes-primero, día seleccionado en `accent`, "hoy" con anillo, acciones
+  Borrar/Hoy. Cierre por click-fuera/Escape y navegación con flechas (roving
+  `tabIndex`). Envía el valor por un `<input type="hidden">` (YYYY-MM-DD), así que
+  funciona dentro de cualquier `<form>`. El popover **solo se renderiza al abrir**
+  (client), por lo que usar `new Date()` para "hoy" no rompe la hidratación. Usado
+  en el alta de paciente y en la pestaña Información de la ficha.
 @AGENTS.md

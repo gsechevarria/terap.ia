@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
 import { updatePatientDetailsAction } from "@/lib/actions/patients";
+import { DateField } from "@/components/ui/DateField";
 import { formatDate } from "@/lib/format";
 
 export type PatientDetails = {
@@ -55,7 +56,12 @@ export function PatientDetailsPanel({
             <Field label="Nombre completo" name="full_name" defaultValue={details.full_name} required wide />
             <Field label="Correo" name="email" type="email" defaultValue={details.email} />
             <Field label="Teléfono" name="phone" type="tel" defaultValue={details.phone} />
-            <Field label="Fecha de nacimiento" name="birth_date" type="date" defaultValue={details.birth_date} />
+            <DateField
+              label="Fecha de nacimiento"
+              name="birth_date"
+              defaultValue={details.birth_date}
+              className="h-9"
+            />
             <Field label="Profesión" name="profession" defaultValue={details.profession} />
             <Field label="Dirección" name="address" defaultValue={details.address} wide />
             <Field

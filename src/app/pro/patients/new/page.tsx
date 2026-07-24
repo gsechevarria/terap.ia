@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createPatientAction } from "@/lib/actions/patients";
+import { DateField } from "@/components/ui/DateField";
 
 export default function NewPatientPage() {
   return (
@@ -28,10 +29,12 @@ export default function NewPatientPage() {
             <span className="field-label">Teléfono (opcional)</span>
             <input name="phone" type="tel" className="field py-2 text-base" />
           </label>
-          <label className="block">
-            <span className="field-label">Fecha de nacimiento (opcional)</span>
-            <input name="birth_date" type="date" className="field py-2 text-base" />
-          </label>
+          <DateField
+            label="Fecha de nacimiento (opcional)"
+            name="birth_date"
+            defaultValue={null}
+            className="py-2 text-base"
+          />
           <label className="block">
             <span className="field-label">Profesión (opcional)</span>
             <input name="profession" className="field py-2 text-base" />
