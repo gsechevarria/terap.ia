@@ -30,6 +30,7 @@ import { NotesPanel } from "@/app/pro/_components/NotesPanel";
 import { PatientDetailsPanel } from "@/app/pro/_components/PatientDetailsPanel";
 
 const TABS = [
+  { key: "informacion", label: "Información" },
   { key: "tareas", label: "Tareas" },
   { key: "notas", label: "Notas" },
   { key: "escalas", label: "Escalas" },
@@ -51,7 +52,7 @@ export default async function PatientDetailPage({
 }) {
   const { id } = await params;
   const { tab: tabRaw } = await searchParams;
-  const tab = (TABS.find((t) => t.key === tabRaw)?.key ?? "tareas") as TabKey;
+  const tab = (TABS.find((t) => t.key === tabRaw)?.key ?? "informacion") as TabKey;
 
   const patient = await getPatient(id);
   if (!patient) notFound();
@@ -132,6 +133,21 @@ export default async function PatientDetailPage({
           </nav>
 
           <div className="mt-6">
+            {tab === "informacion" && (
+              <PatientDetailsPanel
+                patientId={id}
+                age={ageFromBirthDate(patient.birth_date)}
+                details={{
+                  full_name: patient.full_name,
+                  email: patient.email,
+                  phone: patient.phone,
+                  birth_date: patient.birth_date,
+                  address: patient.address,
+                  profession: patient.profession,
+                  emergency_contact: patient.emergency_contact,
+                }}
+              />
+            )}
             {tab === "tareas" && (
               <TasksPanel patientId={id} tasks={await getTasksForPatient(id)} />
             )}
@@ -148,19 +164,6 @@ export default async function PatientDetailPage({
         </div>
 
         <aside className="flex flex-col gap-4">
-          <PatientDetailsPanel
-            patientId={id}
-            age={ageFromBirthDate(patient.birth_date)}
-            details={{
-              full_name: patient.full_name,
-              email: patient.email,
-              phone: patient.phone,
-              birth_date: patient.birth_date,
-              address: patient.address,
-              profession: patient.profession,
-              emergency_contact: patient.emergency_contact,
-            }}
-          />
           <InvitePanel
             patientId={id}
             baseUrl={baseUrl}

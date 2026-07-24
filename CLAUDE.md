@@ -589,12 +589,15 @@ archivados) y más campos en la ficha (teléfono, correo, dirección, profesión
   `full_name/email/phone/profession`, con término saneado para PostgREST). Combina
   con las pestañas Activos/Archivados/Todos, así que busca en cualquiera de ellas.
   Estado vacío específico cuando no hay resultados para «q».
-- **Ficha**: `PatientDetailsPanel.tsx` (client) en el aside — tarjeta "Datos de
-  contacto" (correo, teléfono, nacimiento + edad, profesión, dirección,
-  emergencia) con edición inline (`updatePatientDetailsAction`). Permite además
-  **editar el nombre** (antes no había forma tras el alta). La **edad** se calcula
-  en el server (`ageFromBirthDate` en `lib/format.ts`) y viaja como prop (sin
-  `now` en cliente → sin desajuste de hidratación).
+- **Ficha**: `PatientDetailsPanel.tsx` (client) en una **pestaña "Información"**
+  (la primera, a la izquierda de "Tareas", y **pestaña por defecto**) — rejilla
+  de 2 columnas con todos los campos (nombre, correo, teléfono, nacimiento +
+  edad, profesión, dirección, emergencia) y edición inline
+  (`updatePatientDetailsAction`). Permite además **editar el nombre** (antes no
+  había forma tras el alta). La **edad** se calcula en el server
+  (`ageFromBirthDate` en `lib/format.ts`) y viaja como prop (sin `now` en cliente
+  → sin desajuste de hidratación). El aside de la ficha queda solo con la
+  invitación.
 - **Alta** (`/pro/patients/new`) y `createPatientAction` ampliados con los nuevos
   campos. Seed (`scripts/seed.mjs`) puebla datos de contacto ficticios por paciente.
 - `database.types.ts` actualizado a mano (orden alfabético idéntico al que emite

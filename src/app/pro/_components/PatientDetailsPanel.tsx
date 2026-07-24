@@ -48,23 +48,26 @@ export function PatientDetailsPanel({
 
   if (editing) {
     return (
-      <section className="card p-4">
-        <h2 className="section-label mb-3">Editar datos</h2>
-        <form onSubmit={onSubmit} className="flex flex-col gap-3">
-          <Field label="Nombre completo" name="full_name" defaultValue={details.full_name} required />
-          <Field label="Correo" name="email" type="email" defaultValue={details.email} />
-          <Field label="Teléfono" name="phone" type="tel" defaultValue={details.phone} />
-          <Field label="Fecha de nacimiento" name="birth_date" type="date" defaultValue={details.birth_date} />
-          <Field label="Profesión" name="profession" defaultValue={details.profession} />
-          <Field label="Dirección" name="address" defaultValue={details.address} />
-          <Field
-            label="Contacto de emergencia"
-            name="emergency_contact"
-            defaultValue={details.emergency_contact}
-            placeholder="Nombre y teléfono"
-          />
-          {error && <p className="text-xs text-danger">{error}</p>}
-          <div className="mt-1 flex items-center gap-2">
+      <section className="card p-5">
+        <h2 className="section-label mb-4">Editar información</h2>
+        <form onSubmit={onSubmit}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Nombre completo" name="full_name" defaultValue={details.full_name} required wide />
+            <Field label="Correo" name="email" type="email" defaultValue={details.email} />
+            <Field label="Teléfono" name="phone" type="tel" defaultValue={details.phone} />
+            <Field label="Fecha de nacimiento" name="birth_date" type="date" defaultValue={details.birth_date} />
+            <Field label="Profesión" name="profession" defaultValue={details.profession} />
+            <Field label="Dirección" name="address" defaultValue={details.address} wide />
+            <Field
+              label="Contacto de emergencia"
+              name="emergency_contact"
+              defaultValue={details.emergency_contact}
+              placeholder="Nombre y teléfono"
+              wide
+            />
+          </div>
+          {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+          <div className="mt-5 flex items-center gap-2">
             <button type="submit" disabled={pending} className="btn-primary btn-sm">
               {pending ? "Guardando…" : "Guardar"}
             </button>
@@ -84,25 +87,25 @@ export function PatientDetailsPanel({
     );
   }
 
-  const rows: { label: string; value: string | null }[] = [
+  const rows: { label: string; value: string | null; wide?: boolean }[] = [
+    { label: "Nombre completo", value: details.full_name, wide: true },
     { label: "Correo", value: details.email },
     { label: "Teléfono", value: details.phone },
     {
-      label: "Nacimiento",
+      label: "Fecha de nacimiento",
       value: details.birth_date
         ? `${formatDate(details.birth_date)}${age !== null ? ` · ${age} años` : ""}`
         : null,
     },
     { label: "Profesión", value: details.profession },
-    { label: "Dirección", value: details.address },
-    { label: "Emergencia", value: details.emergency_contact },
+    { label: "Dirección", value: details.address, wide: true },
+    { label: "Contacto de emergencia", value: details.emergency_contact, wide: true },
   ];
-  const hasAny = rows.some((r) => r.value);
 
   return (
-    <section className="card p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="section-label">Datos de contacto</h2>
+    <section className="card p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="section-label">Datos del paciente</h2>
         <button
           type="button"
           onClick={() => setEditing(true)}
@@ -112,22 +115,18 @@ export function PatientDetailsPanel({
           Editar
         </button>
       </div>
-      {hasAny ? (
-        <dl className="flex flex-col gap-2.5">
-          {rows.map((r) => (
-            <div key={r.label} className="flex flex-col gap-0.5">
-              <dt className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-                {r.label}
-              </dt>
-              <dd className="text-sm break-words text-ink">{r.value ?? "—"}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : (
-        <p className="text-xs text-ink-3">
-          Sin datos de contacto todavía. Añádelos con «Editar».
-        </p>
-      )}
+      <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+        {rows.map((r) => (
+          <div key={r.label} className={`flex flex-col gap-1 ${r.wide ? "sm:col-span-2" : ""}`}>
+            <dt className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
+              {r.label}
+            </dt>
+            <dd className={`text-sm break-words ${r.value ? "text-ink" : "text-ink-3"}`}>
+              {r.value ?? "—"}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }
@@ -139,6 +138,7 @@ function Field({
   type = "text",
   required,
   placeholder,
+  wide,
 }: {
   label: string;
   name: string;
@@ -146,9 +146,10 @@ function Field({
   type?: string;
   required?: boolean;
   placeholder?: string;
+  wide?: boolean;
 }) {
   return (
-    <label className="block">
+    <label className={`block ${wide ? "sm:col-span-2" : ""}`}>
       <span className="field-label">{label}</span>
       <input
         name={name}
@@ -156,7 +157,7 @@ function Field({
         required={required}
         placeholder={placeholder}
         defaultValue={defaultValue ?? ""}
-        className="field h-8 w-full px-2 py-1 text-sm"
+        className="field h-9 w-full px-2.5 text-sm"
       />
     </label>
   );
