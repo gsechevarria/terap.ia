@@ -202,20 +202,23 @@ async function main() {
     check("Paciente B NO ve el diario de A", (data ?? []).length === 0);
   }
 
-  console.log("\n== Guard de vínculo del paciente ==");
+  console.log("\n== Ficha del paciente: solo lectura ==");
+  // Sin patients_update_self, un UPDATE del paciente no da error: simplemente
+  // afecta 0 filas (RLS lo filtra). Se verifica que el valor NO cambia.
   {
-    const { error } = await cPatA
-      .from("patients")
-      .update({ professional_id: profB.id })
-      .eq("id", patA.id);
-    check("Paciente A NO puede reasignarse a otro profesional", !!error, error?.message);
+    await cPatA.from("patients").update({ professional_id: profB.id }).eq("id", patA.id);
+    const { data } = await admin.from("patients").select("professional_id").eq("id", patA.id).single();
+    check("Paciente A NO puede reasignarse a otro profesional", data?.professional_id === profA.id, `professional_id=${data?.professional_id}`);
   }
   {
-    const { error } = await cPatA
-      .from("patients")
-      .update({ status: "archived" })
-      .eq("id", patA.id);
-    check("Paciente A NO puede cambiar su propio estado", !!error, error?.message);
+    await cPatA.from("patients").update({ status: "archived" }).eq("id", patA.id);
+    const { data } = await admin.from("patients").select("status").eq("id", patA.id).single();
+    check("Paciente A NO puede cambiar su propio estado", data?.status === "active", `status=${data?.status}`);
+  }
+  {
+    await cPatA.from("patients").update({ full_name: "Editado por el paciente" }).eq("id", patA.id);
+    const { data } = await admin.from("patients").select("full_name").eq("id", patA.id).single();
+    check("Paciente A NO puede editar su ficha (solo lectura)", data?.full_name === "Paciente A", `full_name=${data?.full_name}`);
   }
 
   console.log("\n== Escalas OPT-IN + trigger de puntuación ==");
@@ -284,6 +287,123 @@ async function main() {
       answers: { 1: 1 },
     });
     check("Paciente B NO puede responder el assignment de A", !!crossErr, crossErr?.message);
+  }
+
+  console.log("\n== Citas: el paciente solo confirma/cancela por RPC ==");
+  {
+    const { data: appt } = await admin
+      .from("appointments")
+      .insert({
+        professional_id: profA.id,
+        patient_id: patA.id,
+        starts_at: new Date(Date.now() + 86400e3).toISOString(),
+        ends_at: new Date(Date.now() + 86400e3 + 3600e3).toISOString(),
+      })
+      .select("id")
+      .single();
+
+    // UPDATE directo del paciente: sin política -> 0 filas, status intacto.
+    await cPatA.from("appointments").update({ status: "completed" }).eq("id", appt.id);
+    {
+      const { data } = await admin.from("appointments").select("status").eq("id", appt.id).single();
+      check("el paciente NO puede editar la cita directamente", data?.status === "scheduled", `status=${data?.status}`);
+    }
+    // RPC acotada: confirma la propia.
+    {
+      const { error } = await cPatA.rpc("patient_respond_appointment", { p_appointment_id: appt.id, p_action: "confirm" });
+      check("el paciente confirma su cita por RPC", !error, error?.message);
+      const { data } = await admin.from("appointments").select("status").eq("id", appt.id).single();
+      check("estado = confirmed", data?.status === "confirmed");
+    }
+    // Paciente B NO puede responder la cita de A.
+    {
+      const { error } = await cPatB.rpc("patient_respond_appointment", { p_appointment_id: appt.id, p_action: "cancel" });
+      check("Paciente B NO puede responder la cita de A", !!error, error ? "" : "no dio error");
+      const { data } = await admin.from("appointments").select("status").eq("id", appt.id).single();
+      check("la cita de A sigue confirmed", data?.status === "confirmed");
+    }
+  }
+
+  console.log("\n== Consentimiento: firma por RPC, no insert directo ==");
+  {
+    const { error } = await cPatA.from("consents").insert({
+      professional_id: profA.id,
+      patient_id: patA.id,
+      accepted: true,
+      content_hash: "falso",
+      signed_at: new Date().toISOString(),
+    });
+    check("el paciente NO puede insertar consents directamente", !!error, error ? "" : "no dio error");
+  }
+  {
+    const { data, error } = await cPatA.rpc("patient_accept_consent");
+    check("el paciente firma por RPC", !error && !!data, error?.message);
+    const { data: rows } = await admin
+      .from("consents")
+      .select("id, content_hash, template_id")
+      .eq("patient_id", patA.id);
+    check(
+      "queda 1 firma con hash y plantilla en BD",
+      (rows ?? []).length === 1 && !!rows[0]?.content_hash && !!rows[0]?.template_id,
+      JSON.stringify(rows),
+    );
+  }
+  {
+    await cPatA.rpc("patient_accept_consent");
+    const { data: rows } = await admin.from("consents").select("id").eq("patient_id", patA.id);
+    check("firmar de nuevo es idempotente (sigue 1)", (rows ?? []).length === 1, `n=${rows?.length}`);
+  }
+
+  console.log("\n== Diario: inmutable pasado el día ==");
+  {
+    const { data: today, error } = await cPatA
+      .from("mood_entries")
+      .insert({ patient_id: patA.id, mood_value: 2 })
+      .select("id")
+      .single();
+    check("el paciente registra su ánimo (hoy)", !error && !!today?.id, error?.message);
+    const { error: uErr } = await cPatA.from("mood_entries").update({ mood_value: 5 }).eq("id", today.id);
+    check("puede corregir la entrada de hoy", !uErr, uErr?.message);
+  }
+  {
+    const { data: past } = await admin
+      .from("mood_entries")
+      .insert({ patient_id: patA.id, mood_value: 3, entry_date: "2020-01-01" })
+      .select("id")
+      .single();
+    await cPatA.from("mood_entries").update({ mood_value: 1 }).eq("id", past.id);
+    {
+      const { data } = await admin.from("mood_entries").select("mood_value").eq("id", past.id).single();
+      check("NO puede modificar una entrada antigua", data?.mood_value === 3, `mood=${data?.mood_value}`);
+    }
+    await cPatA.from("mood_entries").delete().eq("id", past.id);
+    {
+      const { data } = await admin.from("mood_entries").select("id").eq("id", past.id);
+      check("NO puede borrar una entrada antigua", (data ?? []).length === 1);
+    }
+  }
+
+  console.log("\n== Documentos: cerrados por defecto (fila) ==");
+  {
+    const { data: doc } = await admin
+      .from("documents")
+      .insert({
+        professional_id: profA.id,
+        patient_id: patA.id,
+        title: "Informe",
+        storage_path: `${patA.id}/rls-${rnd}.txt`,
+      })
+      .select("id")
+      .single();
+    {
+      const { data } = await cPatA.from("documents").select("id").eq("id", doc.id);
+      check("el paciente NO ve un documento no compartido", (data ?? []).length === 0);
+    }
+    await admin.from("documents").update({ shared_with_patient: true }).eq("id", doc.id);
+    {
+      const { data } = await cPatA.from("documents").select("id").eq("id", doc.id);
+      check("ve el documento cuando se comparte", (data ?? []).length === 1);
+    }
   }
 
   console.log("\n== Emergencias (globales visibles para todos) ==");

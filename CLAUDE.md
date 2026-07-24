@@ -660,25 +660,35 @@ al esquema y código reales. Migración
 Políticas nuevas envueltas en `(select public.helper())` (initPlan, se evalúa una
 vez por consulta).
 
-**⚠️ Pendiente / al retomar:**
-- **Aplicar la migración** (mismo límite que las anteriores: sin
-  `SUPABASE_ACCESS_TOKEN`/contraseña aquí). Orden: aplicar migración → los flujos
-  de paciente (onboarding, confirmar cita) usan las RPC nuevas.
-- **Re-probar RLS:** los tests (`test:rls`, `test:onboarding`, `test:agenda`,
-  `test:wellbeing`) asumen el comportamiento antiguo (paciente actualiza su ficha,
-  UPDATE directo de citas, insert directo de consents, update/delete de mood
-  antiguos). Hay que **actualizarlos y re-ejecutarlos** tras aplicar. Verificado
-  aquí solo `build`/`typecheck`/`lint`.
-- **invitations.token en claro** — RESUELTO (migración
-  `20260725100001_invitation_token_hash.sql`): la BD guarda solo el SHA-256
-  (`token_hash`, único, not null); `accept_invitation`/`invitation_preview`
-  hashean el token entrante; se elimina la columna `token`.
-  `createInvitationAction` genera el token (256 bits) en Node, guarda el hash y
-  devuelve el claro **una sola vez** para el enlace. `InvitePanel` ya no persiste
-  el enlace: si hay invitación activa muestra estado + "generar enlace nuevo"
-  (el enlace solo se ve al crearlo). Backfill del hash desde el token existente
-  para no romper enlaces de demo; en producción convendría invalidar+regenerar.
-  Pendiente igual que el resto: **aplicar la migración** al remoto.
+**invitations.token en claro** — RESUELTO (migración
+`20260725100001_invitation_token_hash.sql`): la BD guarda solo el SHA-256
+(`token_hash`, único, not null); `accept_invitation`/`invitation_preview`
+hashean el token entrante; se elimina la columna `token`.
+`createInvitationAction` genera el token (256 bits) en Node, guarda el hash y
+devuelve el claro **una sola vez** para el enlace. `InvitePanel` ya no persiste
+el enlace: si hay invitación activa muestra estado + "generar enlace nuevo".
+Backfill del hash desde el token existente para no romper enlaces de demo (en
+producción: invalidar+regenerar).
+
+**Aplicado y verificado en el remoto:** el usuario aplicó ambas migraciones
+(`20260725090001`, `20260725100001`) por el SQL editor. Verificado por conteos
+(columnas nuevas, `token` eliminada, 3/3 plantillas de consentimiento) y por la
+**batería completa contra el remoto**, con los tests actualizados a la conducta
+endurecida: **`test:rls` 40/40** (antes 24; +patients solo-lectura, citas por
+RPC, consent por RPC, diario inmutable, documentos cerrados), **`test:onboarding`
+10/10** (consent por RPC), **`test:agenda` 14/14** (confirmar/cancelar por RPC),
+`test:pro` 16/16 (invitación con hash); resto verdes (payments 10, wellbeing 10,
+notifications 9, analytics 6, scales 12, contabilidad 14). `build`/`typecheck`/
+`lint` OK.
+
+**⚠️ Pendiente:**
+- **Registro de migraciones:** como se aplicaron por el SQL editor (no
+  `supabase db push`), `supabase_migrations` no las tiene marcadas. Un futuro
+  `db push` intentaría re-ejecutarlas y fallaría (varias sentencias no son
+  idempotentes). Ejecutar con token:
+  `supabase migration repair --status applied 20260725090001 20260725100001`.
+- **Storage:** `shared_with_patient` protege la FILA `documents`, no el binario;
+  revisar políticas de `storage.objects` cuando exista vista de documentos en `/app`.
 - **Barrido de rendimiento** (opcional): envolver los helpers en `(select …)` en
   las ~50 políticas existentes de más volumen.
 

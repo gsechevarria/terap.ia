@@ -102,14 +102,22 @@ async function main() {
     check("el paciente ve sus 2 citas", ids.includes(c1.id) && ids.includes(c2.id));
   }
   {
-    const { error } = await p.from("appointments").update({ status: "confirmed" }).eq("id", c1.id);
-    check("el paciente confirma la cita 1", !error, error?.message);
+    // UPDATE directo del paciente: sin política -> 0 filas, status intacto.
+    await p.from("appointments").update({ status: "completed" }).eq("id", c1.id);
+    const { data } = await p.from("appointments").select("status").eq("id", c1.id).single();
+    check("el paciente NO puede editar la cita directamente", data?.status === "scheduled", `status=${data?.status}`);
+  }
+  {
+    const { error } = await p.rpc("patient_respond_appointment", { p_appointment_id: c1.id, p_action: "confirm" });
+    check("el paciente confirma la cita 1 (RPC)", !error, error?.message);
     const { data } = await p.from("appointments").select("status").eq("id", c1.id).single();
     check("estado = confirmed", data?.status === "confirmed");
   }
   {
-    const { error } = await p.from("appointments").update({ status: "cancelled" }).eq("id", c2.id);
-    check("el paciente cancela la cita 2", !error, error?.message);
+    const { error } = await p.rpc("patient_respond_appointment", { p_appointment_id: c2.id, p_action: "cancel" });
+    check("el paciente cancela la cita 2 (RPC)", !error, error?.message);
+    const { data } = await p.from("appointments").select("status").eq("id", c2.id).single();
+    check("estado = cancelled", data?.status === "cancelled");
   }
 
   console.log("\n== Profesional marca asistencia ==");

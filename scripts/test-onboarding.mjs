@@ -7,6 +7,7 @@
 // =============================================================================
 
 import { createClient } from "@supabase/supabase-js";
+import { createHash, randomBytes } from "node:crypto";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -73,12 +74,13 @@ async function main() {
     .select("id")
     .single();
 
-  const { data: inv } = await admin
+  // El token en claro vive solo aquí y en el enlace; en BD se guarda el hash.
+  const invToken = randomBytes(32).toString("hex");
+  const invHash = createHash("sha256").update(invToken).digest("hex");
+  const { error: invErr } = await admin
     .from("invitations")
-    .insert({ professional_id: prof.id, patient_id: patient.id })
-    .select("token")
-    .single();
-  check("invitación creada con token", !!inv?.token);
+    .insert({ professional_id: prof.id, patient_id: patient.id, token_hash: invHash });
+  check("invitación creada (hash en BD)", !invErr, invErr?.message);
 
   const { data: task } = await admin
     .from("tasks")
@@ -92,7 +94,7 @@ async function main() {
 
   console.log("\n== Aceptar invitación (vincular cuenta) ==");
   {
-    const { error } = await pat.rpc("accept_invitation", { p_token: inv.token });
+    const { error } = await pat.rpc("accept_invitation", { p_token: invToken });
     check("accept_invitation ejecutable por el paciente", !error, error?.message);
   }
   {
@@ -100,16 +102,30 @@ async function main() {
     check("la cuenta queda vinculada al paciente", data?.id === patient.id && data?.user_id === uPat.id);
   }
 
-  console.log("\n== Firmar consentimiento ==");
+  console.log("\n== Firmar consentimiento (RPC) ==");
   {
-    const { error } = await pat.from("consents").insert({
+    // Insert directo bloqueado (política retirada); se firma por RPC, que
+    // hashea el texto de la plantilla en BD del profesional.
+    const { error: directErr } = await pat.from("consents").insert({
       professional_id: prof.id,
       patient_id: patient.id,
       accepted: true,
       content_hash: "hash-de-prueba",
       signed_at: new Date().toISOString(),
     });
-    check("el paciente firma el consentimiento", !error, error?.message);
+    check("insert directo de consents bloqueado", !!directErr, directErr ? "" : "no dio error");
+
+    const { data, error } = await pat.rpc("patient_accept_consent");
+    check("el paciente firma por RPC", !error && !!data, error?.message);
+    const { data: rows } = await admin
+      .from("consents")
+      .select("id, content_hash, template_id")
+      .eq("patient_id", patient.id);
+    check(
+      "la firma queda con hash y plantilla en BD",
+      (rows ?? []).length === 1 && !!rows[0]?.content_hash && !!rows[0]?.template_id,
+      JSON.stringify(rows),
+    );
   }
 
   console.log("\n== Completar una tarea ==");
@@ -130,7 +146,7 @@ async function main() {
 
   console.log("\n== Token de un solo uso ==");
   {
-    const { error } = await pat.rpc("accept_invitation", { p_token: inv.token });
+    const { error } = await pat.rpc("accept_invitation", { p_token: invToken });
     check("reutilizar el token falla", !!error, error ? "" : "no dio error");
   }
 }

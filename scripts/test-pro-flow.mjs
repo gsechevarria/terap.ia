@@ -8,6 +8,7 @@
 // =============================================================================
 
 import { createClient } from "@supabase/supabase-js";
+import { createHash, randomBytes } from "node:crypto";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -95,18 +96,21 @@ async function main() {
   }
 
   console.log("\n== Invitación + preview público ==");
+  // El token en claro solo aquí y en el enlace; en BD, su SHA-256.
+  const invToken = randomBytes(32).toString("hex");
+  const invHash = createHash("sha256").update(invToken).digest("hex");
   const { data: inv, error: iErr } = await pro
     .from("invitations")
-    .insert({ professional_id: proId, patient_id: patientId, email: "ana@example.com" })
-    .select("token")
+    .insert({ professional_id: proId, patient_id: patientId, email: "ana@example.com", token_hash: invHash })
+    .select("id")
     .single();
-  check("crear invitación", !iErr && !!inv?.token, iErr?.message);
+  check("crear invitación", !iErr && !!inv?.id, iErr?.message);
 
   const anon = createClient(URL, ANON, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const { data: preview } = await anon.rpc("invitation_preview", {
-    p_token: inv.token,
+    p_token: invToken,
   });
   const row = preview?.[0];
   check("preview anónimo: válida", row?.valid === true);
