@@ -1,8 +1,6 @@
 "use server";
 
-import { createHash } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
-import { CONSENT_BODY, CONSENT_VERSION } from "@/lib/consent";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -39,27 +37,12 @@ export async function completeOnboardingAction(token: string): Promise<Result> {
   }
   if (!patient) return { ok: false, error: "No se pudo vincular la cuenta." };
 
-  // 2) Registrar el consentimiento (si no existe ya).
-  const { data: existing } = await supabase
-    .from("consents")
-    .select("id")
-    .eq("patient_id", patient.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (!existing) {
-    const hash = createHash("sha256").update(CONSENT_BODY).digest("hex");
-    const { error } = await supabase.from("consents").insert({
-      professional_id: patient.professional_id,
-      patient_id: patient.id,
-      template_id: null,
-      template_version: CONSENT_VERSION,
-      accepted: true,
-      content_hash: hash,
-      signed_at: new Date().toISOString(),
-    });
-    if (error) return { ok: false, error: error.message };
-  }
+  // 2) Registrar la firma del consentimiento. La RPC (SECURITY DEFINER) resuelve
+  //    profesional + plantilla activa y hashea el texto ALMACENADO EN BD, de modo
+  //    que el paciente no puede fabricar la evidencia (professional_id, versión,
+  //    accepted, hash). Es idempotente: si ya firmó, no duplica.
+  const { error } = await supabase.rpc("patient_accept_consent");
+  if (error) return { ok: false, error: error.message };
 
   return { ok: true };
 }

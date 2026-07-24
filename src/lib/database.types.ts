@@ -346,6 +346,7 @@ export type Database = {
           id: string
           patient_id: string
           professional_id: string
+          shared_with_patient: boolean
           storage_path: string
           title: string | null
           uploaded_by: string | null
@@ -355,6 +356,7 @@ export type Database = {
           id?: string
           patient_id: string
           professional_id: string
+          shared_with_patient?: boolean
           storage_path: string
           title?: string | null
           uploaded_by?: string | null
@@ -364,6 +366,7 @@ export type Database = {
           id?: string
           patient_id?: string
           professional_id?: string
+          shared_with_patient?: boolean
           storage_path?: string
           title?: string | null
           uploaded_by?: string | null
@@ -1336,6 +1339,10 @@ export type Database = {
       current_patient_id: { Args: never; Returns: string }
       current_patient_professional_id: { Args: never; Returns: string }
       current_professional_id: { Args: never; Returns: string }
+      ensure_consent_template: {
+        Args: { p_professional_id: string }
+        Returns: undefined
+      }
       invitation_preview: {
         Args: { p_token: string }
         Returns: {
@@ -1343,6 +1350,14 @@ export type Database = {
           professional_name: string
           valid: boolean
         }[]
+      }
+      patient_accept_consent: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      patient_respond_appointment: {
+        Args: { p_appointment_id: string; p_action: string }
+        Returns: undefined
       }
       professional_owns_patient: {
         Args: { p_patient_id: string }

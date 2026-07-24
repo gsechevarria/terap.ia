@@ -615,6 +615,66 @@ archivados) y más campos en la ficha (teléfono, correo, dirección, profesión
 - El seed omite profesionales que ya tienen pacientes: para ver datos de contacto
   en los pacientes demo ya existentes habría que resembrar en limpio.
 
+### Cierre de RLS antes de habilitar auth de pacientes (jul 2026) 🟡 (código listo; migración pendiente de aplicar y de re-probar)
+
+Endurecimiento de RLS pensado para cuando los pacientes tengan cuenta real
+(hoy solo datos ficticios). Adaptación del plan del usuario ("cierre de RLS v2")
+al esquema y código reales. Migración
+`20260725090001_rls_patient_hardening.sql`.
+
+**PASO 0 (verificado):** los 4 helpers de RLS (`current_professional_id`,
+`current_patient_id`, `current_patient_professional_id`,
+`professional_owns_patient`) ya son `security definer` con `search_path=''`
+(en `…002_identity.sql`). No se tocan.
+
+**Fases (todas en la migración):**
+1. **patients → solo lectura para el paciente:** se elimina `patients_update_self`
+   (la ficha es documento clínico del profesional). No había UI de paciente que
+   editara su ficha, así que sin impacto en la app.
+2. **appointments → confirmar/cancelar por RPC:** se elimina
+   `appointments_update_by_patient` (permitía UPDATE de cualquier columna:
+   horario, notas del psicólogo…). Nueva `patient_respond_appointment(id, action)`
+   que solo cambia `status` (confirmed/cancelled) de las citas propias.
+   *Adaptación:* el plan hablaba de `attendance`; en este esquema el paciente
+   actúa sobre `status` (attendance = registro clínico del profesional).
+   `respondAppointmentAction` ahora llama a la RPC.
+3. **consents → firma no falsificable:** se elimina `consents_insert_by_patient`
+   (el `with_check` solo validaba patient_id → el interesado podía fabricar su
+   propia evidencia del art. 9). Nueva `patient_accept_consent()` (SECURITY
+   DEFINER, idempotente) que hashea el `body` de la **plantilla activa en BD**.
+   Se introduce **plantilla por defecto por profesional**
+   (`ensure_consent_template`, con el MISMO texto que `lib/consent.ts` v1):
+   backfill de los existentes + creación en `handle_new_user` + seed.
+   `completeOnboardingAction` ahora firma vía RPC (sin insert/hash en cliente).
+4. **documents → columna `shared_with_patient` (default false)** + la política de
+   lectura del paciente exige el flag. Protege la FILA, no el binario en Storage
+   (revisar `storage.objects` aparte). Hoy no hay vista de documentos en `/app`,
+   así que no se expone nada; el toggle del profesional se añadirá cuando exista
+   esa vista.
+5. **mood_entries → inmutable pasado el día:** se elimina el `ALL` del paciente;
+   se separa en insert / select / update-hoy / delete-hoy. El campo `note` **no**
+   se elimina (lo usa el `MoodLogger`).
+6. **`patients_user_id_unique`** (índice único parcial): un `user_id` = un
+   paciente (`current_patient_id()` es escalar).
+
+Políticas nuevas envueltas en `(select public.helper())` (initPlan, se evalúa una
+vez por consulta).
+
+**⚠️ Pendiente / al retomar:**
+- **Aplicar la migración** (mismo límite que las anteriores: sin
+  `SUPABASE_ACCESS_TOKEN`/contraseña aquí). Orden: aplicar migración → los flujos
+  de paciente (onboarding, confirmar cita) usan las RPC nuevas.
+- **Re-probar RLS:** los tests (`test:rls`, `test:onboarding`, `test:agenda`,
+  `test:wellbeing`) asumen el comportamiento antiguo (paciente actualiza su ficha,
+  UPDATE directo de citas, insert directo de consents, update/delete de mood
+  antiguos). Hay que **actualizarlos y re-ejecutarlos** tras aplicar. Verificado
+  aquí solo `build`/`typecheck`/`lint`.
+- **invitations.token en claro** (PENDIENTE del plan): sí, se guarda en claro y
+  `invitation_preview`/`InvitePanel` lo muestran. Remediación (aparte): añadir
+  `token_hash`, invalidar y regenerar los tokens vivos, `drop column token`.
+- **Barrido de rendimiento** (opcional): envolver los helpers en `(select …)` en
+  las ~50 políticas existentes de más volumen.
+
 ---
 
 ## Resumen del proyecto (plan v2)

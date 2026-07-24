@@ -329,10 +329,13 @@ export async function respondAppointmentAction(
   const patient = await getCurrentPatient();
   if (!patient) throw new Error("Cuenta no vinculada.");
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("appointments")
-    .update({ status: action === "confirm" ? "confirmed" : "cancelled" })
-    .eq("id", id);
+  // Vía RPC acotada: el paciente solo puede confirmar/cancelar sus propias citas
+  // (no reescribir horario, notas del profesional, etc.). La RLS de UPDATE
+  // directo por el paciente se retiró en 20260725090001_rls_patient_hardening.
+  const { error } = await supabase.rpc("patient_respond_appointment", {
+    p_appointment_id: id,
+    p_action: action,
+  });
   if (error) throw new Error(error.message);
   revalidatePath("/app");
   revalidatePath("/app/appointments");

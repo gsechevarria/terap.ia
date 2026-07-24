@@ -75,6 +75,10 @@ async function ensureProfessional(email, name) {
       .single();
     pro = ins.data;
   }
+  // Plantilla de consentimiento por defecto (fuente del hash de la firma).
+  // El trigger la crea al registrar; esto la asegura también en el camino
+  // de fallback (usuario preexistente sin plantilla). Idempotente.
+  await db.rpc("ensure_consent_template", { p_professional_id: pro.id });
   return pro.id;
 }
 
