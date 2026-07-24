@@ -167,8 +167,7 @@ export default async function PatientDetailPage({
           <InvitePanel
             patientId={id}
             baseUrl={baseUrl}
-            initialToken={invitation?.token}
-            initialExpiresAt={invitation?.expires_at}
+            activeExpiresAt={invitation?.expires_at}
           />
         </aside>
       </div>

@@ -669,9 +669,16 @@ vez por consulta).
   UPDATE directo de citas, insert directo de consents, update/delete de mood
   antiguos). Hay que **actualizarlos y re-ejecutarlos** tras aplicar. Verificado
   aquí solo `build`/`typecheck`/`lint`.
-- **invitations.token en claro** (PENDIENTE del plan): sí, se guarda en claro y
-  `invitation_preview`/`InvitePanel` lo muestran. Remediación (aparte): añadir
-  `token_hash`, invalidar y regenerar los tokens vivos, `drop column token`.
+- **invitations.token en claro** — RESUELTO (migración
+  `20260725100001_invitation_token_hash.sql`): la BD guarda solo el SHA-256
+  (`token_hash`, único, not null); `accept_invitation`/`invitation_preview`
+  hashean el token entrante; se elimina la columna `token`.
+  `createInvitationAction` genera el token (256 bits) en Node, guarda el hash y
+  devuelve el claro **una sola vez** para el enlace. `InvitePanel` ya no persiste
+  el enlace: si hay invitación activa muestra estado + "generar enlace nuevo"
+  (el enlace solo se ve al crearlo). Backfill del hash desde el token existente
+  para no romper enlaces de demo; en producción convendría invalidar+regenerar.
+  Pendiente igual que el resto: **aplicar la migración** al remoto.
 - **Barrido de rendimiento** (opcional): envolver los helpers en `(select …)` en
   las ~50 políticas existentes de más volumen.
 

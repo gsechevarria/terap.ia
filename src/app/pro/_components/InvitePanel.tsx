@@ -7,22 +7,23 @@ import { formatDate } from "@/lib/format";
 export function InvitePanel({
   patientId,
   baseUrl,
-  initialToken,
-  initialExpiresAt,
+  activeExpiresAt,
 }: {
   patientId: string;
   baseUrl: string;
-  initialToken?: string | null;
-  initialExpiresAt?: string | null;
+  /** Caducidad de la invitación activa (si la hay). El enlace NO se persiste:
+   *  solo se muestra el que se genere en esta sesión. */
+  activeExpiresAt?: string | null;
 }) {
-  const [token, setToken] = useState<string | null>(initialToken ?? null);
+  const [token, setToken] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(
-    initialExpiresAt ?? null,
+    activeExpiresAt ?? null,
   );
   const [copied, setCopied] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const link = token ? `${baseUrl}/invite/${token}` : "";
+  const hasActive = Boolean(activeExpiresAt);
 
   function generate() {
     startTransition(async () => {
@@ -43,7 +44,9 @@ export function InvitePanel({
   return (
     <div className="card bg-panel p-4">
       <h3 className="section-label">Invitación</h3>
+
       {token ? (
+        // Enlace recién generado: se muestra una sola vez.
         <div className="mt-3 flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <input
@@ -61,15 +64,28 @@ export function InvitePanel({
           </div>
           <p className="text-xs text-ink-3">
             Válida hasta {formatDate(expiresAt)}. Un solo uso.{" "}
-            <button
-              type="button"
-              onClick={generate}
-              disabled={pending}
-              className="underline underline-offset-2 hover:text-ink disabled:opacity-50"
-            >
-              Regenerar
-            </button>
+            <strong className="font-medium text-ink-2">
+              Cópialo ahora
+            </strong>
+            : por seguridad no se vuelve a mostrar.
           </p>
+        </div>
+      ) : hasActive ? (
+        // Hay una invitación activa pero su enlace no está en memoria.
+        <div className="mt-3 flex flex-col gap-2">
+          <p className="text-xs text-ink-2">
+            Hay una invitación activa (válida hasta {formatDate(expiresAt)}). El
+            enlace solo se muestra al crearlo; si lo perdiste, genera uno nuevo
+            (invalida el anterior al aceptarse cualquiera).
+          </p>
+          <button
+            type="button"
+            onClick={generate}
+            disabled={pending}
+            className="btn-ghost self-start"
+          >
+            {pending ? "Generando…" : "Generar enlace nuevo"}
+          </button>
         </div>
       ) : (
         <div className="mt-3">

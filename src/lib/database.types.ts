@@ -506,7 +506,7 @@ export type Database = {
           id: string
           patient_id: string
           professional_id: string
-          token: string
+          token_hash: string
         }
         Insert: {
           accepted_at?: string | null
@@ -516,7 +516,7 @@ export type Database = {
           id?: string
           patient_id: string
           professional_id: string
-          token?: string
+          token_hash: string
         }
         Update: {
           accepted_at?: string | null
@@ -526,7 +526,7 @@ export type Database = {
           id?: string
           patient_id?: string
           professional_id?: string
-          token?: string
+          token_hash?: string
         }
         Relationships: [
           {
