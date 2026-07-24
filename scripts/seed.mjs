@@ -82,6 +82,11 @@ const FIRST = ["Ana", "Marco", "Lucía", "Diego", "Sara", "Pablo", "Elena", "Hug
 const LAST = ["García", "Ferrer", "Ortiz", "Nadal", "Ríos", "Prat", "Vega", "Soler", "Marín", "Cano"];
 const TAGSETS = [["ansiedad"], ["depresión"], ["ansiedad", "quincenal"], ["estrés"], ["duelo"], ["pareja"]];
 const TASK_TITLES = ["Registro de pensamientos", "Ejercicio de respiración", "Diario de gratitud", "Higiene del sueño"];
+// Datos de contacto ficticios (solo demo) ------------------------------------
+const PROFESSIONS = ["Docente", "Enfermera", "Ingeniero de software", "Diseñadora gráfica", "Comercial", "Estudiante", "Autónomo", "Administrativa", "Cocinero", "Fisioterapeuta"];
+const CITIES = ["Madrid", "Barcelona", "Valencia", "Sevilla", "Bilbao", "Zaragoza", "Málaga", "Granada", "Murcia", "Valladolid"];
+const STREETS = ["Calle Mayor", "Av. de la Constitución", "Calle del Sol", "Paseo del Prado", "Calle Real", "Av. Diagonal", "Calle Nueva", "Calle Alta", "Ronda Sur", "Calle del Carmen"];
+const RELATIONS = ["Madre", "Padre", "Pareja", "Hermana", "Hermano", "Amigo", "Tía", "Hijo"];
 const TRAJECTORIES = {
   improving: [17, 15, 12, 10, 7, 5],
   worsening: [6, 8, 11, 13, 16, 18],
@@ -106,13 +111,27 @@ function answersForScore(numItems, target, item9Value = null) {
 }
 
 async function seedPatient(proId, idx, scales, opts) {
-  const name = `${pick(FIRST, idx)} ${pick(LAST, idx + 3)}`;
+  const first = pick(FIRST, idx);
+  const last = pick(LAST, idx + 3);
+  const name = `${first} ${last}`;
+  const slug = `${first}.${last}`
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[^a-z0-9.]/g, "");
+  const p2 = (n) => String(n).padStart(2, "0");
+  const p3 = (n) => String(n).padStart(3, "0");
+  const birthYear = 1965 + ((idx * 3) % 40);
   const { data: patient } = await db
     .from("patients")
     .insert({
       professional_id: proId,
       full_name: name,
-      email: null,
+      email: `${slug}@example.com`,
+      phone: `6${p2(10 + idx)} ${p3(100 + ((idx * 7) % 900))} ${p3(200 + ((idx * 13) % 800))}`,
+      birth_date: `${birthYear}-${p2(1 + ((idx * 5) % 12))}-${p2(1 + ((idx * 7) % 28))}`,
+      profession: pick(PROFESSIONS, idx),
+      address: `${pick(STREETS, idx)} ${1 + ((idx * 3) % 80)}, ${pick(CITIES, idx)}`,
+      emergency_contact: `${pick(RELATIONS, idx)} · 6${p2(20 + idx)} ${p3(300 + (idx % 600))} ${p3(400 + (idx % 500))}`,
       status: idx % 7 === 6 ? "archived" : "active",
       tags: pick(TAGSETS, idx),
     })

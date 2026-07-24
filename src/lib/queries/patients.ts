@@ -15,7 +15,17 @@ export type PatientOverview = Pick<
 export type PatientListFilters = {
   status?: PatientStatus | "all";
   tag?: string;
+  search?: string;
 };
+
+/**
+ * Limpia el término de búsqueda para usarlo con seguridad dentro de un
+ * `.or()` de PostgREST (comas y paréntesis delimitan la sintaxis) y de un
+ * patrón `ilike` (`%`/`_` son comodines).
+ */
+function sanitizeSearch(raw: string): string {
+  return raw.replace(/[%_,()*]/g, " ").replace(/\s+/g, " ").trim();
+}
 
 /**
  * Lista los pacientes del profesional actual con un resumen de estado.
@@ -39,6 +49,15 @@ export async function listPatientsWithOverview(
   }
   if (filters.tag) {
     query = query.contains("tags", [filters.tag]);
+  }
+  if (filters.search) {
+    const term = sanitizeSearch(filters.search);
+    if (term) {
+      const pattern = `%${term}%`;
+      query = query.or(
+        `full_name.ilike.${pattern},email.ilike.${pattern},phone.ilike.${pattern},profession.ilike.${pattern}`,
+      );
+    }
   }
 
   const { data: patients } = await query.order("full_name", {

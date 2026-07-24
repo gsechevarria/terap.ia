@@ -26,6 +26,22 @@ export function toDatetimeLocal(iso: string): string {
   )}:${pad(d.getMinutes())}`;
 }
 
+/**
+ * Edad en años a partir de una fecha 'YYYY-MM-DD'. Pensada para llamarse en un
+ * server component (una sola lectura de "hoy"), de modo que el valor viaja ya
+ * calculado al cliente y no hay desajuste de hidratación.
+ */
+export function ageFromBirthDate(date: string | null | undefined): number | null {
+  if (!date) return null;
+  const b = new Date(date);
+  if (Number.isNaN(b.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+  return age >= 0 && age < 130 ? age : null;
+}
+
 export function formatCurrency(cents: number, currency = "EUR"): string {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency }).format(
     cents / 100,

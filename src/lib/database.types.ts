@@ -714,10 +714,15 @@ export type Database = {
       }
       patients: {
         Row: {
+          address: string | null
+          birth_date: string | null
           created_at: string
           email: string | null
+          emergency_contact: string | null
           full_name: string | null
           id: string
+          phone: string | null
+          profession: string | null
           professional_id: string
           status: Database["public"]["Enums"]["patient_status"]
           tags: string[]
@@ -725,10 +730,15 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          address?: string | null
+          birth_date?: string | null
           created_at?: string
           email?: string | null
+          emergency_contact?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
+          profession?: string | null
           professional_id: string
           status?: Database["public"]["Enums"]["patient_status"]
           tags?: string[]
@@ -736,10 +746,15 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          address?: string | null
+          birth_date?: string | null
           created_at?: string
           email?: string | null
+          emergency_contact?: string | null
           full_name?: string | null
           id?: string
+          phone?: string | null
+          profession?: string | null
           professional_id?: string
           status?: Database["public"]["Enums"]["patient_status"]
           tags?: string[]

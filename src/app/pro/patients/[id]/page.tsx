@@ -20,13 +20,14 @@ import { ResourcesPanel } from "@/app/pro/_components/ResourcesPanel";
 import { DocumentsPanel } from "@/app/pro/_components/DocumentsPanel";
 import { ScoreChart } from "@/app/pro/_components/ScoreChart";
 import { TriangleAlert } from "lucide-react";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { ageFromBirthDate, formatDate, formatDateTime } from "@/lib/format";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import { StatusButton } from "@/app/pro/_components/StatusButton";
 import { TagsEditor } from "@/app/pro/_components/TagsEditor";
 import { InvitePanel } from "@/app/pro/_components/InvitePanel";
 import { TasksPanel } from "@/app/pro/_components/TasksPanel";
 import { NotesPanel } from "@/app/pro/_components/NotesPanel";
+import { PatientDetailsPanel } from "@/app/pro/_components/PatientDetailsPanel";
 
 const TABS = [
   { key: "tareas", label: "Tareas" },
@@ -147,6 +148,19 @@ export default async function PatientDetailPage({
         </div>
 
         <aside className="flex flex-col gap-4">
+          <PatientDetailsPanel
+            patientId={id}
+            age={ageFromBirthDate(patient.birth_date)}
+            details={{
+              full_name: patient.full_name,
+              email: patient.email,
+              phone: patient.phone,
+              birth_date: patient.birth_date,
+              address: patient.address,
+              profession: patient.profession,
+              emergency_contact: patient.emergency_contact,
+            }}
+          />
           <InvitePanel
             patientId={id}
             baseUrl={baseUrl}

@@ -571,6 +571,47 @@ quedar fuera de Verifactu / Ley Antifraude), no envía a la AEAT, sin OCR.
 **Fases futuras (fuera de alcance):** OCR de justificantes y facturación vía API
 certificada (opción B, Verifactu).
 
+### Buscador de pacientes + datos de contacto en la ficha (jul 2026) 🟡 (código listo; migración pendiente de aplicar al remoto)
+
+Solicitado por el usuario: buscador en la lista de pacientes (activos y
+archivados) y más campos en la ficha (teléfono, correo, dirección, profesión…).
+
+**Hecho:**
+- Migración `20260723110001_patient_contact_fields.sql`: añade a `public.patients`
+  las columnas `phone`, `birth_date`, `address`, `profession`,
+  `emergency_contact` (todas `null` por defecto). **Idempotente**
+  (`add column if not exists`); **sin cambios de RLS** (misma tabla, ya cubierta
+  por las políticas de profesional/paciente; el `patients_guard` sigue vigente).
+- **Buscador** en `/pro` (`PatientSearch.tsx`, client): input con icono, debounce
+  250 ms, escribe/limpia el parámetro `?q=` conservando `status`/`tag`; envuelto
+  en `<Suspense>` (usa `useSearchParams`). El filtrado es **server-side** en
+  `listPatientsWithOverview` (nuevo campo `search` → `.or(ilike)` sobre
+  `full_name/email/phone/profession`, con término saneado para PostgREST). Combina
+  con las pestañas Activos/Archivados/Todos, así que busca en cualquiera de ellas.
+  Estado vacío específico cuando no hay resultados para «q».
+- **Ficha**: `PatientDetailsPanel.tsx` (client) en el aside — tarjeta "Datos de
+  contacto" (correo, teléfono, nacimiento + edad, profesión, dirección,
+  emergencia) con edición inline (`updatePatientDetailsAction`). Permite además
+  **editar el nombre** (antes no había forma tras el alta). La **edad** se calcula
+  en el server (`ageFromBirthDate` en `lib/format.ts`) y viaja como prop (sin
+  `now` en cliente → sin desajuste de hidratación).
+- **Alta** (`/pro/patients/new`) y `createPatientAction` ampliados con los nuevos
+  campos. Seed (`scripts/seed.mjs`) puebla datos de contacto ficticios por paciente.
+- `database.types.ts` actualizado a mano (orden alfabético idéntico al que emite
+  `gen:types`, para que regenerarlo no produzca ruido).
+- Verificación local: `build` + `typecheck` + `lint` **OK**.
+
+**⚠️ Pendiente de aplicar al remoto (bloqueante para el deploy):**
+- Este entorno **no tiene `SUPABASE_ACCESS_TOKEN`** (falla `supabase db push` y
+  `gen:types`) ni contraseña de BD en el pooler ni `psql`, así que **la migración
+  no se pudo aplicar aquí**. Antes de desplegar hay que aplicarla, por cualquiera:
+  1. `supabase db push` (tras `supabase login` o exportar `SUPABASE_ACCESS_TOKEN`), o
+  2. pegar el SQL de la migración en el editor SQL del panel de Supabase.
+  Después, opcional: `npm run gen:types` (los tipos ya coinciden). **Sin aplicarla,
+  crear/editar pacientes y el buscador fallarán** (columnas inexistentes).
+- El seed omite profesionales que ya tienen pacientes: para ver datos de contacto
+  en los pacientes demo ya existentes habría que resembrar en limpio.
+
 ---
 
 ## Resumen del proyecto (plan v2)

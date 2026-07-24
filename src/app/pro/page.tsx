@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Plus, TriangleAlert } from "lucide-react";
 import {
   listPatientsWithOverview,
@@ -7,9 +8,10 @@ import {
 } from "@/lib/queries/patients";
 import type { PatientStatus } from "@/lib/types";
 import { StatusCritical } from "@/components/ui/Status";
+import { PatientSearch } from "@/app/pro/_components/PatientSearch";
 import { formatDate, formatDateTime } from "@/lib/format";
 
-type SP = { status?: string; tag?: string };
+type SP = { status?: string; tag?: string; q?: string };
 
 function resolveStatus(raw?: string): PatientStatus | "all" {
   if (raw === "archived" || raw === "all") return raw;
@@ -24,9 +26,10 @@ export default async function ProDashboard({
   const sp = await searchParams;
   const status = resolveStatus(sp.status);
   const tag = sp.tag;
+  const q = sp.q?.trim() ?? "";
 
   const [patients, tags] = await Promise.all([
-    listPatientsWithOverview({ status, tag }),
+    listPatientsWithOverview({ status, tag, search: q }),
     listPatientTags(),
   ]);
 
@@ -66,11 +69,18 @@ export default async function ProDashboard({
         </div>
       )}
 
+      {/* Buscador */}
+      <div className="mt-6 max-w-sm">
+        <Suspense fallback={<div className="field h-9 w-full" aria-hidden />}>
+          <PatientSearch initialValue={q} />
+        </Suspense>
+      </div>
+
       {/* Filtro por estado */}
-      <div className="mt-6 flex flex-wrap items-center gap-1">
-        <StatusTab label="Activos" value="active" current={status} tag={tag} />
-        <StatusTab label="Archivados" value="archived" current={status} tag={tag} />
-        <StatusTab label="Todos" value="all" current={status} tag={tag} />
+      <div className="mt-4 flex flex-wrap items-center gap-1">
+        <StatusTab label="Activos" value="active" current={status} tag={tag} q={q} />
+        <StatusTab label="Archivados" value="archived" current={status} tag={tag} q={q} />
+        <StatusTab label="Todos" value="all" current={status} tag={tag} q={q} />
       </div>
 
       {/* Filtro por etiqueta */}
@@ -78,11 +88,11 @@ export default async function ProDashboard({
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           <TagChip
             label="Todas las etiquetas"
-            href={buildHref(status, undefined)}
+            href={buildHref(status, undefined, q)}
             active={!tag}
           />
           {tags.map((t) => (
-            <TagChip key={t} label={t} href={buildHref(status, t)} active={tag === t} />
+            <TagChip key={t} label={t} href={buildHref(status, t, q)} active={tag === t} />
           ))}
         </div>
       )}
@@ -91,14 +101,28 @@ export default async function ProDashboard({
       <div className="mt-5">
         {patients.length === 0 ? (
           <div className="rounded-lg border border-dashed border-line p-10 text-center text-sm text-ink-2">
-            No hay pacientes con este filtro.{" "}
-            <Link
-              href="/pro/patients/new"
-              className="font-medium text-accent hover:underline"
-            >
-              Crea el primero
-            </Link>
-            .
+            {q ? (
+              <>
+                No se encontraron pacientes para{" "}
+                <span className="font-medium text-ink">«{q}»</span>
+                {status === "active"
+                  ? " entre los activos."
+                  : status === "archived"
+                    ? " entre los archivados."
+                    : "."}
+              </>
+            ) : (
+              <>
+                No hay pacientes con este filtro.{" "}
+                <Link
+                  href="/pro/patients/new"
+                  className="font-medium text-accent hover:underline"
+                >
+                  Crea el primero
+                </Link>
+                .
+              </>
+            )}
           </div>
         ) : (
           <div className="card divide-y divide-line overflow-hidden">
@@ -112,10 +136,11 @@ export default async function ProDashboard({
   );
 }
 
-function buildHref(status: PatientStatus | "all", tag?: string): string {
+function buildHref(status: PatientStatus | "all", tag?: string, q?: string): string {
   const params = new URLSearchParams();
   if (status !== "active") params.set("status", status);
   if (tag) params.set("tag", tag);
+  if (q) params.set("q", q);
   const qs = params.toString();
   return qs ? `/pro?${qs}` : "/pro";
 }
@@ -125,16 +150,18 @@ function StatusTab({
   value,
   current,
   tag,
+  q,
 }: {
   label: string;
   value: PatientStatus | "all";
   current: PatientStatus | "all";
   tag?: string;
+  q?: string;
 }) {
   const active = current === value;
   return (
     <Link
-      href={buildHref(value, tag)}
+      href={buildHref(value, tag, q)}
       className={`rounded px-2.5 py-1 text-sm transition-colors duration-100 ${
         active
           ? "bg-wash-2 font-medium text-ink"

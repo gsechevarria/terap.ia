@@ -18,9 +18,37 @@ export default function NewPatientPage() {
           <span className="field-label">Nombre completo</span>
           <input name="full_name" required autoFocus className="field py-2 text-base" />
         </label>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="block">
+            <span className="field-label">Correo (opcional)</span>
+            <input name="email" type="email" className="field py-2 text-base" />
+          </label>
+          <label className="block">
+            <span className="field-label">Teléfono (opcional)</span>
+            <input name="phone" type="tel" className="field py-2 text-base" />
+          </label>
+          <label className="block">
+            <span className="field-label">Fecha de nacimiento (opcional)</span>
+            <input name="birth_date" type="date" className="field py-2 text-base" />
+          </label>
+          <label className="block">
+            <span className="field-label">Profesión (opcional)</span>
+            <input name="profession" className="field py-2 text-base" />
+          </label>
+        </div>
+
         <label className="block">
-          <span className="field-label">Correo (opcional)</span>
-          <input name="email" type="email" className="field py-2 text-base" />
+          <span className="field-label">Dirección (opcional)</span>
+          <input name="address" className="field py-2 text-base" />
+        </label>
+        <label className="block">
+          <span className="field-label">Contacto de emergencia (opcional)</span>
+          <input
+            name="emergency_contact"
+            placeholder="Nombre y teléfono"
+            className="field py-2 text-base"
+          />
         </label>
         <label className="block">
           <span className="field-label">Etiquetas (separadas por comas)</span>
