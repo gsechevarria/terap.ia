@@ -55,7 +55,7 @@ export async function updateTaskAction(input: {
   const title = input.title.trim();
   if (!title) throw new Error("El título es obligatorio.");
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tasks")
     .update({
       title,
@@ -63,19 +63,25 @@ export async function updateTaskAction(input: {
       due_date: input.dueDate || null,
     })
     .eq("id", input.taskId)
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Tarea no encontrada.");
   revalidatePath(`/pro/patients/${input.patientId}`);
 }
 
 export async function deleteTaskAction(taskId: string, patientId: string) {
   const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tasks")
     .delete()
     .eq("id", taskId)
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Tarea no encontrada.");
   revalidatePath(`/pro/patients/${patientId}`);
 }

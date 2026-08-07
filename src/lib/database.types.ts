@@ -181,8 +181,10 @@ export type Database = {
           fecha_alta_actividad: string | null
           id: string
           professional_id: string
+          prorrata_iva_pct: number | null
           regimen: string
           situacion_iva: string
+          tipo_iva_repercutido: number
           updated_at: string
         }
         Insert: {
@@ -192,8 +194,10 @@ export type Database = {
           fecha_alta_actividad?: string | null
           id?: string
           professional_id: string
+          prorrata_iva_pct?: number | null
           regimen?: string
           situacion_iva?: string
+          tipo_iva_repercutido?: number
           updated_at?: string
         }
         Update: {
@@ -203,8 +207,10 @@ export type Database = {
           fecha_alta_actividad?: string | null
           id?: string
           professional_id?: string
+          prorrata_iva_pct?: number | null
           regimen?: string
           situacion_iva?: string
+          tipo_iva_repercutido?: number
           updated_at?: string
         }
         Relationships: [
@@ -1076,6 +1082,8 @@ export type Database = {
       }
       scale_responses: {
         Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           answers: Json
           assignment_id: string
           created_at: string
@@ -1088,6 +1096,8 @@ export type Database = {
           submitted_at: string
         }
         Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           answers: Json
           assignment_id: string
           created_at?: string
@@ -1100,6 +1110,8 @@ export type Database = {
           submitted_at?: string
         }
         Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           answers?: Json
           assignment_id?: string
           created_at?: string
@@ -1363,6 +1375,14 @@ export type Database = {
       }
       patient_respond_appointment: {
         Args: { p_appointment_id: string; p_action: string }
+        Returns: undefined
+      }
+      settle_attended_appointment: {
+        Args: { p_appointment_id: string }
+        Returns: undefined
+      }
+      unsettle_appointment: {
+        Args: { p_appointment_id: string }
         Returns: undefined
       }
       professional_owns_patient: {

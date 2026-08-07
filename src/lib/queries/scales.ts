@@ -100,6 +100,14 @@ export async function getAssignmentDetail(
 }
 
 /** Nº de respuestas con ítem de riesgo marcado (para alertas en la ficha). */
+/**
+ * Alertas de ítem de riesgo PENDIENTES de revisar por el profesional.
+ *
+ * Antes contaba todas las históricas, así que una vez marcada la primera el
+ * contador no volvía nunca a cero y dejaba de servir como señal: el banner
+ * quedaba encendido para siempre y se aprendía a ignorarlo. Ahora solo cuenta
+ * las que no tienen acuse de recibo.
+ */
 export async function getFlaggedCountForPatient(
   patientId: string,
 ): Promise<number> {
@@ -108,8 +116,41 @@ export async function getFlaggedCountForPatient(
     .from("scale_responses")
     .select("id", { count: "exact", head: true })
     .eq("patient_id", patientId)
-    .eq("flagged", true);
+    .eq("flagged", true)
+    .is("acknowledged_at", null);
   return count ?? 0;
+}
+
+export type FlaggedResponse = {
+  id: string;
+  submittedAt: string;
+  scaleCode: string;
+  assignmentId: string;
+};
+
+/** Respuestas con ítem de riesgo aún sin revisar, para poder darlas por vistas. */
+export async function getUnacknowledgedFlagged(
+  patientId: string,
+): Promise<FlaggedResponse[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("scale_responses")
+    .select("id, submitted_at, assignment_id, scales(code)")
+    .eq("patient_id", patientId)
+    .eq("flagged", true)
+    .is("acknowledged_at", null)
+    .order("submitted_at", { ascending: false })
+    .limit(20);
+
+  return (data ?? []).map((r) => {
+    const rel = r as typeof r & { scales: { code: string } | null };
+    return {
+      id: r.id,
+      submittedAt: r.submitted_at,
+      scaleCode: rel.scales?.code ?? "escala",
+      assignmentId: r.assignment_id,
+    };
+  });
 }
 
 export type MyAssignment = {

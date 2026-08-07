@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isUuid } from "@/lib/schemas/common";
 import { getCurrentPatient } from "@/lib/queries/identity";
 import type { DocumentRow, MoodEntry, ResourceRow } from "@/lib/types";
 
@@ -16,10 +17,19 @@ export async function getMyMoodEntries(): Promise<MoodEntry[]> {
   return data ?? [];
 }
 
-/** Recursos gestionables por el profesional para un paciente (suyos + generales). */
+/**
+ * Recursos gestionables por el profesional para un paciente (suyos + generales).
+ *
+ * `patientId` se valida como UUID antes de interpolarlo: llega del segmento de
+ * URL y en un `.or()` de PostgREST las comas y los paréntesis son sintaxis, así
+ * que un segmento manipulado podía reescribir el filtro y romper el aislamiento
+ * entre pacientes del mismo profesional. (El mismo cuidado que ya tenía
+ * `sanitizeSearch` en `queries/patients.ts`.)
+ */
 export async function getProfessionalResources(
   patientId: string,
 ): Promise<ResourceRow[]> {
+  if (!isUuid(patientId)) return [];
   const supabase = await createClient();
   const { data } = await supabase
     .from("resources")

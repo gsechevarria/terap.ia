@@ -28,7 +28,19 @@ export async function upsertPriceAction(patientId: string, priceEuros: number) {
   revalidatePayments(patientId);
 }
 
-/** Añade un bono (pack de sesiones) al paciente. */
+/**
+ * Añade un bono (pack de sesiones) al paciente y registra su cobro.
+ *
+ * El precio se guardaba SOLO en `session_packs.price_cents` y no generaba
+ * ninguna fila en `payments`. Como la vista fiscal deriva de `payments`, y el
+ * consumo del bono se registra a 0 €, un bono de 10 sesiones vendido por 500 €
+ * aparecía como 10 filas de 0 €: el libro de ingresos, `ingresosTotales`, el
+ * rendimiento neto y los cuatro pagos fraccionados del modelo 130 se dejaban
+ * los 500 € fuera. También faltaba en la analítica de ingresos.
+ *
+ * Se registra como PENDIENTE: el profesional lo marca como cobrado cuando
+ * efectivamente lo cobre, igual que cualquier otro pago.
+ */
 export async function addPackAction(
   patientId: string,
   totalSessions: number,
@@ -36,18 +48,39 @@ export async function addPackAction(
 ) {
   const { pro } = await requireOwnedPatient(patientId);
   if (!(totalSessions > 0)) throw new Error("Nº de sesiones no válido.");
+  if (!(priceEuros >= 0)) throw new Error("Precio no válido.");
 
   const supabase = await createClient();
-  const { error } = await supabase.from("session_packs").insert({
-    professional_id: pro.id,
-    patient_id: patientId,
-    total_sessions: totalSessions,
-    used_sessions: 0,
-    price_cents: eurosToCents(priceEuros),
-    currency: "EUR",
-    active: true,
-  });
+  const priceCents = eurosToCents(priceEuros);
+
+  const { data: pack, error } = await supabase
+    .from("session_packs")
+    .insert({
+      professional_id: pro.id,
+      patient_id: patientId,
+      total_sessions: totalSessions,
+      used_sessions: 0,
+      price_cents: priceCents,
+      currency: "EUR",
+      active: true,
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
+
+  if (priceCents > 0) {
+    const { error: payErr } = await supabase.from("payments").insert({
+      professional_id: pro.id,
+      patient_id: patientId,
+      session_pack_id: pack.id,
+      amount_cents: priceCents,
+      currency: "EUR",
+      status: "pending",
+      note: `Compra de bono (${totalSessions} sesiones)`,
+    });
+    if (payErr) throw new Error(payErr.message);
+  }
+
   revalidatePayments(patientId);
 }
 

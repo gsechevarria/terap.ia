@@ -23,11 +23,17 @@ export async function deleteNoteAction(noteId: string, patientId: string) {
   const { pro } = await requireOwnedPatient(patientId);
 
   const supabase = await createClient();
-  const { error } = await supabase
+  // `.select().maybeSingle()`: en PostgREST un UPDATE/DELETE que no casa
+  // ninguna fila devuelve `error: null`, así que la UI cerraba el editor,
+  // refrescaba y mostraba los datos antiguos como si se hubieran guardado.
+  const { data, error } = await supabase
     .from("patient_notes")
     .delete()
     .eq("id", noteId)
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Nota no encontrada.");
   revalidatePath(`/pro/patients/${patientId}`);
 }

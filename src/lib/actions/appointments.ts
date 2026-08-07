@@ -7,7 +7,10 @@ import {
   requireOwnedPatient,
   requireProfessional,
 } from "@/lib/queries/identity";
-import { settleAttendedAppointment } from "@/lib/payments";
+import {
+  settleAttendedAppointment,
+  unsettleAppointment,
+} from "@/lib/payments";
 import { revalidateAgenda, revalidatePayments } from "@/lib/revalidate";
 import { formatDateTime } from "@/lib/format";
 import { safeExternalUrl } from "@/lib/url";
@@ -105,12 +108,22 @@ export async function createAppointmentAction(input: {
     }
   }
 
-  // Detección de solapes (a menos que el profesional ya haya confirmado).
+  // Solapes de la serie con lo que ya hay en la agenda.
   if (!input.force) {
     const conflict = await findConflict(supabase, pro.id, occurrences);
     if (conflict) return { ok: false, conflict };
+
+    // Y solapes de las ocurrencias ENTRE SÍ: con `daily` y una duración de más
+    // de 24 h, cada ocurrencia pisa la siguiente y no se avisaba. O(n²) con
+    // n ≤ 26, es gratis.
+    const selfConflict = findSelfOverlap(occurrences);
+    if (selfConflict) return { ok: false, conflict: selfConflict };
   }
 
+  // El id de la cita madre se genera aquí para poder insertar TODA la serie en
+  // una sola sentencia. Antes eran dos inserts: si el segundo fallaba quedaba
+  // una cita huérfana ya notificada, y al reintentar se duplicaba.
+  const parentId = crypto.randomUUID();
   const base = {
     professional_id: pro.id,
     patient_id: input.patientId,
@@ -120,25 +133,16 @@ export async function createAppointmentAction(input: {
     recurrence_until: input.until || null,
   };
 
-  const { data: first, error } = await supabase
-    .from("appointments")
-    .insert({ ...base, starts_at: start.toISOString(), ends_at: end.toISOString() })
-    .select("id")
-    .single();
-  if (error) throw new Error(error.message);
+  const rows: TablesInsert<"appointments">[] = occurrences.map((o, i) => ({
+    ...base,
+    id: i === 0 ? parentId : undefined,
+    starts_at: o.start.toISOString(),
+    ends_at: o.end.toISOString(),
+    parent_appointment_id: i === 0 ? null : parentId,
+  }));
 
-  if (occurrences.length > 1) {
-    const rows: TablesInsert<"appointments">[] = occurrences.slice(1).map((o) => ({
-      ...base,
-      starts_at: o.start.toISOString(),
-      ends_at: o.end.toISOString(),
-      parent_appointment_id: first.id,
-    }));
-    if (rows.length) {
-      const { error: e2 } = await supabase.from("appointments").insert(rows);
-      if (e2) throw new Error(e2.message);
-    }
-  }
+  const { error } = await supabase.from("appointments").insert(rows);
+  if (error) throw new Error(error.message);
 
   const { data: patient } = await supabase
     .from("patients")
@@ -146,7 +150,7 @@ export async function createAppointmentAction(input: {
     .eq("id", input.patientId)
     .maybeSingle();
   if (patient?.user_id) {
-    await supabase.from("notifications").insert({
+    const { error: notifErr } = await supabase.from("notifications").insert({
       user_id: patient.user_id,
       professional_id: pro.id,
       patient_id: input.patientId,
@@ -154,13 +158,52 @@ export async function createAppointmentAction(input: {
       type: "appointment_created",
       title: "Nueva cita",
       body: `Se ha programado una cita para el ${formatDateTime(start.toISOString())}.`,
-      scheduled_for: start.toISOString(),
+      // `null`, NO la hora de inicio de la cita: el cron solo envía lo que
+      // cumple `scheduled_for is null or <= now()`, así que programar una cita
+      // para dentro de dos semanas dejaba el aviso "Nueva cita" en cola 14 días
+      // y se entregaba justo cuando la sesión empezaba.
+      scheduled_for: null,
+      payload: {
+        kind: "appointment",
+        appointment_id: parentId,
+        starts_at: start.toISOString(),
+        url: "/app/appointments",
+      },
       status: "queued",
     });
+    // La cita ya está creada: no se revierte por un fallo al encolar, pero
+    // tampoco se traga en silencio (antes nadie se enteraba de que el paciente
+    // no iba a recibir el aviso).
+    if (notifErr) {
+      console.error("[appointments] no se pudo encolar la notificación", {
+        appointmentId: parentId,
+        error: notifErr.message,
+      });
+    }
   }
 
   revalidateAgenda(input.patientId);
   return { ok: true };
+}
+
+/** Primer solape entre dos ocurrencias de la propia serie generada. */
+function findSelfOverlap(
+  occurrences: { start: Date; end: Date }[],
+): string | null {
+  for (let i = 0; i < occurrences.length; i++) {
+    for (let j = i + 1; j < occurrences.length; j++) {
+      const a = occurrences[i];
+      const b = occurrences[j];
+      if (b.start.getTime() < a.end.getTime() && b.end.getTime() > a.start.getTime()) {
+        return `Las repeticiones se solapan entre sí (${formatDateTime(
+          a.start.toISOString(),
+        )} y ${formatDateTime(
+          b.start.toISOString(),
+        )}). Reduce la duración o cambia la frecuencia.`;
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -176,13 +219,19 @@ async function findConflict(
   const windowStart = occurrences[0].start.toISOString();
   const windowEnd = occurrences[occurrences.length - 1].end.toISOString();
 
+  // `order` + `limit` explícitos: sin ellos, la ventana de una serie de 26
+  // ocurrencias (medio año) puede superar el `db-max-rows` de PostgREST y el
+  // recorte, además, sería no determinista — se dejarían de detectar solapes
+  // sin ningún aviso.
   let apptQuery = supabase
     .from("appointments")
     .select("starts_at, ends_at, patients(full_name)")
     .eq("professional_id", professionalId)
     .neq("status", "cancelled")
     .lt("starts_at", windowEnd)
-    .gt("ends_at", windowStart);
+    .gt("ends_at", windowStart)
+    .order("starts_at")
+    .limit(2000);
   if (excludeId) apptQuery = apptQuery.neq("id", excludeId);
 
   const [apptRes, blockRes] = await Promise.all([
@@ -192,7 +241,9 @@ async function findConflict(
       .select("starts_at, ends_at, reason")
       .eq("professional_id", professionalId)
       .lt("starts_at", windowEnd)
-      .gt("ends_at", windowStart),
+      .gt("ends_at", windowStart)
+      .order("starts_at")
+      .limit(2000),
   ]);
 
   const overlaps = (aStart: Date, aEnd: Date, bStart: string, bEnd: string) =>
@@ -299,18 +350,28 @@ export async function updateAppointmentAction(input: {
 
 export async function cancelAppointmentAction(id: string) {
   const pro = await requireProfessional();
+  // Antes de cancelar hay que deshacer la liquidación: si la cita estaba
+  // marcada como "acudió", el bono quedaba consumido y el pago creado.
+  await unsettleAppointment(id);
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("appointments")
-    .update({ status: "cancelled" })
+    .update({ status: "cancelled", attendance: "pending" })
     .eq("id", id)
     .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidateAgenda();
+  revalidatePayments();
 }
 
 export async function deleteAppointmentAction(id: string) {
   const pro = await requireProfessional();
+  // Imprescindible ANTES de borrar: `payments.appointment_id` es `on delete
+  // set null`, así que al borrar la cita el pago quedaba huérfano y sin forma
+  // de reconciliarlo con nada.
+  await unsettleAppointment(id);
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("appointments")
@@ -319,18 +380,44 @@ export async function deleteAppointmentAction(id: string) {
     .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidateAgenda();
+  revalidatePayments();
 }
 
-export async function setAttendanceAction(
-  id: string,
-  attendance: "pending" | "attended" | "no_show" | "late_cancel",
-) {
+const ATTENDANCE_VALUES = [
+  "pending",
+  "attended",
+  "no_show",
+  "late_cancel",
+] as const;
+type Attendance = (typeof ATTENDANCE_VALUES)[number];
+
+export async function setAttendanceAction(id: string, attendance: Attendance) {
   const pro = await requireProfessional();
+  // El tipo de TypeScript no existe en runtime y esto es un endpoint HTTP.
+  if (!(ATTENDANCE_VALUES as readonly string[]).includes(attendance)) {
+    throw new Error("Estado de asistencia no válido.");
+  }
+
   const supabase = await createClient();
-  const patch: { attendance: typeof attendance; status?: "completed" } = {
-    attendance,
-  };
+
+  // Hay que leer el estado ANTERIOR: corregir un "acudió" puesto por error
+  // dejaba el bono consumido y el pago creado, y el paciente perdía una sesión
+  // que había pagado.
+  const { data: prev } = await supabase
+    .from("appointments")
+    .select("patient_id, attendance")
+    .eq("id", id)
+    .eq("professional_id", pro.id)
+    .maybeSingle();
+  if (!prev) throw new Error("Cita no encontrada.");
+
+  if (prev.attendance === "attended" && attendance !== "attended") {
+    await unsettleAppointment(id);
+  }
+
+  const patch: { attendance: Attendance; status?: "completed" } = { attendance };
   if (attendance === "attended") patch.status = "completed";
+
   const { data: updated, error } = await supabase
     .from("appointments")
     .update(patch)
@@ -339,15 +426,19 @@ export async function setAttendanceAction(
     .select("patient_id")
     .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!updated) throw new Error("Cita no encontrada.");
 
-  // Consumo de bono / pago pendiente automático al acudir.
+  // Consumo de bono / pago pendiente automático al acudir (idempotente en BD).
   if (attendance === "attended") {
     await settleAttendedAppointment(id);
   }
-  revalidateAgenda(updated?.patient_id);
-  // Marcar "acudió" liquida la sesión (bono o pago pendiente): eso mueve los
-  // agregados de pagos, la analítica y la estimación fiscal, no solo la agenda.
-  if (attendance === "attended") revalidatePayments(updated?.patient_id);
+
+  revalidateAgenda(updated.patient_id);
+  // Liquidar o deshacer mueve los agregados de pagos, la analítica y la
+  // estimación fiscal, no solo la agenda.
+  if (attendance === "attended" || prev.attendance === "attended") {
+    revalidatePayments(updated.patient_id);
+  }
 }
 
 // ---- Bloqueos de agenda ----------------------------------------------------

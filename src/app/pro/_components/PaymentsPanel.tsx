@@ -212,15 +212,35 @@ export function PaymentsPanel({
                       ) : (
                         <span className="flex items-center gap-1.5">
                           {formatDate(p.created_at)}
-                          <span className="chip">manual</span>
+                          {/* La venta de un bono es un cobro, no una sesión
+                              suelta: sin distinguirlo se confundía con un pago
+                              manual cualquiera. */}
+                          <span className="chip">
+                            {p.session_pack_id && !p.appointment_id
+                              ? "venta de bono"
+                              : "manual"}
+                          </span>
                         </span>
                       )}
                     </td>
                     <td className="tabular-nums whitespace-nowrap">
                       {formatCurrency(p.amount_cents, p.currency)}
+                      {/* "Sin tarifa configurada" no es lo mismo que "gratis":
+                          un 0,00 € a secas parecía una deuda saldada. */}
+                      {p.note?.startsWith("Sin tarifa") && (
+                        <span
+                          className="ml-2 chip bg-warn-soft text-warn"
+                          title={p.note}
+                        >
+                          revisar importe
+                        </span>
+                      )}
                     </td>
                     <td>
-                      {p.session_pack_id ? (
+                      {/* Consumo de bono (imputación de sesión a 0 €): no
+                          tiene método de pago propio. La VENTA del bono sí,
+                          porque es un cobro real. */}
+                      {p.session_pack_id && p.appointment_id ? (
                         <span className="chip">Bono</span>
                       ) : (
                         <select

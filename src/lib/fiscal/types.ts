@@ -61,6 +61,13 @@ export interface ConfigFiscal {
   epigrafeIae: string | null;
   fechaAltaActividad: string | null; // YYYY-MM-DD
   aplicaRetencionDefault: boolean;
+  /** % de IVA repercutido en la facturación (solo si la actividad no es exenta). */
+  tipoIvaRepercutido: number;
+  /**
+   * % de IVA soportado que se recupera vía modelo 303. Obligatorio en régimen
+   * MIXTO; en exenta es 0 y en sujeta 100 por definición. `null` = sin declarar.
+   */
+  prorrataIvaPct: number | null;
 }
 
 export const CONFIG_FISCAL_DEFAULT: ConfigFiscal = {
@@ -69,7 +76,19 @@ export const CONFIG_FISCAL_DEFAULT: ConfigFiscal = {
   epigrafeIae: "776",
   fechaAltaActividad: null,
   aplicaRetencionDefault: false,
+  tipoIvaRepercutido: 21,
+  prorrataIvaPct: null,
 };
+
+/**
+ * Prorrata efectiva a usar en `deducibleIrpf`: en exenta y sujeta se deriva del
+ * régimen; en mixta hay que haberla declarado (si no, el motor lanza).
+ */
+export function prorrataEfectiva(config: ConfigFiscal): number | null {
+  if (config.situacionIva === "exenta") return 0;
+  if (config.situacionIva === "sujeta") return 100;
+  return config.prorrataIvaPct;
+}
 
 // --- Movimientos (dominio, en euros) ----------------------------------------
 export interface IngresoFiscal {
@@ -128,6 +147,9 @@ export interface Modelo130Result {
   retencionesAcumuladas: number;
   pagosFraccionadosPrevios: number;
   pagoTrimestre: number;
+  /** Parámetros del ejercicio sin confirmar contra la AEAT que han intervenido. */
+  parametrosNoVerificados: string[];
+  estimacionNoVerificada: boolean;
 }
 
 export interface GastosPorCategoria {

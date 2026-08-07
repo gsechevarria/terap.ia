@@ -7,6 +7,8 @@ import {
   construirLibros,
   calcularResumenAnual,
   getParams,
+  hayParamsExactos,
+  EJERCICIO_MAS_RECIENTE,
   CATEGORIA_LABEL,
   DESCARGO_FISCAL,
   type CategoriaGasto,
@@ -43,6 +45,41 @@ function resumenFilas(r: ResumenAnual, f: FiltroPeriodo): [string, string][] {
   return filas;
 }
 
+/**
+ * Aviso, DENTRO del fichero, cuando el cálculo depende de parámetros que no se
+ * han confirmado contra la AEAT.
+ *
+ * El descargo genérico ya iba en la hoja, pero no distinguía: un XLSX de un
+ * ejercicio pasado salía calculado con los parámetros de 2026 sin que nada en
+ * el fichero lo dijera. Quien lo abra semanas después, fuera de la aplicación,
+ * no tiene otra forma de saberlo.
+ */
+function avisoParametros(
+  r: ResumenAnual,
+  ejercicioSolicitado: number,
+): string[][] {
+  const avisos: string[][] = [];
+
+  if (!hayParamsExactos(ejercicioSolicitado)) {
+    avisos.push([
+      "⚠ AVISO",
+      `No hay parámetros fiscales propios del ejercicio ${ejercicioSolicitado}: las cifras se han calculado con los de ${EJERCICIO_MAS_RECIENTE}.`,
+    ]);
+  }
+
+  const noVerificados = [
+    ...new Set(r.trimestres.flatMap((t) => t.parametrosNoVerificados)),
+  ];
+  if (noVerificados.length > 0) {
+    avisos.push([
+      "⚠ AVISO",
+      `Estimación NO verificada: pendiente de confirmar contra la AEAT ${noVerificados.join(", ")}.`,
+    ]);
+  }
+
+  return avisos.length > 0 ? [...avisos, []] : [];
+}
+
 // --- XLSX -------------------------------------------------------------------
 function sheetName(nombre: string): string {
   return nombre.replace(/[\\/?*[\]:]/g, "").slice(0, 31);
@@ -55,6 +92,7 @@ function buildXlsx(libros: Libro[], resumen: ResumenAnual, f: FiltroPeriodo): Bu
     ["Contabilidad — resumen fiscal (orientativo)"],
     [DESCARGO_FISCAL],
     [],
+    ...avisoParametros(resumen, f.ejercicio),
     ...resumenFilas(resumen, f),
     [],
     ["Desglose de gastos por categoría"],

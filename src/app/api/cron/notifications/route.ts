@@ -16,6 +16,17 @@ const PREF_KEY: Record<string, keyof PrefRow> = {
   new_scale: "new_scale",
 };
 
+/**
+ * Tipos que se envían SIEMPRE, ignorando las preferencias del usuario.
+ *
+ * `scale_flag` avisa al profesional de que un paciente ha marcado el ítem de
+ * riesgo: es una alerta de seguridad clínica, no una notificación de
+ * conveniencia, y no debe poder silenciarse desde los ajustes. Está explícito
+ * y no solo ausente de PREF_KEY para que añadirle una preferencia sea una
+ * decisión consciente y no un descuido.
+ */
+const SIEMPRE_ENVIAR = new Set(["scale_flag"]);
+
 type PrefRow = {
   appointment_reminders: boolean;
   new_appointment: boolean;
@@ -123,7 +134,8 @@ export async function GET(req: NextRequest) {
       .eq("user_id", n.user_id)
       .maybeSingle();
     const prefKey = PREF_KEY[n.type ?? ""];
-    if (pref && prefKey && pref[prefKey] === false) {
+    const forzado = SIEMPRE_ENVIAR.has(n.type ?? "");
+    if (!forzado && pref && prefKey && pref[prefKey] === false) {
       await admin.from("notifications").update({ status: "sent", sent_at: now.toISOString() }).eq("id", n.id);
       summary.skipped++;
       continue;

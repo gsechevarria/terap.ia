@@ -29,6 +29,8 @@ function toConfigDomain(row: ConfiguracionFiscal | null): ConfigFiscal {
     epigrafeIae: row.epigrafe_iae,
     fechaAltaActividad: row.fecha_alta_actividad,
     aplicaRetencionDefault: row.aplica_retencion_default,
+    tipoIvaRepercutido: row.tipo_iva_repercutido ?? 21,
+    prorrataIvaPct: row.prorrata_iva_pct,
   };
 }
 

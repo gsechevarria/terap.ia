@@ -11,7 +11,7 @@ import {
   getScaleAssignments,
   getUpcomingAppointments,
 } from "@/lib/queries/patient-detail";
-import { getScaleCatalog, getFlaggedCountForPatient } from "@/lib/queries/scales";
+import { getScaleCatalog, getUnacknowledgedFlagged } from "@/lib/queries/scales";
 import { getPatientPaymentDetail } from "@/lib/queries/payments";
 import { getProfessionalResources } from "@/lib/queries/wellbeing";
 import { ScalesPanel } from "@/app/pro/_components/ScalesPanel";
@@ -19,7 +19,6 @@ import { PaymentsPanel } from "@/app/pro/_components/PaymentsPanel";
 import { ResourcesPanel } from "@/app/pro/_components/ResourcesPanel";
 import { DocumentsPanel } from "@/app/pro/_components/DocumentsPanel";
 import { ScoreChart } from "@/app/pro/_components/ScoreChart";
-import { TriangleAlert } from "lucide-react";
 import { ageFromBirthDate, formatDate, formatDateTime } from "@/lib/format";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import { StatusButton } from "@/app/pro/_components/StatusButton";
@@ -28,6 +27,7 @@ import { InvitePanel } from "@/app/pro/_components/InvitePanel";
 import { TasksPanel } from "@/app/pro/_components/TasksPanel";
 import { NotesPanel } from "@/app/pro/_components/NotesPanel";
 import { PatientDetailsPanel } from "@/app/pro/_components/PatientDetailsPanel";
+import { FlaggedAlerts } from "@/app/pro/_components/FlaggedAlerts";
 
 const TABS = [
   { key: "informacion", label: "Información" },
@@ -57,8 +57,11 @@ export default async function PatientDetailPage({
   const patient = await getPatient(id);
   if (!patient) notFound();
 
-  const invitation = await getActiveInvitation(id);
-  const alertCount = await getFlaggedCountForPatient(id);
+  // Independientes entre sí: en secuencia eran tres viajes encadenados.
+  const [invitation, flagged] = await Promise.all([
+    getActiveInvitation(id),
+    getUnacknowledgedFlagged(id),
+  ]);
 
   // El enlace de invitación lleva el token en el path, así que su base NO puede
   // salir de cabeceras: con un proxy mal configurado, o una petición directa al
@@ -72,21 +75,7 @@ export default async function PatientDetailPage({
         ← Pacientes
       </Link>
 
-      {alertCount > 0 && (
-        <div className="mt-4 flex items-start gap-2.5 rounded-md border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
-          <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
-          <p>
-            Este paciente tiene {alertCount} respuesta
-            {alertCount > 1 ? "s" : ""} con el ítem de riesgo marcado.{" "}
-            <Link
-              href={`/pro/patients/${id}?tab=escalas`}
-              className="font-medium underline underline-offset-2"
-            >
-              Ver escalas
-            </Link>
-          </p>
-        </div>
-      )}
+      <FlaggedAlerts patientId={id} responses={flagged} />
 
       {/* Cabecera */}
       <div className="mt-3 flex flex-col gap-3 border-b border-line pb-6 sm:flex-row sm:items-start sm:justify-between">

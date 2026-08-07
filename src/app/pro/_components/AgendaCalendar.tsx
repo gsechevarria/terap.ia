@@ -729,6 +729,8 @@ function EditModal({
   const [attendance, setAttendance] = useState(appt.attendance);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState("");
+  const esDeSerie =
+    appt.parent_appointment_id != null || appt.recurrence_freq !== "none";
 
   const minutes = customMode
     ? Math.max(5, parseInt(customMin, 10) || 0)
@@ -815,6 +817,18 @@ function EditModal({
             Cerrar
           </button>
         </div>
+
+        {/* La edición afecta SOLO a esta ocurrencia. Se dice de forma explícita
+            porque antes no se decía y mover la cita madre de una serie dejaba
+            las repeticiones en el horario antiguo, sin aviso. Editar la serie
+            completa está pendiente. */}
+        {esDeSerie && (
+          <p className="mt-3 rounded bg-info-soft p-2.5 text-xs text-info">
+            Esta cita forma parte de una serie. Los cambios se aplican{" "}
+            <strong className="font-semibold">solo a esta cita</strong>; las
+            demás repeticiones se quedan como están.
+          </p>
+        )}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="block sm:col-span-2">

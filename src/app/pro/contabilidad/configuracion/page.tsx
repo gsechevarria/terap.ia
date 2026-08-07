@@ -57,6 +57,45 @@ export default async function ConfiguracionFiscalPage() {
           </span>
         </label>
 
+        <label className="block">
+          <span className="field-label">% IVA repercutido</span>
+          <input
+            type="number"
+            name="tipo_iva_repercutido"
+            min={0}
+            max={100}
+            step="1"
+            defaultValue={cfg?.tipo_iva_repercutido ?? 21}
+            className="field"
+          />
+          <span className="mt-1 block text-xs text-ink-3">
+            Solo se usa si la actividad NO es exenta: sirve para separar la base
+            imponible del IVA en los cobros que registres.
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="field-label">
+            Prorrata de IVA (%) — obligatoria en régimen mixto
+          </span>
+          <input
+            type="number"
+            name="prorrata_iva_pct"
+            min={0}
+            max={100}
+            step="1"
+            defaultValue={cfg?.prorrata_iva_pct ?? ""}
+            className="field"
+          />
+          <span className="mt-1 block text-xs text-ink-3">
+            Porcentaje del IVA soportado que recuperas vía modelo 303. En exenta
+            es 0 y en sujeta 100, y se deduce solo. En{" "}
+            <strong className="font-medium">mixta</strong> hay que indicarlo: sin
+            este dato no se puede saber qué parte del IVA de tus gastos es coste
+            deducible en IRPF, y el cálculo se detiene en vez de suponerlo.
+          </span>
+        </label>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="field-label">Epígrafe IAE</span>

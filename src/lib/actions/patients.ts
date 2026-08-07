@@ -76,7 +76,10 @@ export async function updatePatientDetailsAction(
   );
 
   const supabase = await createClient();
-  const { error } = await supabase
+  // `.select().maybeSingle()`: en PostgREST un UPDATE/DELETE que no casa
+  // ninguna fila devuelve `error: null`, así que la UI cerraba el editor,
+  // refrescaba y mostraba los datos antiguos como si se hubieran guardado.
+  const { data, error } = await supabase
     .from("patients")
     .update({
       full_name: fullName,
@@ -84,8 +87,11 @@ export async function updatePatientDetailsAction(
       ...contact,
     })
     .eq("id", patientId)
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Paciente no encontrado.");
 
   revalidatePath("/pro");
   revalidatePath(`/pro/patients/${patientId}`);
@@ -98,12 +104,15 @@ export async function setPatientStatusAction(
 ) {
   const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("patients")
     .update({ status })
     .eq("id", patientId)
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Paciente no encontrado.");
   revalidatePath("/pro");
   revalidatePath(`/pro/patients/${patientId}`);
 }
@@ -112,11 +121,14 @@ export async function setPatientStatusAction(
 export async function updatePatientTagsAction(patientId: string, tags: string[]) {
   const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("patients")
     .update({ tags })
     .eq("id", patientId)
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Paciente no encontrado.");
   revalidatePath(`/pro/patients/${patientId}`);
 }

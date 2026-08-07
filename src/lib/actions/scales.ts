@@ -53,11 +53,14 @@ export async function setScaleAssignmentActiveAction(
 ) {
   const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("scale_assignments")
     .update({ active })
     .eq("id", assignmentId)
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Escala no encontrada.");
   revalidatePath(`/pro/patients/${patientId}`);
 }

@@ -10,14 +10,15 @@ import type {
   ResumenAnual,
   Trimestre,
 } from "./types";
-import { CATEGORIAS_GASTO } from "./types";
+import { CATEGORIAS_GASTO, prorrataEfectiva } from "./types";
 import type { ParamsFiscales } from "./parametros";
 import {
-  amortizacionAnual,
+  amortizacionEjercicio,
   anioDeFecha,
   deducibleIrpf,
   redondear,
   tasaRetencion,
+  trimestreAdquisicion,
   trimestreDeFecha,
 } from "./helpers";
 import { calcularModelo130 } from "./modelo130";
@@ -34,25 +35,33 @@ export function calcularResumenAnual(
     (g) => anioDeFecha(g.fecha) === ejercicio && !g.esBienInversion,
   );
   const tasaRet = tasaRetencion(config, ejercicio, params);
+  const prorrata = prorrataEfectiva(config);
 
-  // Amortización anual total de los bienes vivos en el ejercicio.
+  // Amortización del ejercicio, prorrateada por días desde la adquisición, y
+  // guardada junto al trimestre a partir del cual procede imputarla.
+  const amortizaciones = data.bienes
+    .map((b) => ({
+      importe: amortizacionEjercicio(b, ejercicio),
+      desdeTrimestre: trimestreAdquisicion(b, ejercicio),
+    }))
+    .filter((a) => a.importe > 0 && a.desdeTrimestre != null);
+
   const amortizacionesTotales = redondear(
-    data.bienes.reduce((s, b) => {
-      const adqYear = anioDeFecha(b.fechaAdquisicion);
-      const dentroVida =
-        adqYear <= ejercicio &&
-        (b.aniosAmortizacion == null ||
-          ejercicio <= adqYear + b.aniosAmortizacion - 1);
-      return dentroVida ? s + amortizacionAnual(b) : s;
-    }, 0),
+    amortizaciones.reduce((s, a) => s + a.importe, 0),
   );
 
   // Acumulados hasta el final de un trimestre.
+  //
+  // Los ingresos se acumulan por BASE, no por total: el IRPF grava la base
+  // imponible. Antes se sumaba `i.total` aquí mientras la retención se
+  // calculaba sobre `i.base`, incoherencia que solo era invisible porque la
+  // vista fiscal devolvía base = total para todo el mundo (ver la corrección
+  // del IVA repercutido en 20260807130001).
   const ingresosAcum = (t: Trimestre) =>
     redondear(
       ingresos
         .filter((i) => trimestreDeFecha(i.fecha) <= t)
-        .reduce((s, i) => s + i.total, 0),
+        .reduce((s, i) => s + i.base, 0),
     );
   const retencionesAcum = (t: Trimestre) =>
     redondear(
@@ -64,11 +73,28 @@ export function calcularResumenAnual(
     redondear(
       gastosCorrientes
         .filter((g) => trimestreDeFecha(g.fecha) <= t)
-        .reduce((s, g) => s + deducibleIrpf(g, config.situacionIva), 0),
+        .reduce((s, g) => s + deducibleIrpf(g, config.situacionIva, prorrata), 0),
     );
-  // Amortización prorrateada por trimestre (anual × t/4).
+
+  /**
+   * Amortización acumulada hasta el trimestre `t`: cada bien reparte su importe
+   * anual entre los trimestres que van DESDE su adquisición hasta el 4T. Antes
+   * era `total × t/4`, que imputaba amortización de un bien en trimestres
+   * anteriores a su compra.
+   */
+  const amortizacionAcum = (t: Trimestre) =>
+    redondear(
+      amortizaciones.reduce((s, a) => {
+        const desde = a.desdeTrimestre!;
+        if (t < desde) return s;
+        const trimestresVivos = 4 - desde + 1;
+        const transcurridos = t - desde + 1;
+        return s + (a.importe * transcurridos) / trimestresVivos;
+      }, 0),
+    );
+
   const gastosDeduciblesAcum = (t: Trimestre) =>
-    redondear(gastosCorrientesAcum(t) + (amortizacionesTotales * t) / 4);
+    redondear(gastosCorrientesAcum(t) + amortizacionAcum(t));
 
   // Los 4 pagos fraccionados, encadenando los previos.
   const trimestres: Modelo130Result[] = [];
@@ -96,7 +122,9 @@ export function calcularResumenAnual(
     cur.base = redondear(cur.base + g.base);
     cur.cuotaIva = redondear(cur.cuotaIva + g.cuotaIva);
     cur.total = redondear(cur.total + g.total);
-    cur.deducible = redondear(cur.deducible + deducibleIrpf(g, config.situacionIva));
+    cur.deducible = redondear(
+      cur.deducible + deducibleIrpf(g, config.situacionIva, prorrata),
+    );
     porCat.set(g.categoria, cur);
   }
   const gastosPorCategoria = CATEGORIAS_GASTO.map((c) => porCat.get(c)).filter(
