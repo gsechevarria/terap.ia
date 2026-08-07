@@ -17,6 +17,21 @@
 
 create extension if not exists pgcrypto with schema extensions;
 
+-- `with schema` no reubica una pgcrypto ya instalada en otro esquema: si ya
+-- existe, la sentencia anterior no hace nada. Si no está en `extensions`,
+-- `extensions.digest(...)` no existirá y las funciones de abajo fallarían en
+-- runtime, no aquí. Mejor abortar la migración ahora.
+do $guard$
+begin
+  if not exists (
+    select 1 from pg_extension e
+    join pg_namespace n on n.oid = e.extnamespace
+    where e.extname = 'pgcrypto' and n.nspname = 'extensions'
+  ) then
+    raise exception 'pgcrypto no está en el esquema extensions';
+  end if;
+end $guard$;
+
 -- ---------------------------------------------------------------------------
 -- FASE 1 · patients — la ficha pasa a solo lectura para el paciente
 -- ---------------------------------------------------------------------------
@@ -254,14 +269,17 @@ create policy documents_select_by_patient on public.documents
 -- insert-only). El campo `note` NO se elimina: lo usa el diario (MoodLogger).
 drop policy if exists mood_entries_all_by_patient on public.mood_entries;
 
+drop policy if exists mood_entries_insert_by_patient on public.mood_entries;
 create policy mood_entries_insert_by_patient on public.mood_entries
   for insert to authenticated
   with check (patient_id = (select public.current_patient_id()));
 
+drop policy if exists mood_entries_select_by_patient on public.mood_entries;
 create policy mood_entries_select_by_patient on public.mood_entries
   for select to authenticated
   using (patient_id = (select public.current_patient_id()));
 
+drop policy if exists mood_entries_update_today on public.mood_entries;
 create policy mood_entries_update_today on public.mood_entries
   for update to authenticated
   using (
@@ -273,6 +291,7 @@ create policy mood_entries_update_today on public.mood_entries
     and entry_date = current_date
   );
 
+drop policy if exists mood_entries_delete_today on public.mood_entries;
 create policy mood_entries_delete_today on public.mood_entries
   for delete to authenticated
   using (

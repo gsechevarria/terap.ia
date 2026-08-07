@@ -11,7 +11,24 @@ import {
   setAttendanceAction,
   updateAppointmentAction,
 } from "@/lib/actions/appointments";
-import { toDatetimeLocal } from "@/lib/format";
+import {
+  formatDateTime,
+  formatTime,
+  fromDatetimeLocal,
+  toDatetimeLocal,
+} from "@/lib/format";
+import { actionErrorMessage } from "@/lib/errors";
+import {
+  TZ,
+  addDaysYMD,
+  formatYMD,
+  fromWallClock,
+  minutesOfDayInTZ,
+  mondayOfYMD,
+  parseYMD,
+  todayYMD,
+  ymdInTZ,
+} from "@/lib/tz";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import type { AgendaAppointment, AgendaBlock } from "@/lib/queries/appointments";
 
@@ -25,31 +42,24 @@ const HOUR_PX = 48;
 const GRID_H = (HOUR_END - HOUR_START) * HOUR_PX;
 const DURATIONS = [30, 45, 60, 90] as const;
 
-function parseYMD(s: string): Date {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
+/*
+ * Este componente es cliente, pero Next también lo renderiza en el servidor
+ * (UTC). Cualquier `getHours()`/`getDate()` daba una hora en el HTML inicial y
+ * otra tras hidratar. Todo lo horario pasa por `lib/tz`; las celdas del
+ * calendario son fechas sin zona ancladas a UTC (`parseYMD`/`formatYMD`).
+ */
+
+/** Día de calendario (en Madrid) al que pertenece una cita o un bloqueo. */
+function dayOf(iso: string): string {
+  return ymdInTZ(new Date(iso));
 }
-function ymd(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
-function mondayOf(d: Date): Date {
-  return addDays(d, -((d.getDay() + 6) % 7));
-}
-function timeLabel(iso: string): string {
-  return new Date(iso).toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+/** Minutos desde medianoche, en hora de Madrid. */
 function minutesOfDay(iso: string): number {
-  const d = new Date(iso);
-  return d.getHours() * 60 + d.getMinutes();
+  return minutesOfDayInTZ(new Date(iso));
+}
+/** Formatea una celda del calendario sin que la zona del proceso la desplace. */
+function cellLabel(d: Date, opts: Intl.DateTimeFormatOptions): string {
+  return d.toLocaleDateString("es-ES", { timeZone: "UTC", ...opts });
 }
 
 /* -------------------------------------------------------------- estados --- */
@@ -112,19 +122,19 @@ export function AgendaCalendar({
   const [editing, setEditing] = useState<AgendaAppointment | null>(null);
 
   // "Hoy"/"ahora" fuera del render (pureza de React); solo tras montar.
-  const [todayYMD, setTodayYMD] = useState<string | null>(null);
+  // El intervalo es necesario: sin él la línea roja se quedaba clavada en la
+  // hora de carga, y una agenda suele estar abierta toda la jornada.
+  const [today, setToday] = useState<string | null>(null);
   const [nowMin, setNowMin] = useState<number | null>(null);
   useEffect(() => {
-    let active = true;
-    (async () => {
+    function tick() {
       const n = new Date();
-      if (!active) return;
-      setTodayYMD(ymd(n));
-      setNowMin(n.getHours() * 60 + n.getMinutes());
-    })();
-    return () => {
-      active = false;
-    };
+      setToday(todayYMD(n));
+      setNowMin(minutesOfDayInTZ(n));
+    }
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
   }, []);
 
   // Cerrar popup/modal con Escape.
@@ -158,7 +168,7 @@ export function AgendaCalendar({
           date={date}
           appointments={appointments}
           blocks={blocks}
-          todayYMD={todayYMD}
+          todayYMD={today}
           onOpen={openPopup}
         />
       ) : (
@@ -167,7 +177,7 @@ export function AgendaCalendar({
           date={date}
           appointments={appointments}
           blocks={blocks}
-          todayYMD={todayYMD}
+          todayYMD={today}
           nowMin={nowMin}
           onOpen={openPopup}
         />
@@ -253,15 +263,17 @@ function MonthGrid({
     p: { kind: "appt"; appt: AgendaAppointment } | { kind: "block"; block: AgendaBlock },
   ) => void;
 }) {
-  const first = new Date(date.getFullYear(), date.getMonth(), 1);
-  const gridStart = mondayOf(first);
-  const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
-  const month = date.getMonth();
+  const first = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1),
+  );
+  const gridStart = mondayOfYMD(first);
+  const cells = Array.from({ length: 42 }, (_, i) => addDaysYMD(gridStart, i));
+  const month = date.getUTCMonth();
 
   const apptByDay = useMemo(() => {
     const m = new Map<string, AgendaAppointment[]>();
     for (const a of appointments) {
-      const k = ymd(new Date(a.starts_at));
+      const k = dayOf(a.starts_at);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(a);
     }
@@ -271,7 +283,7 @@ function MonthGrid({
   const blockByDay = useMemo(() => {
     const m = new Map<string, AgendaBlock[]>();
     for (const b of blocks) {
-      const k = ymd(new Date(b.starts_at));
+      const k = dayOf(b.starts_at);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(b);
     }
@@ -293,9 +305,9 @@ function MonthGrid({
         </div>
         <div className="grid grid-cols-7 gap-px bg-line">
           {cells.map((cell) => {
-            const k = ymd(cell);
+            const k = formatYMD(cell);
             const isToday = todayYMD === k;
-            const inMonth = cell.getMonth() === month;
+            const inMonth = cell.getUTCMonth() === month;
             const dayAppts = apptByDay.get(k) ?? [];
             const dayBlocks = blockByDay.get(k) ?? [];
             const MAX = 3;
@@ -315,7 +327,7 @@ function MonthGrid({
                         : "text-ink-3"
                   }`}
                 >
-                  {cell.getDate()}
+                  {cell.getUTCDate()}
                 </Link>
                 <div className="flex flex-col gap-0.5">
                   {dayBlocks.slice(0, 1).map((b) => (
@@ -336,7 +348,7 @@ function MonthGrid({
                       onClick={(e) => onOpen(e, { kind: "appt", appt: a })}
                       className={`w-full cursor-pointer truncate rounded-sm border-l-2 px-1 py-px text-left text-[10px] font-medium ${statusClasses(a.status)}`}
                     >
-                      {timeLabel(a.starts_at)} {a.patientName ?? "—"}
+                      {formatTime(a.starts_at)} {a.patientName ?? "—"}
                     </button>
                   ))}
                   {extra > 0 && (
@@ -422,8 +434,8 @@ function TimeGrid({
     p: { kind: "appt"; appt: AgendaAppointment } | { kind: "block"; block: AgendaBlock },
   ) => void;
 }) {
-  const start = days === 7 ? mondayOf(date) : date;
-  const cols = Array.from({ length: days }, (_, i) => addDays(start, i));
+  const start = days === 7 ? mondayOfYMD(date) : date;
+  const cols = Array.from({ length: days }, (_, i) => addDaysYMD(start, i));
   const hours = Array.from(
     { length: HOUR_END - HOUR_START },
     (_, i) => HOUR_START + i,
@@ -432,7 +444,7 @@ function TimeGrid({
   const apptByDay = useMemo(() => {
     const m = new Map<string, AgendaAppointment[]>();
     for (const a of appointments) {
-      const k = ymd(new Date(a.starts_at));
+      const k = dayOf(a.starts_at);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(a);
     }
@@ -449,7 +461,7 @@ function TimeGrid({
         >
           <div />
           {cols.map((c) => {
-            const k = ymd(c);
+            const k = formatYMD(c);
             const isToday = todayYMD === k;
             return (
               <Link
@@ -460,7 +472,7 @@ function TimeGrid({
                 <span
                   className={`text-xs capitalize ${isToday ? "font-semibold text-accent" : "text-ink-2"}`}
                 >
-                  {c.toLocaleDateString("es-ES", {
+                  {cellLabel(c, {
                     weekday: "short",
                     day: "numeric",
                     ...(days === 1 ? { month: "long" } : {}),
@@ -489,11 +501,17 @@ function TimeGrid({
           </div>
           {/* Columnas de días */}
           {cols.map((c) => {
-            const k = ymd(c);
+            const k = formatYMD(c);
             const isToday = todayYMD === k;
             const placed = layoutDay(apptByDay.get(k) ?? []);
-            const dayStartMs = c.getTime() + HOUR_START * 3600_000;
-            const dayEndMs = c.getTime() + HOUR_END * 3600_000;
+            // Instantes reales de las 07:00 y las 21:00 EN MADRID de ese día.
+            // Con `c.getTime() + 7h` se obtenían las 07:00 UTC y los bloqueos
+            // se pintaban desplazados una o dos horas.
+            const cy = c.getUTCFullYear();
+            const cm = c.getUTCMonth() + 1;
+            const cd = c.getUTCDate();
+            const dayStartMs = fromWallClock(cy, cm, cd, HOUR_START, 0).getTime();
+            const dayEndMs = fromWallClock(cy, cm, cd, HOUR_END, 0).getTime();
             const dayBlocks = blocks
               .map((b) => {
                 const s = Math.max(new Date(b.starts_at).getTime(), dayStartMs);
@@ -553,7 +571,7 @@ function TimeGrid({
                     </span>
                     {height >= 34 && (
                       <span className="block truncate text-[10px] opacity-80">
-                        {timeLabel(appt.starts_at)} – {timeLabel(appt.ends_at)}
+                        {formatTime(appt.starts_at)} – {formatTime(appt.ends_at)}
                       </span>
                     )}
                   </button>
@@ -591,6 +609,7 @@ function ApptPreview({
   onEdit: () => void;
 }) {
   const day = new Date(appt.starts_at).toLocaleDateString("es-ES", {
+    timeZone: TZ,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -605,7 +624,7 @@ function ApptPreview({
       </div>
       <p className="mt-1 text-sm text-ink-2 capitalize">{day}</p>
       <p className="text-sm text-ink-2">
-        {timeLabel(appt.starts_at)} – {timeLabel(appt.ends_at)}
+        {formatTime(appt.starts_at)} – {formatTime(appt.ends_at)}
         {appt.attendance !== "pending" && (
           <span className="ml-2 text-xs text-ink-3">
             · {ATTENDANCE_LABEL[appt.attendance] ?? appt.attendance}
@@ -655,13 +674,7 @@ function BlockPreview({
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleString("es-ES", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const fmt = (iso: string) => formatDateTime(iso);
   return (
     <div>
       <p className="text-sm font-semibold">Bloqueo</p>
@@ -730,7 +743,7 @@ function EditModal({
         router.refresh();
         if (close) onClose();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error.");
+        setError(actionErrorMessage(e));
       }
     });
   }
@@ -744,8 +757,14 @@ function EditModal({
       setError("La duración debe ser de al menos 5 minutos.");
       return;
     }
+    // El valor del input se interpreta como hora de Madrid, no como hora del
+    // navegador: es la inversa exacta de `toDatetimeLocal`.
+    const startDate = fromDatetimeLocal(start);
+    if (!startDate) {
+      setError("La fecha y hora no son válidas.");
+      return;
+    }
     setError("");
-    const startDate = new Date(start);
     const endsAt = new Date(startDate.getTime() + minutes * 60_000).toISOString();
     startTransition(async () => {
       try {
@@ -768,7 +787,7 @@ function EditModal({
         router.refresh();
         onClose();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error.");
+        setError(actionErrorMessage(e));
       }
     });
   }

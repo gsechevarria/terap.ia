@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateContabilidad } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfessional } from "@/lib/queries/identity";
 import { CATEGORIAS_GASTO, type CategoriaGasto } from "@/lib/fiscal";
@@ -62,8 +62,7 @@ export async function upsertConfiguracionFiscalAction(fd: FormData) {
     { onConflict: "professional_id" },
   );
   if (error) throw new Error(error.message);
-  revalidatePath("/contabilidad/configuracion");
-  revalidatePath("/contabilidad");
+  revalidateContabilidad();
 }
 
 // --- Gastos -----------------------------------------------------------------
@@ -142,8 +141,7 @@ export async function createGastoAction(fd: FormData) {
     if (bErr) throw new Error(bErr.message);
   }
 
-  revalidatePath("/contabilidad/gastos");
-  revalidatePath("/contabilidad");
+  revalidateContabilidad();
 }
 
 export async function updateGastoAction(fd: FormData) {
@@ -193,8 +191,7 @@ export async function updateGastoAction(fd: FormData) {
 
   const { error } = await supabase.from("gastos").update(patch).eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/contabilidad/gastos");
-  revalidatePath("/contabilidad");
+  revalidateContabilidad();
 }
 
 export async function deleteGastoAction(id: string) {
@@ -211,6 +208,5 @@ export async function deleteGastoAction(id: string) {
   await supabase.from("bienes_inversion").delete().eq("gasto_id", id);
   const { error } = await supabase.from("gastos").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/contabilidad/gastos");
-  revalidatePath("/contabilidad");
+  revalidateContabilidad();
 }

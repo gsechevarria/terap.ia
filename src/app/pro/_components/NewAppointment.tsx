@@ -4,6 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { TriangleAlert } from "lucide-react";
 import { createAppointmentAction } from "@/lib/actions/appointments";
+import { actionErrorMessage } from "@/lib/errors";
+import { fromDatetimeLocal } from "@/lib/format";
+import { fromWallClock } from "@/lib/tz";
 
 type Freq = "none" | "weekly" | "biweekly" | "monthly";
 
@@ -51,9 +54,21 @@ export function NewAppointment({
       setError("La duración debe ser de al menos 5 minutos.");
       return;
     }
+    // La hora escrita se interpreta como hora de Madrid, no como hora del
+    // navegador ni del servidor (este componente también se renderiza en SSR).
+    const startDate = fromDatetimeLocal(start);
+    if (!startDate) {
+      setError("La fecha y hora no son válidas.");
+      return;
+    }
     setError("");
-    const startDate = new Date(start);
     const endsAt = new Date(startDate.getTime() + minutes * 60_000).toISOString();
+    // "Hasta" es un día inclusivo: se convierte al final de ESE día en Madrid.
+    const untilISO = (() => {
+      if (!until) return null;
+      const [uy, um, ud] = until.split("-").map(Number);
+      return fromWallClock(uy, um, ud, 23, 59).toISOString();
+    })();
 
     startTransition(async () => {
       try {
@@ -63,7 +78,7 @@ export function NewAppointment({
           endsAt,
           videoLink,
           freq,
-          until: until ? new Date(`${until}T23:59`).toISOString() : null,
+          until: untilISO,
           notes,
           force,
         });
@@ -82,7 +97,7 @@ export function NewAppointment({
         setConflict("");
         router.refresh();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error al crear la cita.");
+        setError(actionErrorMessage(e));
       }
     });
   }
@@ -91,18 +106,23 @@ export function NewAppointment({
     <div className="card bg-panel p-4">
       <h3 className="section-label">Nueva cita</h3>
       <div className="mt-3 grid gap-2.5">
-        <select
-          value={patientId || patients[0]?.id || ""}
-          onChange={(e) => setPatientId(e.target.value)}
-          className="field"
-        >
-          {patients.length === 0 && <option value="">Sin pacientes activos</option>}
-          {patients.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.full_name ?? "Sin nombre"}
-            </option>
-          ))}
-        </select>
+        <label className="block">
+          <span className="field-label">Paciente</span>
+          <select
+            value={patientId || patients[0]?.id || ""}
+            onChange={(e) => setPatientId(e.target.value)}
+            className="field"
+          >
+            {patients.length === 0 && (
+              <option value="">Sin pacientes activos</option>
+            )}
+            {patients.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.full_name ?? "Sin nombre"}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <label className="block">
           <span className="field-label">Fecha y hora de la sesión</span>
@@ -175,12 +195,15 @@ export function NewAppointment({
           )}
         </div>
 
-        <input
-          value={videoLink}
-          onChange={(e) => setVideoLink(e.target.value)}
-          placeholder="Link de videollamada (Meet/Zoom)"
-          className="field"
-        />
+        <label className="block">
+          <span className="field-label">Link de videollamada (opcional)</span>
+          <input
+            value={videoLink}
+            onChange={(e) => setVideoLink(e.target.value)}
+            placeholder="Link de videollamada (Meet/Zoom)"
+            className="field"
+          />
+        </label>
         <label className="flex items-center gap-2 text-xs font-medium text-ink-2">
           Repetición
           <select
@@ -211,13 +234,16 @@ export function NewAppointment({
             />
           </label>
         )}
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Notas (opcional)"
-          rows={2}
-          className="field"
-        />
+        <label className="block">
+          <span className="field-label">Notas (opcional)</span>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notas (opcional)"
+            rows={2}
+            className="field"
+          />
+        </label>
       </div>
 
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}

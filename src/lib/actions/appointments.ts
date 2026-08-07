@@ -4,18 +4,40 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
 import { settleAttendedAppointment } from "@/lib/payments";
+import { revalidateAgenda, revalidatePayments } from "@/lib/revalidate";
+import { formatDateTime } from "@/lib/format";
+import { TZ, fromWallClock, lastDayOfMonth, wallClockParts } from "@/lib/tz";
 import type { TablesInsert } from "@/lib/types";
 
 type Freq = "none" | "daily" | "weekly" | "biweekly" | "monthly";
 const RECURRENCE_CAP = 26;
 
-function nextOccurrence(d: Date, freq: Freq): Date {
-  const n = new Date(d);
-  if (freq === "daily") n.setDate(n.getDate() + 1);
-  else if (freq === "weekly") n.setDate(n.getDate() + 7);
-  else if (freq === "biweekly") n.setDate(n.getDate() + 14);
-  else if (freq === "monthly") n.setMonth(n.getMonth() + 1);
-  return n;
+/**
+ * i-ésima ocurrencia de una serie, contada SIEMPRE desde la cita original.
+ *
+ * Dos motivos para no usar `setDate`/`setMonth` ni encadenar desde la anterior:
+ *
+ *  - `setDate`/`setMonth` operan en la zona del proceso (UTC en Vercel), que no
+ *    preserva la hora de pared en Madrid: una serie semanal que cruzase el fin
+ *    del horario de verano se desplazaba una hora a partir de ahí.
+ *  - Encadenar desde la ocurrencia anterior pierde el día original en cuanto un
+ *    mes lo recorta: 31-ene → 28-feb dejaba la serie clavada en el 28 (28-mar,
+ *    28-abr…). Anclando en la cita original vuelve al 31 cuando el mes da.
+ */
+function occurrenceAt(anchor: Date, freq: Freq, i: number): Date {
+  const { y, m, d, hh, mm } = wallClockParts(anchor);
+  if (freq === "daily") return fromWallClock(y, m, d + i, hh, mm);
+  if (freq === "weekly") return fromWallClock(y, m, d + 7 * i, hh, mm);
+  if (freq === "biweekly") return fromWallClock(y, m, d + 14 * i, hh, mm);
+  if (freq === "monthly") {
+    // Normaliza el año antes de recortar el día: `lastDayOfMonth` necesita un
+    // mes real, y la serie puede saltar de diciembre a enero.
+    const total = m - 1 + i;
+    const ny = y + Math.floor(total / 12);
+    const nm = (total % 12) + 1;
+    return fromWallClock(ny, nm, Math.min(d, lastDayOfMonth(ny, nm)), hh, mm);
+  }
+  return anchor;
 }
 
 export type CreateAppointmentResult =
@@ -53,13 +75,10 @@ export async function createAppointmentAction(input: {
   const occurrences: { start: Date; end: Date }[] = [{ start, end }];
   if (input.freq !== "none") {
     const until = input.until ? new Date(input.until) : null;
-    let cur = nextOccurrence(start, input.freq);
-    let count = 0;
-    while (count < RECURRENCE_CAP) {
+    for (let i = 1; i <= RECURRENCE_CAP; i++) {
+      const cur = occurrenceAt(start, input.freq, i);
       if (until && cur.getTime() > until.getTime()) break;
       occurrences.push({ start: cur, end: new Date(cur.getTime() + durationMs) });
-      cur = nextOccurrence(cur, input.freq);
-      count++;
     }
   }
 
@@ -111,14 +130,13 @@ export async function createAppointmentAction(input: {
       channel: "push",
       type: "appointment_created",
       title: "Nueva cita",
-      body: `Se ha programado una cita para el ${start.toLocaleString("es-ES")}.`,
+      body: `Se ha programado una cita para el ${formatDateTime(start.toISOString())}.`,
       scheduled_for: start.toISOString(),
       status: "queued",
     });
   }
 
-  revalidatePath("/pro/agenda");
-  revalidatePath(`/pro/patients/${input.patientId}`);
+  revalidateAgenda(input.patientId);
   return { ok: true };
 }
 
@@ -199,6 +217,7 @@ async function findConflict(
 
   const first = hits[0];
   const when = first.occ.toLocaleString("es-ES", {
+    timeZone: TZ,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -250,7 +269,7 @@ export async function updateAppointmentAction(input: {
     })
     .eq("id", input.id);
   if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+  revalidateAgenda(input.patientId);
   return { ok: true };
 }
 
@@ -261,14 +280,14 @@ export async function cancelAppointmentAction(id: string) {
     .update({ status: "cancelled" })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+  revalidateAgenda();
 }
 
 export async function deleteAppointmentAction(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("appointments").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+  revalidateAgenda();
 }
 
 export async function setAttendanceAction(
@@ -280,14 +299,22 @@ export async function setAttendanceAction(
     attendance,
   };
   if (attendance === "attended") patch.status = "completed";
-  const { error } = await supabase.from("appointments").update(patch).eq("id", id);
+  const { data: updated, error } = await supabase
+    .from("appointments")
+    .update(patch)
+    .eq("id", id)
+    .select("patient_id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
 
   // Consumo de bono / pago pendiente automático al acudir.
   if (attendance === "attended") {
     await settleAttendedAppointment(id);
   }
-  revalidatePath("/pro/agenda");
+  revalidateAgenda(updated?.patient_id);
+  // Marcar "acudió" liquida la sesión (bono o pago pendiente): eso mueve los
+  // agregados de pagos, la analítica y la estimación fiscal, no solo la agenda.
+  if (attendance === "attended") revalidatePayments(updated?.patient_id);
 }
 
 // ---- Bloqueos de agenda ----------------------------------------------------
@@ -311,14 +338,14 @@ export async function createBlockAction(input: {
     reason: input.reason?.trim() || null,
   });
   if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+  revalidateAgenda();
 }
 
 export async function deleteBlockAction(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("agenda_blocks").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+  revalidateAgenda();
 }
 
 // ---- Lado paciente ---------------------------------------------------------

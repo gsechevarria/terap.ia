@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { addDocumentAction, deleteDocumentAction } from "@/lib/actions/documents";
 import { formatDate } from "@/lib/format";
+import { useAction } from "@/lib/use-action";
 import type { DocumentRow } from "@/lib/types";
 
 export function DocumentsPanel({
@@ -13,23 +13,9 @@ export function DocumentsPanel({
   patientId: string;
   documents: DocumentRow[];
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const { run, pending, error, setError } = useAction();
   const [title, setTitle] = useState("");
-  const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-
-  function run(fn: () => Promise<void>) {
-    setError("");
-    startTransition(async () => {
-      try {
-        await fn();
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Error.");
-      }
-    });
-  }
 
   function upload() {
     const f = fileRef.current?.files?.[0];
@@ -53,14 +39,20 @@ export function DocumentsPanel({
       <div className="card bg-panel p-4">
         <h3 className="section-label">Subir documento</h3>
         <div className="mt-3 flex flex-col gap-2">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Título (opcional)"
-            className="field"
-          />
-          <div className="flex items-center gap-2">
-            <input ref={fileRef} type="file" className="text-sm text-ink-2" />
+          <label className="block">
+            <span className="field-label">Título (opcional)</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Título (opcional)"
+              className="field"
+            />
+          </label>
+          <div className="flex items-end gap-2">
+            <label className="block">
+              <span className="field-label">Archivo</span>
+              <input ref={fileRef} type="file" className="text-sm text-ink-2" />
+            </label>
             <button
               type="button"
               onClick={upload}

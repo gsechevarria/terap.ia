@@ -1,13 +1,25 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { completeTaskAction } from "@/lib/actions/patient-tasks";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { useAction } from "@/lib/use-action";
 import { Status } from "@/components/ui/Status";
 import type { TaskWithCompletion } from "@/lib/queries/tasks";
 
-export function PatientTasks({ tasks }: { tasks: TaskWithCompletion[] }) {
+/**
+ * `today` llega resuelto desde el server component (`todayYMD()` en la zona del
+ * profesional). Antes se calculaba con `new Date()` durante el render de este
+ * componente cliente, que también se renderiza en servidor: en UTC salía otro
+ * día, la etiqueta "vencida"/"para hoy" era incorrecta y rompía la hidratación.
+ */
+export function PatientTasks({
+  tasks,
+  today,
+}: {
+  tasks: TaskWithCompletion[];
+  today: string;
+}) {
   const pending = tasks.filter((t) => !t.completed);
   const done = tasks.filter((t) => t.completed);
 
@@ -17,7 +29,9 @@ export function PatientTasks({ tasks }: { tasks: TaskWithCompletion[] }) {
       {pending.length === 0 ? (
         <p className="text-sm text-ink-2">No tienes tareas pendientes.</p>
       ) : (
-        pending.map((t) => <PendingTask key={t.id} task={t} />)
+        pending.map((t) => (
+          <PendingTask key={t.id} task={t} today={today} />
+        ))
       )}
 
       {done.length > 0 && (
@@ -46,28 +60,31 @@ export function PatientTasks({ tasks }: { tasks: TaskWithCompletion[] }) {
   );
 }
 
-function isDueSoon(due: string | null): "today" | "overdue" | null {
+/** Ambas fechas son 'YYYY-MM-DD', así que se comparan como texto. */
+function isDueSoon(
+  due: string | null,
+  today: string,
+): "today" | "overdue" | null {
   if (!due) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(due + "T00:00:00");
-  if (d < today) return "overdue";
-  if (d.getTime() === today.getTime()) return "today";
+  if (due < today) return "overdue";
+  if (due === today) return "today";
   return null;
 }
 
-function PendingTask({ task }: { task: TaskWithCompletion }) {
+function PendingTask({
+  task,
+  today,
+}: {
+  task: TaskWithCompletion;
+  today: string;
+}) {
   const [showText, setShowText] = useState(false);
   const [text, setText] = useState("");
-  const [pending, startTransition] = useTransition();
-  const router = useRouter();
-  const due = isDueSoon(task.due_date);
+  const { run, pending, error } = useAction();
+  const due = isDueSoon(task.due_date, today);
 
   function complete() {
-    startTransition(async () => {
-      await completeTaskAction(task.id, text);
-      router.refresh();
-    });
+    run(() => completeTaskAction(task.id, text));
   }
 
   return (
@@ -98,9 +115,12 @@ function PendingTask({ task }: { task: TaskWithCompletion }) {
           onChange={(e) => setText(e.target.value)}
           rows={2}
           placeholder="Escribe algo si quieres (opcional)…"
+          aria-label="Nota sobre la tarea (opcional)"
           className="field mt-3"
         />
       )}
+
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
       <div className="mt-3 flex items-center gap-2">
         <button

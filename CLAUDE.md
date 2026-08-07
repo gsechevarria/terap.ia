@@ -615,7 +615,7 @@ archivados) y más campos en la ficha (teléfono, correo, dirección, profesión
 - El seed omite profesionales que ya tienen pacientes: para ver datos de contacto
   en los pacientes demo ya existentes habría que resembrar en limpio.
 
-### Cierre de RLS antes de habilitar auth de pacientes (jul 2026) 🟡 (código listo; migración pendiente de aplicar y de re-probar)
+### Cierre de RLS antes de habilitar auth de pacientes (jul 2026) ✅ (aplicado y verificado en el remoto; `test:rls` 40/40)
 
 Endurecimiento de RLS pensado para cuando los pacientes tengan cuenta real
 (hoy solo datos ficticios). Adaptación del plan del usuario ("cierre de RLS v2")
@@ -683,10 +683,15 @@ notifications 9, analytics 6, scales 12, contabilidad 14). `build`/`typecheck`/
 
 **⚠️ Pendiente:**
 - **Registro de migraciones:** como se aplicaron por el SQL editor (no
-  `supabase db push`), `supabase_migrations` no las tiene marcadas. Un futuro
-  `db push` intentaría re-ejecutarlas y fallaría (varias sentencias no son
-  idempotentes). Ejecutar con token:
+  `supabase db push`), `supabase_migrations` no las tiene marcadas. Ejecutar con
+  token:
   `supabase migration repair --status applied 20260725090001 20260725100001`.
+  Pasos exactos en `docs/DEPLOY.md` → "Reparación del historial de migraciones".
+  Ambos ficheros **ya son idempotentes** (agosto 2026): las cuatro políticas
+  `mood_entries_*` llevan `drop policy if exists` delante, y en
+  `20260725100001` el backfill del token y el `drop column token` van dentro de
+  guardas que comprueban que la columna existe. Antes, un `db push` habría
+  abortado la cola entera.
 - **Storage:** `shared_with_patient` protege la FILA `documents`, no el binario;
   revisar políticas de `storage.objects` cuando exista vista de documentos en `/app`.
 - **Barrido de rendimiento** (opcional): envolver los helpers en `(select …)` en

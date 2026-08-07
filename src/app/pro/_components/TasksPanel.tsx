@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import {
   createTaskAction,
@@ -9,6 +8,7 @@ import {
   deleteTaskAction,
 } from "@/lib/actions/tasks";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { useAction } from "@/lib/use-action";
 import { Status } from "@/components/ui/Status";
 import type { TaskWithCompletion } from "@/lib/queries/tasks";
 
@@ -34,8 +34,7 @@ export function TasksPanel({
   const [creating, setCreating] = useState<Draft>(EMPTY);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Draft>(EMPTY);
-  const [pending, startTransition] = useTransition();
-  const router = useRouter();
+  const { run, pending, error } = useAction();
 
   // "Hoy"/"pronto" se resuelven tras montar para no romper la hidratación
   // (servidor y cliente pueden estar en husos/días distintos).
@@ -61,16 +60,16 @@ export function TasksPanel({
 
   function create() {
     if (!creating.title.trim()) return;
-    startTransition(async () => {
-      await createTaskAction({
-        patientId,
-        title: creating.title,
-        description: creating.description,
-        dueDate: creating.dueDate || null,
-      });
-      setCreating(EMPTY);
-      router.refresh();
-    });
+    run(
+      () =>
+        createTaskAction({
+          patientId,
+          title: creating.title,
+          description: creating.description,
+          dueDate: creating.dueDate || null,
+        }),
+      () => setCreating(EMPTY),
+    );
   }
 
   function startEdit(t: TaskWithCompletion) {
@@ -84,24 +83,21 @@ export function TasksPanel({
 
   function saveEdit() {
     if (!editDraft.title.trim() || !editingId) return;
-    startTransition(async () => {
-      await updateTaskAction({
-        taskId: editingId,
-        patientId,
-        title: editDraft.title,
-        description: editDraft.description,
-        dueDate: editDraft.dueDate || null,
-      });
-      setEditingId(null);
-      router.refresh();
-    });
+    run(
+      () =>
+        updateTaskAction({
+          taskId: editingId,
+          patientId,
+          title: editDraft.title,
+          description: editDraft.description,
+          dueDate: editDraft.dueDate || null,
+        }),
+      () => setEditingId(null),
+    );
   }
 
   function remove(id: string) {
-    startTransition(async () => {
-      await deleteTaskAction(id, patientId);
-      router.refresh();
-    });
+    run(() => deleteTaskAction(id, patientId));
   }
 
   return (
@@ -110,21 +106,29 @@ export function TasksPanel({
       <div className="card bg-panel p-4">
         <h3 className="section-label">Nueva tarea</h3>
         <div className="mt-3 flex flex-col gap-2">
-          <input
-            value={creating.title}
-            onChange={(e) => setCreating({ ...creating, title: e.target.value })}
-            placeholder="Título"
-            className="field"
-          />
-          <textarea
-            value={creating.description}
-            onChange={(e) =>
-              setCreating({ ...creating, description: e.target.value })
-            }
-            placeholder="Descripción (opcional)"
-            rows={2}
-            className="field"
-          />
+          <label className="block">
+            <span className="field-label">Título</span>
+            <input
+              value={creating.title}
+              onChange={(e) =>
+                setCreating({ ...creating, title: e.target.value })
+              }
+              placeholder="Título"
+              className="field"
+            />
+          </label>
+          <label className="block">
+            <span className="field-label">Descripción (opcional)</span>
+            <textarea
+              value={creating.description}
+              onChange={(e) =>
+                setCreating({ ...creating, description: e.target.value })
+              }
+              placeholder="Descripción (opcional)"
+              rows={2}
+              className="field"
+            />
+          </label>
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-xs font-medium text-ink-2">
               Fecha límite
@@ -149,6 +153,8 @@ export function TasksPanel({
         </div>
       </div>
 
+      {error && <p className="text-sm text-danger">{error}</p>}
+
       {/* Lista */}
       {tasks.length === 0 ? (
         <p className="text-sm text-ink-2">No hay tareas asignadas.</p>
@@ -163,6 +169,7 @@ export function TasksPanel({
                     onChange={(e) =>
                       setEditDraft({ ...editDraft, title: e.target.value })
                     }
+                    aria-label="Título de la tarea"
                     className="field"
                   />
                   <textarea
@@ -171,6 +178,7 @@ export function TasksPanel({
                       setEditDraft({ ...editDraft, description: e.target.value })
                     }
                     rows={2}
+                    aria-label="Descripción de la tarea"
                     className="field"
                   />
                   <div className="flex flex-wrap items-center gap-2">
@@ -180,6 +188,7 @@ export function TasksPanel({
                       onChange={(e) =>
                         setEditDraft({ ...editDraft, dueDate: e.target.value })
                       }
+                      aria-label="Fecha límite"
                       className="field w-auto px-2 py-1"
                     />
                     <button

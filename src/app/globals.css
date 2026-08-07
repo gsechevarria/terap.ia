@@ -19,7 +19,17 @@
   --line-strong: #d4d4d8; /* borde de control */
   --ink: #1f1f23; /* texto primario (no negro puro) */
   --ink-2: #52525b; /* texto secundario */
-  --ink-3: #a1a1aa; /* texto terciario / placeholder */
+  /* Terciario / placeholder. Cumple WCAG AA (4,5:1) sobre los TRES fondos en
+     los que se pinta: canvas 5,33:1 · panel 5,02:1 · sunken 4,68:1. El gris
+     anterior (#a1a1aa) se quedaba en 2,48:1, y este token no es decorativo:
+     pinta las horas del calendario, las fechas de las notas, las etiquetas de
+     la ficha y los placeholders de todos los inputs.
+     Ojo al ajustarlo: `section-label` y `chip` van sobre `--panel`, así que
+     medir solo contra `--canvas` deja el token por debajo del criterio. */
+  --ink-3: #686871;
+  /* Gris antiguo, SOLO para elementos decorativos (separadores, iconos de
+     adorno) que no transmiten información y no están sujetos al criterio. */
+  --ink-faint: #a1a1aa;
 
   /* Acento único — verde calmado (marca) */
   --accent: #0f7b6c;
@@ -56,7 +66,9 @@
     --line-strong: #3f3f46;
     --ink: #e7e7ea;
     --ink-2: #a1a1aa;
-    --ink-3: #6b6b73;
+    /* canvas 5,67:1 · panel 5,20:1 · sunken 4,77:1 (antes 3,35:1). */
+    --ink-3: #91919a;
+    --ink-faint: #6b6b73;
 
     --accent: #4f9d8b;
     --accent-ink: #10130f;
@@ -87,6 +99,7 @@
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
+  --color-ink-faint: var(--ink-faint);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
@@ -169,9 +182,13 @@ body {
     @apply h-11 rounded-md px-4.5 text-[15px];
   }
 
-  /* ---- Campos ---------------------------------------------------------- */
+  /* ---- Campos ----------------------------------------------------------
+     `text-base` (16px) es deliberado y no debe bajarse a `text-sm`: iOS hace
+     zoom automático al enfocar un input de menos de 16px, y la forma de
+     evitarlo era `maximumScale: 1`, que bloquea el pinch-zoom e incumple WCAG
+     1.4.4. `LoginForm` ya lo parcheaba suelto con `text-base`. */
   .field {
-    @apply w-full rounded border border-line-strong bg-canvas px-2.5 py-1.5 text-sm text-ink transition-colors duration-150 outline-none placeholder:text-ink-3;
+    @apply w-full rounded border border-line-strong bg-canvas px-2.5 py-1.5 text-base text-ink transition-colors duration-150 outline-none placeholder:text-ink-3;
   }
   .field:focus {
     border-color: var(--accent);

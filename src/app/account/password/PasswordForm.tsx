@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { authErrorMessage } from "@/lib/errors";
 import { getUserRole, homePathForRole } from "@/lib/auth/roles";
 
 export function PasswordForm() {
@@ -28,11 +29,7 @@ export function PasswordForm() {
 
     if (err) {
       setSaving(false);
-      setError(
-        err.message.includes("different from the old")
-          ? "La nueva contraseña debe ser distinta de la actual."
-          : err.message,
-      );
+      setError(authErrorMessage(err));
       return;
     }
     const role = getUserRole(data.user);

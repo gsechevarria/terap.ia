@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePayments } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfessional } from "@/lib/queries/identity";
 import { DEFAULT_SESSION_TYPE } from "@/lib/queries/payments";
@@ -26,7 +26,7 @@ export async function upsertPriceAction(patientId: string, priceEuros: number) {
     { onConflict: "professional_id,patient_id,session_type" },
   );
   if (error) throw new Error(error.message);
-  revalidatePath(`/pro/patients/${patientId}`);
+  revalidatePayments(patientId);
 }
 
 /** Añade un bono (pack de sesiones) al paciente. */
@@ -50,7 +50,7 @@ export async function addPackAction(
     active: true,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(`/pro/patients/${patientId}`);
+  revalidatePayments(patientId);
 }
 
 /** Registra un pago manual (sin vincular a cita), con método opcional. */
@@ -75,8 +75,7 @@ export async function registerPaymentAction(
     paid_at: status === "paid" ? new Date().toISOString() : null,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(`/pro/patients/${patientId}`);
-  revalidatePath("/pro/pagos");
+  revalidatePayments(patientId);
 }
 
 /** Fija/cambia el método de pago de un registro (transferencia/bizum/efectivo). */
@@ -94,8 +93,7 @@ export async function setPaymentMethodAction(
     .update({ method: method && isPaymentMethod(method) ? method : null })
     .eq("id", paymentId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/pro/patients/${patientId}`);
-  revalidatePath("/pro/pagos");
+  revalidatePayments(patientId);
 }
 
 /** Cambia el estado de un pago (pagado/pendiente). */
@@ -113,14 +111,12 @@ export async function setPaymentStatusAction(
     })
     .eq("id", paymentId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/pro/patients/${patientId}`);
-  revalidatePath("/pro/pagos");
+  revalidatePayments(patientId);
 }
 
 export async function deletePaymentAction(paymentId: string, patientId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("payments").delete().eq("id", paymentId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/pro/patients/${patientId}`);
-  revalidatePath("/pro/pagos");
+  revalidatePayments(patientId);
 }

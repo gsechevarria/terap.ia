@@ -1,9 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { respondAppointmentAction } from "@/lib/actions/appointments";
 import { formatDateTime } from "@/lib/format";
+import { useAction } from "@/lib/use-action";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import type { Appointment } from "@/lib/types";
 
@@ -21,15 +20,11 @@ export function PatientAppointmentItem({
   appt: Appointment;
   canRespond: boolean;
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const { run, pending, error } = useAction();
   const cancelled = appt.status === "cancelled";
 
   function respond(action: "confirm" | "cancel") {
-    startTransition(async () => {
-      await respondAppointmentAction(appt.id, action);
-      router.refresh();
-    });
+    run(() => respondAppointmentAction(appt.id, action));
   }
 
   return (
@@ -82,6 +77,7 @@ export function PatientAppointmentItem({
           </button>
         </div>
       )}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
     </li>
   );
 }

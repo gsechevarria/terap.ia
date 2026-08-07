@@ -13,7 +13,10 @@ export const viewport: Viewport = {
   themeColor: "#4f9d8b",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // Sin `maximumScale` ni `userScalable: false`: bloquear el pinch-zoom
+  // incumple WCAG 2.2 §1.4.4 (AA) en una app que muestra escalas clínicas,
+  // importes y horas a 10-11 px. El auto-zoom de iOS al enfocar un input se
+  // evita con los 16px de `.field`, no capando el zoom del usuario.
 };
 
 export default function RootLayout({

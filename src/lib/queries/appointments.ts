@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
+import { fromWallClock, todayYMD } from "@/lib/tz";
 import type { Appointment } from "@/lib/types";
 
 export type AgendaAppointment = Appointment & { patientName: string | null };
@@ -10,10 +11,14 @@ export type AgendaBlock = {
   reason: string | null;
 };
 
+/**
+ * Medianoche de hoy EN MADRID. Con `setHours(0,0,0,0)` se obtenía la medianoche
+ * del proceso (UTC en Vercel), que en verano son las 02:00 en España: las citas
+ * de la primera franja del día quedaban fuera de la agenda.
+ */
 function startOfToday(): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+  const [y, m, d] = todayYMD().split("-").map(Number);
+  return fromWallClock(y, m, d, 0, 0).toISOString();
 }
 
 /** Agenda del profesional: citas (con nombre de paciente) + bloqueos, desde hoy. */

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition, type ComponentType } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { Angry, Frown, Meh, Smile, Laugh, Check } from "lucide-react";
 import { addMoodEntryAction } from "@/lib/actions/mood";
+import { useAction } from "@/lib/use-action";
 
 type Face = { value: number; Icon: ComponentType<{ className?: string; strokeWidth?: number }>; label: string };
 
@@ -16,22 +16,35 @@ const FACES: Face[] = [
 ];
 
 export function MoodLogger() {
-  const router = useRouter();
   const [value, setValue] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [done, setDone] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const { run, pending, error } = useAction();
+
+  // El aviso "Registrado" se oculta solo; sin este cleanup, el timer sobrevive
+  // al desmontaje y React avisa de un setState sobre un componente muerto.
+  const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (doneTimer.current) clearTimeout(doneTimer.current);
+    },
+    [],
+  );
 
   function submit() {
     if (value == null) return;
-    startTransition(async () => {
-      await addMoodEntryAction(value, note);
-      setValue(null);
-      setNote("");
-      setDone(true);
-      router.refresh();
-      setTimeout(() => setDone(false), 2500);
-    });
+    // La entrada solo se limpia si se ha guardado: si falla, el paciente no
+    // pierde ni el ánimo marcado ni la nota que hubiera escrito.
+    run(
+      () => addMoodEntryAction(value, note),
+      () => {
+        setValue(null);
+        setNote("");
+        setDone(true);
+        if (doneTimer.current) clearTimeout(doneTimer.current);
+        doneTimer.current = setTimeout(() => setDone(false), 2500);
+      },
+    );
   }
 
   return (
@@ -64,6 +77,7 @@ export function MoodLogger() {
             onChange={(e) => setNote(e.target.value)}
             rows={2}
             placeholder="¿Quieres añadir algo? (opcional)"
+            aria-label="Nota sobre cómo te sientes (opcional)"
             className="field"
           />
           <button
@@ -76,6 +90,8 @@ export function MoodLogger() {
           </button>
         </div>
       )}
+
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
       {done && (
         <p className="mt-3 flex items-center gap-1.5 text-sm font-medium text-accent">

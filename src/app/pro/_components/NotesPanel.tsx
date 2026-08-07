@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { addNoteAction, deleteNoteAction } from "@/lib/actions/notes";
 import { formatDateTime } from "@/lib/format";
+import { useAction } from "@/lib/use-action";
 import type { PatientNote } from "@/lib/types";
 
 export function NotesPanel({
@@ -14,38 +14,41 @@ export function NotesPanel({
   notes: PatientNote[];
 }) {
   const [value, setValue] = useState("");
-  const [pending, startTransition] = useTransition();
-  const router = useRouter();
+  const { run, pending, error } = useAction();
   const ref = useRef<HTMLTextAreaElement>(null);
 
   function add() {
     if (!value.trim()) return;
-    startTransition(async () => {
-      await addNoteAction(patientId, value);
-      setValue("");
-      router.refresh();
-      ref.current?.focus();
-    });
+    // El texto solo se borra si la action ha ido bien: si falla, la nota sigue
+    // en el textarea y el profesional puede reintentar sin reescribirla.
+    run(
+      () => addNoteAction(patientId, value),
+      () => {
+        setValue("");
+        ref.current?.focus();
+      },
+    );
   }
 
   function remove(id: string) {
-    startTransition(async () => {
-      await deleteNoteAction(id, patientId);
-      router.refresh();
-    });
+    run(() => deleteNoteAction(id, patientId));
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <textarea
-          ref={ref}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          rows={3}
-          placeholder="Nota rápida (privada, solo tú la ves)…"
-          className="field"
-        />
+        <label className="block">
+          <span className="field-label">Nueva nota</span>
+          <textarea
+            ref={ref}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            rows={3}
+            placeholder="Nota rápida (privada, solo tú la ves)…"
+            className="field"
+          />
+        </label>
+        {error && <p className="text-sm text-danger">{error}</p>}
         <button
           type="button"
           onClick={add}

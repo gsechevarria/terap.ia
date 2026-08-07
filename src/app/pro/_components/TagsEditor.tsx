@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { updatePatientTagsAction } from "@/lib/actions/patients";
+import { useAction } from "@/lib/use-action";
 
 export function TagsEditor({
   patientId,
@@ -13,19 +13,17 @@ export function TagsEditor({
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(tags.join(", "));
-  const [pending, startTransition] = useTransition();
-  const router = useRouter();
+  const { run, pending, error } = useAction();
 
   function save() {
     const parsed = value
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
-    startTransition(async () => {
-      await updatePatientTagsAction(patientId, parsed);
-      setEditing(false);
-      router.refresh();
-    });
+    run(
+      () => updatePatientTagsAction(patientId, parsed),
+      () => setEditing(false),
+    );
   }
 
   if (!editing) {
@@ -57,6 +55,7 @@ export function TagsEditor({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="ansiedad, quincenal"
+        aria-label="Etiquetas separadas por comas"
         className="field h-7 w-auto px-2 py-1 text-xs"
       />
       <button
@@ -77,6 +76,7 @@ export function TagsEditor({
       >
         Cancelar
       </button>
+      {error && <p className="w-full text-xs text-danger">{error}</p>}
     </div>
   );
 }

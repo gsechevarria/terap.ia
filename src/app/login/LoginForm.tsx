@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { authErrorMessage } from "@/lib/errors";
 import { ROLES, getUserRole, homePathForRole, type Role } from "@/lib/auth/roles";
 
 type Method = "password" | "magic" | "reset";
@@ -38,11 +39,7 @@ export function LoginForm({ invite }: { invite?: string }) {
 
     if (error) {
       setStatus("error");
-      setMessage(
-        error.message === "Invalid login credentials"
-          ? "Correo o contraseña incorrectos."
-          : error.message,
-      );
+      setMessage(authErrorMessage(error));
       return;
     }
     const userRole = getUserRole(data.user);
@@ -71,7 +68,7 @@ export function LoginForm({ invite }: { invite?: string }) {
 
     if (error) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(authErrorMessage(error));
       return;
     }
     setStatus("sent");
@@ -93,9 +90,11 @@ export function LoginForm({ invite }: { invite?: string }) {
 
     if (error) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(authErrorMessage(error));
       return;
     }
+    // Mensaje deliberadamente neutro: no revela si la cuenta existe (evita
+    // enumeración de usuarios). No cambiar por un "te hemos enviado…" directo.
     setStatus("sent");
     setMessage(
       "Si existe una cuenta con ese correo, te hemos enviado un enlace para establecer tu contraseña.",
@@ -329,8 +328,11 @@ function RoleOption({
   onSelect: (role: Role) => void;
 }) {
   return (
+    /* El radio real va `sr-only`: el anillo de foco tiene que pintarse sobre
+       la etiqueta visible o quien navega con teclado no ve dónde está. Va con
+       `has-[:focus-visible]` porque el input es hijo, no hermano. */
     <label
-      className={`cursor-pointer rounded border px-3 py-2 text-center text-sm font-medium transition-colors duration-100 ${
+      className={`cursor-pointer rounded border px-3 py-2 text-center text-sm font-medium transition-colors duration-100 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
         checked
           ? "border-accent bg-accent-soft text-accent"
           : "border-line text-ink-2 hover:bg-wash"

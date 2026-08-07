@@ -14,6 +14,8 @@ import {
   type SituacionIva,
 } from "@/lib/fiscal";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { actionErrorMessage } from "@/lib/errors";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { Gasto } from "@/lib/types";
 
 function deducibleCents(g: Gasto, situacionIva: SituacionIva): number {
@@ -30,11 +32,30 @@ export function GastosTable({
 }) {
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
+  // Sin `try/catch` un fallo al guardar tumbaba la pantalla entera (y con ella
+  // la tabla de gastos); el estado `pending` lo aporta `SubmitButton` vía
+  // `useFormStatus`, que además impide el doble envío.
   async function saveEdit(fd: FormData) {
-    await updateGastoAction(fd);
-    setEditingId(null);
-    router.refresh();
+    setError("");
+    try {
+      await updateGastoAction(fd);
+      setEditingId(null);
+      router.refresh();
+    } catch (e) {
+      setError(actionErrorMessage(e));
+    }
+  }
+
+  async function removeGasto(id: string) {
+    setError("");
+    try {
+      await deleteGastoAction(id);
+      router.refresh();
+    } catch (e) {
+      setError(actionErrorMessage(e));
+    }
   }
 
   if (gastos.length === 0) {
@@ -113,9 +134,9 @@ export function GastosTable({
                       <input type="file" name="adjunto" accept="image/*,application/pdf" className="field py-1.5 text-xs" />
                     </label>
                     <div className="flex items-end gap-2 sm:col-span-3">
-                      <button type="submit" className="btn-primary btn-sm">
+                      <SubmitButton className="btn-primary btn-sm">
                         Guardar
-                      </button>
+                      </SubmitButton>
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
@@ -123,6 +144,9 @@ export function GastosTable({
                       >
                         Cancelar
                       </button>
+                      {error && (
+                        <p className="text-xs text-danger">{error}</p>
+                      )}
                     </div>
                   </form>
                 </td>
@@ -167,10 +191,13 @@ export function GastosTable({
                     >
                       Editar
                     </button>
-                    <form action={deleteGastoAction.bind(null, g.id)}>
-                      <button type="submit" className="btn-danger btn-sm">
+                    <form action={() => removeGasto(g.id)}>
+                      <SubmitButton
+                        className="btn-danger btn-sm"
+                        pendingLabel="Eliminando…"
+                      >
                         Eliminar
-                      </button>
+                      </SubmitButton>
                     </form>
                   </span>
                 </td>

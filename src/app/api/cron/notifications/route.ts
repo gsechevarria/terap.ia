@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
+import { formatDateTime } from "@/lib/format";
 import type { Database } from "@/lib/database.types";
 
 export const runtime = "nodejs";
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
       channel: "push",
       type: "appointment_reminder",
       title: "Recordatorio de cita",
-      body: `Tienes una cita el ${new Date(a.starts_at).toLocaleString("es-ES")}.`,
+      body: `Tienes una cita el ${formatDateTime(a.starts_at)}.`,
       payload: { appointment_id: a.id, url: "/app/appointments" },
       status: "queued",
     });

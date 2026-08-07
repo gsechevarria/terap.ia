@@ -5,6 +5,7 @@ import { getUpcomingAppointments } from "@/lib/queries/patient-detail";
 import { getMyActiveAssignments } from "@/lib/queries/scales";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { formatCurrency, formatDateTime } from "@/lib/format";
+import { todayYMD } from "@/lib/tz";
 import { PatientTasks } from "@/app/app/_components/PatientTasks";
 import { MoodLogger } from "@/app/app/_components/MoodLogger";
 
@@ -112,7 +113,7 @@ export default async function PatientHome() {
         </section>
       )}
 
-      <PatientTasks tasks={tasks} />
+      <PatientTasks tasks={tasks} today={todayYMD()} />
 
       <div className="grid grid-cols-2 gap-3">
         <Link href="/app/diary" className="card row-hover p-4 text-center text-sm font-medium">
