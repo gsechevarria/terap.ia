@@ -2,15 +2,38 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
+import {
+  getCurrentPatient,
+  requireOwnedPatient,
+  requireProfessional,
+} from "@/lib/queries/identity";
 import { settleAttendedAppointment } from "@/lib/payments";
 import { revalidateAgenda, revalidatePayments } from "@/lib/revalidate";
 import { formatDateTime } from "@/lib/format";
+import { safeExternalUrl } from "@/lib/url";
 import { TZ, fromWallClock, lastDayOfMonth, wallClockParts } from "@/lib/tz";
 import type { TablesInsert } from "@/lib/types";
 
 type Freq = "none" | "daily" | "weekly" | "biweekly" | "monthly";
 const RECURRENCE_CAP = 26;
+
+/**
+ * Normaliza el link de videollamada, o lanza si no es http(s).
+ *
+ * Se rechaza en vez de guardarlo en silencio para que el profesional se entere:
+ * el campo se pinta como `href` en la agenda y en la app del paciente, así que
+ * un `javascript:` ahí sería XSS almacenado con un clic.
+ */
+function checkVideoLink(raw: string | undefined): string | null {
+  if (!raw || !raw.trim()) return null;
+  const safe = safeExternalUrl(raw);
+  if (!safe) {
+    throw new Error(
+      "El link de videollamada no es válido. Debe empezar por https:// o http://.",
+    );
+  }
+  return safe;
+}
 
 /**
  * i-ésima ocurrencia de una serie, contada SIEMPRE desde la cita original.
@@ -59,8 +82,8 @@ export async function createAppointmentAction(input: {
   notes?: string;
   force?: boolean;
 }): Promise<CreateAppointmentResult> {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro } = await requireOwnedPatient(input.patientId);
+  const videoLink = checkVideoLink(input.videoLink);
 
   const start = new Date(input.startsAt);
   const end = new Date(input.endsAt);
@@ -91,7 +114,7 @@ export async function createAppointmentAction(input: {
   const base = {
     professional_id: pro.id,
     patient_id: input.patientId,
-    video_link: input.videoLink?.trim() || null,
+    video_link: videoLink,
     notes: input.notes?.trim() || null,
     recurrence_freq: input.freq,
     recurrence_until: input.until || null,
@@ -240,8 +263,8 @@ export async function updateAppointmentAction(input: {
   notes?: string;
   force?: boolean;
 }): Promise<CreateAppointmentResult> {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro } = await requireOwnedPatient(input.patientId);
+  const videoLink = checkVideoLink(input.videoLink);
   const start = new Date(input.startsAt);
   const end = new Date(input.endsAt);
   if (!(end.getTime() > start.getTime())) {
@@ -264,28 +287,36 @@ export async function updateAppointmentAction(input: {
     .update({
       starts_at: start.toISOString(),
       ends_at: end.toISOString(),
-      video_link: input.videoLink?.trim() || null,
+      video_link: videoLink,
       notes: input.notes?.trim() || null,
     })
-    .eq("id", input.id);
+    .eq("id", input.id)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidateAgenda(input.patientId);
   return { ok: true };
 }
 
 export async function cancelAppointmentAction(id: string) {
+  const pro = await requireProfessional();
   const supabase = await createClient();
   const { error } = await supabase
     .from("appointments")
     .update({ status: "cancelled" })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidateAgenda();
 }
 
 export async function deleteAppointmentAction(id: string) {
+  const pro = await requireProfessional();
   const supabase = await createClient();
-  const { error } = await supabase.from("appointments").delete().eq("id", id);
+  const { error } = await supabase
+    .from("appointments")
+    .delete()
+    .eq("id", id)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidateAgenda();
 }
@@ -294,6 +325,7 @@ export async function setAttendanceAction(
   id: string,
   attendance: "pending" | "attended" | "no_show" | "late_cancel",
 ) {
+  const pro = await requireProfessional();
   const supabase = await createClient();
   const patch: { attendance: typeof attendance; status?: "completed" } = {
     attendance,
@@ -303,6 +335,7 @@ export async function setAttendanceAction(
     .from("appointments")
     .update(patch)
     .eq("id", id)
+    .eq("professional_id", pro.id)
     .select("patient_id")
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -323,8 +356,7 @@ export async function createBlockAction(input: {
   endsAt: string;
   reason?: string;
 }) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const pro = await requireProfessional();
   const start = new Date(input.startsAt);
   const end = new Date(input.endsAt);
   if (!(end.getTime() > start.getTime())) {
@@ -342,8 +374,13 @@ export async function createBlockAction(input: {
 }
 
 export async function deleteBlockAction(id: string) {
+  const pro = await requireProfessional();
   const supabase = await createClient();
-  const { error } = await supabase.from("agenda_blocks").delete().eq("id", id);
+  const { error } = await supabase
+    .from("agenda_blocks")
+    .delete()
+    .eq("id", id)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidateAgenda();
 }

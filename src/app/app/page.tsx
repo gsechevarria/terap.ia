@@ -6,6 +6,7 @@ import { getMyActiveAssignments } from "@/lib/queries/scales";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 import { todayYMD } from "@/lib/tz";
+import { safeExternalUrl } from "@/lib/url";
 import { PatientTasks } from "@/app/app/_components/PatientTasks";
 import { MoodLogger } from "@/app/app/_components/MoodLogger";
 
@@ -50,9 +51,9 @@ export default async function PatientHome() {
             <span className="text-sm font-medium">
               {formatDateTime(nextAppt.starts_at)}
             </span>
-            {nextAppt.video_link && (
+            {safeExternalUrl(nextAppt.video_link) && (
               <Link
-                href={nextAppt.video_link}
+                href={safeExternalUrl(nextAppt.video_link)!}
                 className="text-sm font-medium text-accent hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"

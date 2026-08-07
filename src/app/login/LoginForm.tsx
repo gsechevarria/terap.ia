@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/errors";
-import { ROLES, getUserRole, homePathForRole, type Role } from "@/lib/auth/roles";
+import { getUserRole, homePathForRole } from "@/lib/auth/roles";
 
 type Method = "password" | "magic" | "reset";
 type Status = "idle" | "sending" | "sent" | "error";
@@ -13,9 +13,6 @@ export function LoginForm({ invite }: { invite?: string }) {
   const [method, setMethod] = useState<Method>(isInvite ? "magic" : "password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Role>(
-    isInvite ? ROLES.PATIENT : ROLES.PROFESSIONAL,
-  );
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
@@ -58,12 +55,13 @@ export function LoginForm({ invite }: { invite?: string }) {
     }`;
 
     const supabase = createClient();
+    // El rol NO se envía desde el cliente: iba a `user_metadata`, que el propio
+    // usuario puede reescribir. Lo fija el servidor en `handle_new_user`.
+    // `shouldCreateUser` solo se permite en el alta por invitación: sin esto,
+    // cualquiera con un correo se daba de alta como profesional desde /login.
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: redirectTo,
-        data: { role: isInvite ? ROLES.PATIENT : role },
-      },
+      options: { emailRedirectTo: redirectTo, shouldCreateUser: isInvite },
     });
 
     if (error) {
@@ -251,26 +249,12 @@ export function LoginForm({ invite }: { invite?: string }) {
           </label>
 
           {!isInvite && (
-            <fieldset>
-              <legend className="field-label">Accedes como</legend>
-              <div className="grid grid-cols-2 gap-2">
-                <RoleOption
-                  label="Profesional"
-                  value={ROLES.PROFESSIONAL}
-                  checked={role === ROLES.PROFESSIONAL}
-                  onSelect={setRole}
-                />
-                <RoleOption
-                  label="Paciente"
-                  value={ROLES.PATIENT}
-                  checked={role === ROLES.PATIENT}
-                  onSelect={setRole}
-                />
-              </div>
-              <p className="mt-1.5 text-xs text-ink-3">
-                El rol solo se asigna en tu primer acceso.
-              </p>
-            </fieldset>
+            <p className="rounded bg-panel p-3 text-xs leading-relaxed text-ink-2">
+              El acceso por enlace es solo para cuentas ya existentes. Si eres
+              paciente, entra desde el enlace de invitación que te haya enviado
+              tu profesional; si eres profesional y aún no tienes cuenta,
+              ponte en contacto con nosotros.
+            </p>
           )}
 
           {status === "error" && (
@@ -316,37 +300,3 @@ function MethodTab({
   );
 }
 
-function RoleOption({
-  label,
-  value,
-  checked,
-  onSelect,
-}: {
-  label: string;
-  value: Role;
-  checked: boolean;
-  onSelect: (role: Role) => void;
-}) {
-  return (
-    /* El radio real va `sr-only`: el anillo de foco tiene que pintarse sobre
-       la etiqueta visible o quien navega con teclado no ve dónde está. Va con
-       `has-[:focus-visible]` porque el input es hijo, no hermano. */
-    <label
-      className={`cursor-pointer rounded border px-3 py-2 text-center text-sm font-medium transition-colors duration-100 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
-        checked
-          ? "border-accent bg-accent-soft text-accent"
-          : "border-line text-ink-2 hover:bg-wash"
-      }`}
-    >
-      <input
-        type="radio"
-        name="role"
-        value={value}
-        checked={checked}
-        onChange={() => onSelect(value)}
-        className="sr-only"
-      />
-      {label}
-    </label>
-  );
-}

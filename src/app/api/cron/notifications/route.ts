@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
@@ -23,12 +24,29 @@ type PrefRow = {
   email_fallback: boolean;
 };
 
+/** Comparación en tiempo constante; `===` sobre strings hace cortocircuito. */
+function safeEq(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) {
+    // `timingSafeEqual` exige la misma longitud; se compara contra sí mismo
+    // para no dar una pista temporal por la vía rápida.
+    timingSafeEqual(ba, ba);
+    return false;
+  }
+  return timingSafeEqual(ba, bb);
+}
+
+/**
+ * Sin `CRON_SECRET` configurado NO se abre (nada de fail-open), y el secreto
+ * solo se acepta por cabecera: la vía `?secret=` lo dejaba en los logs de
+ * acceso de Vercel, en cualquier proxy intermedio y en el `Referer`.
+ */
 function authorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
-  const header = req.headers.get("authorization");
-  const qs = req.nextUrl.searchParams.get("secret");
-  return header === `Bearer ${secret}` || qs === secret;
+  const header = req.headers.get("authorization") ?? "";
+  return header.startsWith("Bearer ") && safeEq(header.slice(7), secret);
 }
 
 export async function GET(req: NextRequest) {

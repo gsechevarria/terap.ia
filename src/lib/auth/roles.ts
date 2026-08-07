@@ -1,16 +1,18 @@
 import type { User } from "@supabase/supabase-js";
 
 /**
- * Roles de la aplicación.
+ * Roles de la aplicación. Este helper es el ÚNICO punto donde se resuelve el
+ * rol: lo usan `proxy.ts`, los dos layouts de área, `/auth/confirm` y la página
+ * de onboarding. Es, en la práctica, toda la autorización de la aplicación por
+ * encima de la RLS.
  *
- * SESIÓN 0 (bootstrap): el rol vive en el metadata del usuario de Supabase Auth.
- * Se fija en el PRIMER acceso vía `signInWithOtp({ options: { data: { role } } })`
- * (los datos de `data` solo se aplican al crear el usuario; en accesos posteriores
- * el rol ya fijado no cambia).
+ * El rol se lee SOLO de `app_metadata`, que es de escritura exclusiva del
+ * servidor (`service_role` o una función `SECURITY DEFINER`).
  *
- * SESIÓN 1: el rol pasará a la tabla `profiles` con RLS y dejará de leerse del
- * metadata. Este helper es el ÚNICO punto donde se resuelve el rol, para poder
- * migrar la fuente sin tocar el resto del código.
+ * NO volver a leer `user_metadata`: el propio usuario puede reescribirlo con la
+ * clave anon —`supabase.auth.updateUser({ data: { role: 'professional' } })`—,
+ * así que cualquier paciente podía ascenderse a profesional. Lo escribe el
+ * trigger `handle_new_user` (ver 20260807120001_role_in_app_metadata.sql).
  */
 export const ROLES = {
   PROFESSIONAL: "professional",
@@ -21,9 +23,7 @@ export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 export function getUserRole(user: User | null): Role | null {
   if (!user) return null;
-  const raw = (user.app_metadata?.role ?? user.user_metadata?.role) as
-    | string
-    | undefined;
+  const raw = user.app_metadata?.role as string | undefined;
   if (raw === ROLES.PROFESSIONAL || raw === ROLES.PATIENT) return raw;
   return null;
 }

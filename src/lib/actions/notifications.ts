@@ -26,12 +26,25 @@ export async function savePushSubscriptionAction(sub: {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Da de baja la suscripción push de este dispositivo.
+ *
+ * El filtro por `user_id` es la corrección: borraba por `endpoint` sin
+ * comprobar sesión ni propietario, así que quien conociera (o adivinara por
+ * fuerza bruta) el endpoint de otra persona podía dejarla sin notificaciones.
+ */
 export async function deletePushSubscriptionAction(endpoint: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No autenticado.");
+
   const { error } = await supabase
     .from("push_subscriptions")
     .delete()
-    .eq("endpoint", endpoint);
+    .eq("endpoint", endpoint)
+    .eq("user_id", user.id);
   if (error) throw new Error(error.message);
 }
 

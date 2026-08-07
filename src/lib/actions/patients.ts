@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfessional } from "@/lib/queries/identity";
+import { getCurrentProfessional, requireOwnedPatient } from "@/lib/queries/identity";
 import type { PatientStatus } from "@/lib/types";
 
 function parseTags(raw: string): string[] {
@@ -67,6 +67,7 @@ export async function updatePatientDetailsAction(
   patientId: string,
   formData: FormData,
 ) {
+  const { pro } = await requireOwnedPatient(patientId);
   const fullName = String(formData.get("full_name") ?? "").trim();
   if (!fullName) throw new Error("El nombre es obligatorio.");
 
@@ -82,7 +83,8 @@ export async function updatePatientDetailsAction(
       email: optionalText(formData, "email"),
       ...contact,
     })
-    .eq("id", patientId);
+    .eq("id", patientId)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
 
   revalidatePath("/pro");
@@ -94,11 +96,13 @@ export async function setPatientStatusAction(
   patientId: string,
   status: PatientStatus,
 ) {
+  const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
   const { error } = await supabase
     .from("patients")
     .update({ status })
-    .eq("id", patientId);
+    .eq("id", patientId)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidatePath("/pro");
   revalidatePath(`/pro/patients/${patientId}`);
@@ -106,11 +110,13 @@ export async function setPatientStatusAction(
 
 /** Actualiza las etiquetas del paciente. */
 export async function updatePatientTagsAction(patientId: string, tags: string[]) {
+  const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
   const { error } = await supabase
     .from("patients")
     .update({ tags })
-    .eq("id", patientId);
+    .eq("id", patientId)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidatePath(`/pro/patients/${patientId}`);
 }

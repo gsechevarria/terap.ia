@@ -11,6 +11,7 @@
 | `VAPID_PRIVATE_KEY` | Production/Preview | secreta |
 | `VAPID_SUBJECT` | todos | `mailto:...` |
 | `CRON_SECRET` | Production/Preview | autoriza `/api/cron/notifications` |
+| `NEXT_PUBLIC_SITE_URL` | todos | URL pública sin barra final. **Obligatoria**: la usan los enlaces de invitación |
 | `TZ` | todos | `Europe/Madrid`. Red de seguridad, ver abajo |
 
 > Los valores están en tu `.env.local` (que **no** se versiona). Cópialos a Vercel.
@@ -62,6 +63,41 @@ supabase migration list   # verificar que ambas figuran como aplicadas
 
 Comprueba que la salida de `migration list` marca las dos como aplicadas en
 local y en remoto antes de lanzar ningún `db push` nuevo.
+
+## 3 ter. Configuración de Auth en el panel de Supabase — **pendiente**
+
+`supabase/config.toml` es el fichero **local**: describe el objetivo, pero la
+configuración que manda está en el panel del proyecto remoto y hay que
+cambiarla a mano. Lista de lo que falta, en Authentication → *Settings* salvo
+donde se indique:
+
+| Ajuste | Ahora | Objetivo | Por qué |
+|---|---|---|---|
+| Minimum password length | 6 | **12** | Datos del art. 9 |
+| Password requirements | ninguno | **mayúsculas + minúsculas + dígitos + símbolos** | |
+| Confirm email | **off** | **on** | Hoy el correo no se verifica nunca, y es la identidad con la que se canjea la invitación |
+| Secure password change | **off** | **on** | Sin ello, una sesión robada permite tomar la cuenta |
+| Email OTP expiry | 3600 s | **600 s** | |
+| MFA (TOTP) | deshabilitado | **enroll + verify** para cuentas `pro` | Requiere plan Pro |
+| Session timebox | sin límite | **12 h** | |
+| Session inactivity timeout | sin límite | **30 min** | |
+| CAPTCHA | off | **on (Turnstile)** | Frena el abuso del envío de enlaces |
+| Leaked password protection (HIBP) | off | **on** | |
+| Database → Network restrictions | `0.0.0.0/0` | **CIDR de Vercel + oficina** | Rellena los rangos **antes** de activarlo o cortas la app |
+| Database → SSL enforcement | off | **on** | |
+
+Y en Authentication → **URL Configuration**, revisa que las *Redirect URLs* no
+tengan comodines de más: `/auth/confirm` ya valida el `?next=` contra una lista
+blanca, pero la allow-list de Supabase es la primera barrera.
+
+### Nota, sin implementar: `FORCE ROW LEVEL SECURITY`
+
+Ninguna tabla lo tiene activado, así que el rol `postgres` (y cualquier
+conexión con la `service_role`) lo lee todo saltándose la RLS. Activarlo exige
+antes dar políticas explícitas al propietario, porque hoy `accept_invitation`,
+`patient_accept_consent` y `patient_respond_appointment` dependen justamente de
+ese bypass de propietario para funcionar. Es un trabajo aparte y con su propia
+batería de pruebas: **no se ha tocado en esta fase**.
 
 ## 4. Cron de notificaciones
 

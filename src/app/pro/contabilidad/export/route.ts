@@ -2,6 +2,7 @@ import { type NextRequest } from "next/server";
 import * as XLSX from "xlsx";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { getFiscalArrays } from "@/lib/queries/contabilidad";
+import { getCurrentProfessional } from "@/lib/queries/identity";
 import {
   construirLibros,
   calcularResumenAnual,
@@ -159,14 +160,24 @@ async function buildPdf(resumen: ResumenAnual, f: FiltroPeriodo): Promise<Uint8A
 }
 
 // --- Handler ----------------------------------------------------------------
+/** Los libros registro llevan ingresos y proveedores: fuera de toda caché. */
+const NO_STORE = { "Cache-Control": "private, no-store, max-age=0" } as const;
+
 export async function GET(req: NextRequest) {
+  // Los route handlers NO ejecutan layouts: aunque esta ruta viva bajo /pro, no
+  // hereda la guardia de ProLayout. La comprobación de sesión va aquí.
+  const pro = await getCurrentProfessional();
+  if (!pro) {
+    return new Response("No autorizado", { status: 401, headers: NO_STORE });
+  }
+
   const sp = req.nextUrl.searchParams;
   const formato = sp.get("formato") ?? "xlsx";
   const ejercicio = Number.parseInt(sp.get("ejercicio") ?? "", 10);
   const periodoRaw = sp.get("periodo") ?? "anual";
 
   if (!Number.isInteger(ejercicio) || ejercicio < 2000 || ejercicio > 2100) {
-    return new Response("Ejercicio no válido", { status: 400 });
+    return new Response("Ejercicio no válido", { status: 400, headers: NO_STORE });
   }
   const trimestre =
     periodoRaw === "1" || periodoRaw === "2" || periodoRaw === "3" || periodoRaw === "4"
@@ -187,6 +198,7 @@ export async function GET(req: NextRequest) {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${baseName}.csv"`,
+        ...NO_STORE,
       },
     });
   }
@@ -196,6 +208,7 @@ export async function GET(req: NextRequest) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${baseName}.pdf"`,
+        ...NO_STORE,
       },
     });
   }
@@ -206,6 +219,7 @@ export async function GET(req: NextRequest) {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${baseName}.xlsx"`,
+      ...NO_STORE,
     },
   });
 }

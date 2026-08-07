@@ -261,6 +261,7 @@ export type Database = {
       consents: {
         Row: {
           accepted: boolean
+          content_body: string | null
           content_hash: string | null
           created_at: string
           id: string
@@ -272,6 +273,7 @@ export type Database = {
         }
         Insert: {
           accepted?: boolean
+          content_body?: string | null
           content_hash?: string | null
           created_at?: string
           id?: string
@@ -283,6 +285,7 @@ export type Database = {
         }
         Update: {
           accepted?: boolean
+          content_body?: string | null
           content_hash?: string | null
           created_at?: string
           id?: string
@@ -902,6 +905,7 @@ export type Database = {
       professionals: {
         Row: {
           created_at: string
+          deleted_at: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -910,6 +914,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -918,6 +923,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string

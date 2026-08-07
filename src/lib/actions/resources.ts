@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfessional } from "@/lib/queries/identity";
+import {
+  requireOwnedPatient,
+  requireProfessional,
+} from "@/lib/queries/identity";
+import { safeExternalUrl } from "@/lib/url";
 
 function storagePath(patientId: string, fileName: string): string {
   const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -15,10 +19,16 @@ export async function addResourceLinkAction(input: {
   title: string;
   url: string;
 }) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
-  if (!input.title.trim() || !input.url.trim()) {
-    throw new Error("Título y enlace son obligatorios.");
+  // Sin patientId el recurso es para todos los pacientes del profesional; con
+  // él hay que comprobar propiedad.
+  const pro = input.patientId
+    ? (await requireOwnedPatient(input.patientId)).pro
+    : await requireProfessional();
+  if (!input.title.trim()) throw new Error("El título es obligatorio.");
+  // Mismo motivo que en video_link: el enlace se pinta como href al paciente.
+  const url = safeExternalUrl(input.url);
+  if (!url) {
+    throw new Error("El enlace no es válido. Debe empezar por https:// o http://.");
   }
   const supabase = await createClient();
   const { error } = await supabase.from("resources").insert({
@@ -26,7 +36,7 @@ export async function addResourceLinkAction(input: {
     patient_id: input.patientId || null,
     title: input.title.trim(),
     kind: "link",
-    url: input.url.trim(),
+    url,
   });
   if (error) throw new Error(error.message);
   revalidatePath(`/pro/patients/${input.patientId ?? ""}`);
@@ -34,13 +44,12 @@ export async function addResourceLinkAction(input: {
 
 /** El profesional sube un archivo (PDF/audio) como recurso para un paciente. */
 export async function addResourceFileAction(formData: FormData) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
   const patientId = String(formData.get("patientId") ?? "");
+  const { pro } = await requireOwnedPatient(patientId);
   const title = String(formData.get("title") ?? "").trim();
   const kind = String(formData.get("kind") ?? "pdf");
   const file = formData.get("file") as File | null;
-  if (!patientId || !title || !file || file.size === 0) {
+  if (!title || !file || file.size === 0) {
     throw new Error("Faltan datos del recurso.");
   }
 
@@ -63,16 +72,25 @@ export async function addResourceFileAction(formData: FormData) {
 }
 
 export async function deleteResourceAction(id: string, patientId: string) {
+  const pro = patientId
+    ? (await requireOwnedPatient(patientId)).pro
+    : await requireProfessional();
   const supabase = await createClient();
   const { data: res } = await supabase
     .from("resources")
     .select("storage_path")
     .eq("id", id)
+    .eq("professional_id", pro.id)
     .maybeSingle();
-  if (res?.storage_path) {
+  if (!res) throw new Error("Recurso no encontrado.");
+  if (res.storage_path) {
     await supabase.storage.from("files").remove([res.storage_path]);
   }
-  const { error } = await supabase.from("resources").delete().eq("id", id);
+  const { error } = await supabase
+    .from("resources")
+    .delete()
+    .eq("id", id)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidatePath(`/pro/patients/${patientId}`);
 }

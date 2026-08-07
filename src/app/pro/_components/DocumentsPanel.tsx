@@ -1,7 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { addDocumentAction, deleteDocumentAction } from "@/lib/actions/documents";
+import { Eye } from "lucide-react";
+import {
+  addDocumentAction,
+  deleteDocumentAction,
+  setDocumentSharedAction,
+} from "@/lib/actions/documents";
 import { formatDate } from "@/lib/format";
 import { useAction } from "@/lib/use-action";
 import type { DocumentRow } from "@/lib/types";
@@ -67,6 +72,13 @@ export function DocumentsPanel({
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
+      <p className="text-xs text-ink-2">
+        Los documentos <strong className="font-medium">no se comparten</strong>{" "}
+        con el paciente salvo que lo marques. Recuerda que la Ley 41/2002
+        (art. 18.3) excluye del acceso del paciente tus anotaciones subjetivas y
+        los datos de terceros.
+      </p>
+
       {documents.length === 0 ? (
         <p className="text-sm text-ink-2">Sin documentos.</p>
       ) : (
@@ -76,13 +88,32 @@ export function DocumentsPanel({
               key={d.id}
               className="group flex items-center justify-between px-4 py-3 text-sm"
             >
-              <span>
+              <span className="min-w-0">
                 {d.title ?? "Documento"}
                 <span className="ml-2 text-xs text-ink-3">
                   {formatDate(d.created_at)}
                 </span>
+                {d.shared_with_patient && (
+                  <span className="ml-2 inline-flex items-center gap-1 text-xs text-accent">
+                    <Eye className="size-3.5" aria-hidden />
+                    visible para el paciente
+                  </span>
+                )}
               </span>
               <div className="flex items-center gap-1.5">
+                <label className="flex cursor-pointer items-center gap-1.5 text-xs text-ink-2">
+                  <input
+                    type="checkbox"
+                    checked={d.shared_with_patient}
+                    disabled={pending}
+                    onChange={(e) =>
+                      run(() =>
+                        setDocumentSharedAction(d.id, patientId, e.target.checked),
+                      )
+                    }
+                  />
+                  Compartir
+                </label>
                 <a
                   href={`/files?path=${encodeURIComponent(d.storage_path)}`}
                   className="text-sm font-medium text-accent hover:underline"

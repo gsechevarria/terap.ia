@@ -162,16 +162,32 @@ export async function getPatientsForSelect(): Promise<
   return data ?? [];
 }
 
-/** Cita individual + nombre de paciente (para .ics / edición). */
+/**
+ * Cita individual + nombre de paciente (para .ics / edición).
+ *
+ * El filtro por propietario es explícito y no se delega solo en la RLS: esta
+ * query alimenta el `.ics`, que expone `appt.notes` (campo clínico), y una sola
+ * regresión en una política la convertiría en una fuga con solo tener el UUID.
+ */
 export async function getAppointment(
   id: string,
 ): Promise<AgendaAppointment | null> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const [pro, patient] = await Promise.all([
+    getCurrentProfessional(),
+    getCurrentPatient(),
+  ]);
+  if (!pro && !patient) return null;
+
+  let query = supabase
     .from("appointments")
     .select("*, patients(full_name)")
-    .eq("id", id)
-    .maybeSingle();
+    .eq("id", id);
+  query = pro
+    ? query.eq("professional_id", pro.id)
+    : query.eq("patient_id", patient!.id);
+
+  const { data } = await query.maybeSingle();
   if (!data) return null;
   const { patients, ...rest } = data as typeof data & {
     patients: { full_name: string | null } | null;

@@ -3,27 +3,36 @@
 import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfessional } from "@/lib/queries/identity";
+import { requireOwnedPatient } from "@/lib/queries/identity";
 
 /**
  * Genera una invitación (token de un solo uso) para el paciente. El token en
  * claro (256 bits) se genera aquí y se devuelve UNA vez para construir el
  * enlace; en BD solo se guarda su SHA-256 (ver 20260725100001). No hay forma de
  * recuperar el enlace más tarde: si se pierde, se regenera.
+ *
+ * `requireOwnedPatient` es la corrección de seguridad: antes bastaba con estar
+ * autenticado como profesional cualquiera y pasar el UUID de un paciente ajeno.
+ * La política `invitations_all_by_professional` solo validaba
+ * `professional_id` —el del propio atacante, luego siempre pasaba— y la FK solo
+ * exige que la fila exista. Con el token en claro en la respuesta, se canjeaba
+ * desde otra cuenta y `accept_invitation` reasignaba `patients.user_id`: el
+ * paciente legítimo perdía el acceso a su ficha.
  */
 export async function createInvitationAction(
   patientId: string,
 ): Promise<{ token: string; expiresAt: string }> {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro, patient } = await requireOwnedPatient(patientId);
+
+  // `accept_invitation` exige que el correo de la invitación coincida con el de
+  // la cuenta que la canjea, así que sin correo la invitación sería inservible.
+  if (!patient.email) {
+    throw new Error(
+      "Añade el correo del paciente en su ficha antes de invitarle: la invitación solo puede aceptarla esa dirección.",
+    );
+  }
 
   const supabase = await createClient();
-  const { data: patient } = await supabase
-    .from("patients")
-    .select("email")
-    .eq("id", patientId)
-    .maybeSingle();
-
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
 
@@ -31,8 +40,8 @@ export async function createInvitationAction(
     .from("invitations")
     .insert({
       professional_id: pro.id,
-      patient_id: patientId,
-      email: patient?.email ?? null,
+      patient_id: patient.id,
+      email: patient.email,
       token_hash: tokenHash,
     })
     .select("expires_at")

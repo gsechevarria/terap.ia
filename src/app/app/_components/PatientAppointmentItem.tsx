@@ -3,6 +3,7 @@
 import { respondAppointmentAction } from "@/lib/actions/appointments";
 import { formatDateTime } from "@/lib/format";
 import { useAction } from "@/lib/use-action";
+import { safeExternalUrl } from "@/lib/url";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import type { Appointment } from "@/lib/types";
 
@@ -38,9 +39,10 @@ export function PatientAppointmentItem({
         </Status>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-        {appt.video_link && (
+        {/* Defensa en profundidad: el esquema se valida también al guardar. */}
+        {safeExternalUrl(appt.video_link) && (
           <a
-            href={appt.video_link}
+            href={safeExternalUrl(appt.video_link)!}
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-accent hover:underline"

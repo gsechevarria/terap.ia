@@ -4,6 +4,10 @@ import {
 } from "@/lib/queries/payments";
 import { paymentMethodLabel } from "@/lib/payment-methods";
 import { isValidYMD, fromDateToISO, toDateToISO } from "@/lib/date-ranges";
+import { getCurrentProfessional } from "@/lib/queries/identity";
+
+/** El CSV lleva nombres de pacientes e importes: fuera de cualquier caché. */
+const NO_STORE = { "Cache-Control": "private, no-store, max-age=0" } as const;
 
 function cell(v: string | number | null | undefined): string {
   const s = v == null ? "" : String(v);
@@ -15,6 +19,13 @@ function cell(v: string | number | null | undefined): string {
  * filtros que el histórico (rango de fechas, estado, método, paciente).
  */
 export async function GET(request: Request) {
+  // Los route handlers NO ejecutan layouts: aunque esta ruta viva bajo /pro, no
+  // hereda la guardia de ProLayout. La comprobación de sesión va aquí.
+  const pro = await getCurrentProfessional();
+  if (!pro) {
+    return new Response("No autorizado", { status: 401, headers: NO_STORE });
+  }
+
   const sp = new URL(request.url).searchParams;
   const fromRaw = sp.get("from") ?? undefined;
   const toRaw = sp.get("to") ?? undefined;
@@ -53,6 +64,7 @@ export async function GET(request: Request) {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="pagos-terapia.csv"`,
+      ...NO_STORE,
     },
   });
 }

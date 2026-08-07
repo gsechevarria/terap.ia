@@ -53,11 +53,33 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 - **Autorización definitiva:** cada layout server (`/pro/layout.tsx`,
   `/app/layout.tsx`) revalida `supabase.auth.getUser()` y el rol. Defensa en
   profundidad (recomendación de Next.js y Supabase).
-- **Rol:** resuelto SIEMPRE por `src/lib/auth/roles.ts` (`getUserRole`).
-  - Sesión 0 (bootstrap): el rol vive en el metadata del usuario y se fija en el
-    primer acceso (`signInWithOtp({ options: { data: { role } } })`).
-  - **Sesión 1:** el rol migrará a la tabla `profiles` con RLS. Al hacerlo, solo
-    debe cambiar `getUserRole` — el resto del código no.
+- **Rol:** resuelto SIEMPRE por `src/lib/auth/roles.ts` (`getUserRole`), que lee
+  **solo `app_metadata`** (ago 2026, migración `20260807120001`).
+  - `app_metadata` únicamente lo escribe el servidor: el trigger
+    `handle_new_user` (SECURITY DEFINER) o alguien con `service_role`.
+  - **Nunca volver a leer `user_metadata`:** es de escritura libre para el
+    propio usuario (`supabase.auth.updateUser({ data: { role } })`), así que
+    cualquier paciente podía ascenderse a profesional.
+
+### Alta de un profesional (ya NO es autoservicio)
+
+Desde ago 2026 `/login` no crea cuentas (`shouldCreateUser` solo se activa en el
+alta por invitación) y la política `professionals_insert_self` está eliminada.
+Para dar de alta a un psicólogo, con la `service_role`:
+
+```js
+await admin.auth.admin.createUser({
+  email,
+  email_confirm: true,
+  user_metadata: { full_name: "Nombre Apellido" },
+  app_metadata: { role: "professional" },   // ← esto es lo que da el rol
+});
+```
+
+El trigger `handle_new_user` crea la fila en `professionals` y su plantilla de
+consentimiento por defecto. Sin `app_metadata.role`, el usuario se crea como
+`patient` (el rol sin privilegios). El wizard de registro para psicólogos
+sustituirá este paso manual.
 
 ## Estructura
 

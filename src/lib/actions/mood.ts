@@ -22,8 +22,14 @@ export async function addMoodEntryAction(value: number, note?: string) {
 }
 
 export async function deleteMoodEntryAction(id: string) {
+  const patient = await getCurrentPatient();
+  if (!patient) throw new Error("Cuenta no vinculada.");
   const supabase = await createClient();
-  const { error } = await supabase.from("mood_entries").delete().eq("id", id);
+  const { error } = await supabase
+    .from("mood_entries")
+    .delete()
+    .eq("id", id)
+    .eq("patient_id", patient.id);
   if (error) throw new Error(error.message);
   revalidatePath("/app/diary");
 }

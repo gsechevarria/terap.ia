@@ -18,6 +18,7 @@ import {
   toDatetimeLocal,
 } from "@/lib/format";
 import { actionErrorMessage } from "@/lib/errors";
+import { safeExternalUrl } from "@/lib/url";
 import {
   TZ,
   addDaysYMD,
@@ -637,9 +638,11 @@ function ApptPreview({
         </p>
       )}
       <div className="mt-2 flex items-center gap-3 text-xs">
-        {appt.video_link && (
+        {/* Se revalida el esquema al pintar, no solo al guardar: cubre lo que ya
+            estuviera en BD antes de la validación en la server action. */}
+        {safeExternalUrl(appt.video_link) && (
           <a
-            href={appt.video_link}
+            href={safeExternalUrl(appt.video_link)!}
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-accent hover:underline"

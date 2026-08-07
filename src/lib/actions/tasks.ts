@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfessional } from "@/lib/queries/identity";
+import { requireOwnedPatient } from "@/lib/queries/identity";
 import { enqueuePatientNotification } from "@/lib/notifications";
 
 export async function createTaskAction(input: {
@@ -11,8 +11,7 @@ export async function createTaskAction(input: {
   description?: string;
   dueDate?: string | null;
 }) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro } = await requireOwnedPatient(input.patientId);
   const title = input.title.trim();
   if (!title) throw new Error("El título es obligatorio.");
 
@@ -52,6 +51,7 @@ export async function updateTaskAction(input: {
   description?: string;
   dueDate?: string | null;
 }) {
+  const { pro } = await requireOwnedPatient(input.patientId);
   const title = input.title.trim();
   if (!title) throw new Error("El título es obligatorio.");
   const supabase = await createClient();
@@ -62,14 +62,20 @@ export async function updateTaskAction(input: {
       description: input.description?.trim() || null,
       due_date: input.dueDate || null,
     })
-    .eq("id", input.taskId);
+    .eq("id", input.taskId)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidatePath(`/pro/patients/${input.patientId}`);
 }
 
 export async function deleteTaskAction(taskId: string, patientId: string) {
+  const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
-  const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+  const { error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("id", taskId)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidatePath(`/pro/patients/${patientId}`);
 }

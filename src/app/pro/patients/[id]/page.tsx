@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { headers } from "next/headers";
+import { siteUrl } from "@/lib/site-url";
 import { notFound } from "next/navigation";
 import { getPatient } from "@/lib/queries/patients";
 import { getTasksForPatient } from "@/lib/queries/tasks";
@@ -60,10 +60,11 @@ export default async function PatientDetailPage({
   const invitation = await getActiveInvitation(id);
   const alertCount = await getFlaggedCountForPatient(id);
 
-  const h = await headers();
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const baseUrl = `${proto}://${host}`;
+  // El enlace de invitación lleva el token en el path, así que su base NO puede
+  // salir de cabeceras: con un proxy mal configurado, o una petición directa al
+  // origen, un `x-forwarded-host: evil.tld` generaba un enlace que entregaba el
+  // token al atacante. Se toma de la configuración del despliegue.
+  const baseUrl = siteUrl();
 
   return (
     <div className="mx-auto max-w-5xl">

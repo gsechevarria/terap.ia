@@ -2,7 +2,7 @@
 
 import { revalidatePayments } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfessional } from "@/lib/queries/identity";
+import { requireOwnedPatient } from "@/lib/queries/identity";
 import { DEFAULT_SESSION_TYPE } from "@/lib/queries/payments";
 import { isPaymentMethod } from "@/lib/payment-methods";
 
@@ -10,8 +10,7 @@ const eurosToCents = (euros: number) => Math.round(euros * 100);
 
 /** Precio por sesión del paciente (upsert sobre payment_settings). */
 export async function upsertPriceAction(patientId: string, priceEuros: number) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro } = await requireOwnedPatient(patientId);
   if (!(priceEuros >= 0)) throw new Error("Precio no válido.");
 
   const supabase = await createClient();
@@ -35,8 +34,7 @@ export async function addPackAction(
   totalSessions: number,
   priceEuros: number,
 ) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro } = await requireOwnedPatient(patientId);
   if (!(totalSessions > 0)) throw new Error("Nº de sesiones no válido.");
 
   const supabase = await createClient();
@@ -60,8 +58,7 @@ export async function registerPaymentAction(
   status: "paid" | "pending",
   method?: string | null,
 ) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro } = await requireOwnedPatient(patientId);
   if (!(amountEuros >= 0)) throw new Error("Importe no válido.");
 
   const supabase = await createClient();
@@ -84,14 +81,15 @@ export async function setPaymentMethodAction(
   patientId: string,
   method: string | null,
 ) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro } = await requireOwnedPatient(patientId);
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("payments")
     .update({ method: method && isPaymentMethod(method) ? method : null })
-    .eq("id", paymentId);
+    .eq("id", paymentId)
+    .eq("patient_id", patientId)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidatePayments(patientId);
 }
@@ -102,6 +100,8 @@ export async function setPaymentStatusAction(
   patientId: string,
   status: "paid" | "pending",
 ) {
+  const { pro } = await requireOwnedPatient(patientId);
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("payments")
@@ -109,14 +109,23 @@ export async function setPaymentStatusAction(
       status,
       paid_at: status === "paid" ? new Date().toISOString() : null,
     })
-    .eq("id", paymentId);
+    .eq("id", paymentId)
+    .eq("patient_id", patientId)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidatePayments(patientId);
 }
 
 export async function deletePaymentAction(paymentId: string, patientId: string) {
+  const { pro } = await requireOwnedPatient(patientId);
+
   const supabase = await createClient();
-  const { error } = await supabase.from("payments").delete().eq("id", paymentId);
+  const { error } = await supabase
+    .from("payments")
+    .delete()
+    .eq("id", paymentId)
+    .eq("patient_id", patientId)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidatePayments(patientId);
 }
