@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { siteUrl } from "@/lib/site-url";
+import { addDaysYMD, formatYMD, parseYMD, todayYMD } from "@/lib/tz";
 import { notFound } from "next/navigation";
 import { getPatient } from "@/lib/queries/patients";
 import { getTasksForPatient } from "@/lib/queries/tasks";
@@ -68,6 +69,8 @@ export default async function PatientDetailPage({
   // origen, un `x-forwarded-host: evil.tld` generaba un enlace que entregaba el
   // token al atacante. Se toma de la configuración del despliegue.
   const baseUrl = siteUrl();
+  // "Hoy" en la zona del profesional, resuelto una vez en el servidor.
+  const hoy = todayYMD();
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -139,7 +142,12 @@ export default async function PatientDetailPage({
               />
             )}
             {tab === "tareas" && (
-              <TasksPanel patientId={id} tasks={await getTasksForPatient(id)} />
+              <TasksPanel
+                patientId={id}
+                tasks={await getTasksForPatient(id)}
+                today={hoy}
+                soon={formatYMD(addDaysYMD(parseYMD(hoy), 2))}
+              />
             )}
             {tab === "notas" && (
               <NotesPanel patientId={id} notes={await getNotesForPatient(id)} />

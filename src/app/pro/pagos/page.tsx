@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/format";
 import { BarChart } from "@/app/pro/_components/BarChart";
 import { MethodBreakdown } from "@/app/pro/_components/MethodBreakdown";
 import { presetRange } from "@/lib/date-ranges";
+import { ymdParts } from "@/lib/tz";
 
 function monthLabelLong(ym: string): string {
   return new Date(`${ym}-01T00:00:00`).toLocaleDateString("es-ES", {
@@ -20,7 +21,7 @@ function monthLabelShort(ym: string): string {
 }
 /** Rango inclusivo YYYY-MM-DD de un mes (fecha pura, apta para render). */
 function monthRange(ym: string): { from: string; to: string } {
-  const [y, m] = ym.split("-").map(Number);
+  const [y, m] = ymdParts(`${ym}-01`);
   const p = (n: number) => String(n).padStart(2, "0");
   const last = new Date(y, m, 0).getDate();
   return { from: `${ym}-01`, to: `${ym}-${p(last)}` };

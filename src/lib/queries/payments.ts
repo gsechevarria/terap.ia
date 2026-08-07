@@ -159,9 +159,17 @@ const EMPTY_HISTORY: PaymentHistory = {
 
 /**
  * Pagos del profesional con filtros (rango de fechas, estado, método, paciente)
- * y agregados sobre el conjunto filtrado. La fecha efectiva de cada pago es
- * `paid_at ?? created_at`; el filtro de rango se aplica en JS sobre ella para
- * ser consistente con lo que se muestra. Para seguimiento, nunca facturación.
+ * y agregados sobre el conjunto filtrado.
+ *
+ * El filtro de fechas y la ordenación se hacen EN SQL sobre la columna generada
+ * `fecha_efectiva` (= `paid_at ?? created_at`). Antes se traía todo sin
+ * `order`, sin `limit` y sin `range`, y se filtraba en memoria: PostgREST corta
+ * en `db-max-rows` (1.000) y, sin ORDER BY, el subconjunto devuelto ni siquiera
+ * es determinista. Con cuatro años de historial, filtrar "enero 2024" mostraba
+ * 3 pagos en vez de 55 y los totales reportaban una fracción de lo real, sin
+ * ningún aviso.
+ *
+ * Para seguimiento, nunca facturación.
  */
 export async function getProfessionalPayments(
   filters: PaymentFilters = {},
@@ -179,31 +187,36 @@ export async function getProfessionalPayments(
   if (filters.patientId) q = q.eq("patient_id", filters.patientId);
   if (filters.method === "none") q = q.is("method", null);
   else if (filters.method) q = q.eq("method", filters.method);
+  if (filters.fromISO) q = q.gte("fecha_efectiva", filters.fromISO);
+  if (filters.toISO) q = q.lt("fecha_efectiva", filters.toISO);
 
-  const { data } = await q;
+  // El tope es explícito y alto: los agregados de la pantalla se calculan sobre
+  // lo devuelto, así que un recorte silencioso falsearía los totales. Si algún
+  // profesional lo supera habrá que mover los agregados a una RPC que sume en
+  // SQL (anotado en docs/MIGRACIONES-PENDIENTES.md).
+  const { data, error } = await q
+    .order("fecha_efectiva", { ascending: false })
+    .limit(5000);
 
-  const fromMs = filters.fromISO ? Date.parse(filters.fromISO) : null;
-  const toMs = filters.toISO ? Date.parse(filters.toISO) : null;
+  if (error) {
+    console.error("[queries/payments] fallo al leer el histórico", {
+      code: error.code,
+    });
+    return EMPTY_HISTORY;
+  }
+
   const effective = (p: Payment) => p.paid_at ?? p.created_at;
-
-  const rows: PaymentHistoryRow[] = [];
-  for (const row of data ?? []) {
+  const rows: PaymentHistoryRow[] = (data ?? []).map((row) => {
     const { patients, appointments, ...rest } = row as typeof row & {
       patients: { full_name: string | null } | null;
       appointments: { starts_at: string } | null;
     };
-    const payment = rest as Payment;
-    const whenMs = Date.parse(effective(payment));
-    if (fromMs !== null && whenMs < fromMs) continue;
-    if (toMs !== null && whenMs >= toMs) continue;
-    rows.push({
-      ...payment,
+    return {
+      ...(rest as Payment),
       sessionAt: appointments?.starts_at ?? null,
       patientName: patients?.full_name ?? null,
-    });
-  }
-
-  rows.sort((a, b) => Date.parse(effective(b)) - Date.parse(effective(a)));
+    };
+  });
 
   let totalPaidCents = 0;
   let totalPendingCents = 0;

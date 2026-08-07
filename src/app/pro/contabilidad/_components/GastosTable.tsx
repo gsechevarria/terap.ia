@@ -172,7 +172,7 @@ export function GastosTable({
                   {formatCurrency(deducibleCents(g, situacionIva))}
                 </td>
                 <td className="whitespace-nowrap text-right">
-                  <span className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                  <span className="inline-flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                     {g.adjunto_path && (
                       <a
                         href={`/receipts?path=${encodeURIComponent(g.adjunto_path)}`}

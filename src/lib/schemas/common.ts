@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ymdParts } from "@/lib/tz";
 
 /**
  * Piezas compartidas por los esquemas de las server actions.
@@ -31,7 +32,7 @@ export const YMD = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "La fecha no es válida.")
   .refine((s) => {
-    const [y, m, d] = s.split("-").map(Number);
+    const [y, m, d] = ymdParts(s);
     const dt = new Date(Date.UTC(y, m - 1, d));
     return (
       dt.getUTCFullYear() === y &&

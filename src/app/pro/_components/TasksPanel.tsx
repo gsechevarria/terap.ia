@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CalendarDays } from "lucide-react";
 import {
   createTaskAction,
@@ -16,45 +16,35 @@ type Draft = { title: string; description: string; dueDate: string };
 
 const EMPTY: Draft = { title: "", description: "", dueDate: "" };
 
-/** Fecha local en formato YYYY-MM-DD (comparable con `due_date` de la BD). */
-function localDayISO(offsetDays = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
+/**
+ * `today` y `soon` llegan resueltos desde el server component (`todayYMD()` en
+ * la zona del profesional). Antes se calculaban tras montar con un `setState`
+ * dentro de un efecto: además de provocar un parpadeo, el React Compiler lo
+ * prohíbe por las cascadas de render que genera.
+ */
 export function TasksPanel({
   patientId,
   tasks,
+  today,
+  soon,
 }: {
   patientId: string;
   tasks: TaskWithCompletion[];
+  /** Hoy en la zona del profesional, 'YYYY-MM-DD'. */
+  today: string;
+  /** Hoy + 2 días: umbral de "vence pronto". */
+  soon: string;
 }) {
   const [creating, setCreating] = useState<Draft>(EMPTY);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Draft>(EMPTY);
   const { run, pending, error } = useAction();
 
-  // "Hoy"/"pronto" se resuelven tras montar para no romper la hidratación
-  // (servidor y cliente pueden estar en husos/días distintos).
-  const [now, setNow] = useState<{ today: string; soon: string } | null>(null);
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      if (!active) return;
-      setNow({ today: localDayISO(), soon: localDayISO(2) });
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
-
   /** Color de la etiqueta de fecha según urgencia (solo tareas pendientes). */
   function dueTone(t: TaskWithCompletion): string {
-    if (!t.due_date || t.completed || !now) return "";
-    if (t.due_date < now.today) return "bg-danger-soft text-danger";
-    if (t.due_date <= now.soon) return "bg-warn-soft text-warn";
+    if (!t.due_date || t.completed) return "";
+    if (t.due_date < today) return "bg-danger-soft text-danger";
+    if (t.due_date <= soon) return "bg-warn-soft text-warn";
     return "";
   }
 
@@ -235,7 +225,7 @@ export function TasksPanel({
                           <CalendarDays className="size-3.5" />
                           <span className="text-ink-3">Límite</span>
                           {formatDate(t.due_date)}
-                          {!t.completed && now && t.due_date < now.today && (
+                          {!t.completed && t.due_date < today && (
                             <span className="font-semibold">· vencida</span>
                           )}
                         </span>
@@ -255,7 +245,7 @@ export function TasksPanel({
                       </p>
                     )}
                   </div>
-                  <div className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100">
+                  <div className="flex shrink-0 gap-1 opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                     <button
                       type="button"
                       onClick={() => startEdit(t)}

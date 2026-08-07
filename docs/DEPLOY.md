@@ -117,6 +117,28 @@ Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente si
 por query string (`?secret=`) se retiró para que el secreto no acabe en los logs
 de acceso.
 
+## 4 bis. Vigilancia del cron
+
+El cron es el único camino por el que salen los recordatorios y las alertas de
+ítem de riesgo. Si dejara de ejecutarse, **nadie se enteraría** hasta que un
+paciente se quejase de haber faltado a una sesión.
+
+Desde ago 2026 el endpoint devuelve **500** ante cualquier error de consulta (y
+no `{ ok: true, sent: 0 }`, que era éxito aparente con cero trabajo hecho), así
+que basta con vigilar el código de estado.
+
+Configura una alerta —Better Stack, Cronitor, o el monitor que uses— con:
+
+- **Health check:** `GET https://<dominio>/api/health` cada 5 min. Devuelve 503
+  si Postgres no responde.
+- **Heartbeat del cron:** aviso si `/api/cron/notifications` **no reporta un 200
+  en 26 horas** (el cron es diario a las 08:00 UTC; 26 h da margen para un
+  reintento sin generar falsos positivos).
+- **Alerta inmediata** ante cualquier 500 del cron.
+
+El cuerpo de la respuesta trae el desglose para diagnosticar sin abrir logs:
+`{ ok, remindersCreated, sent, failed, retrying, skipped }`.
+
 ## 5. Seed de demo
 ```bash
 SEED_PRO_EMAIL=tu-correo@dominio npm run seed

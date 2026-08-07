@@ -105,7 +105,9 @@ export function ScoreChart({
           />
         )}
         {points.map((p, i) => (
-          <g key={i}>
+          // Por fecha y no por índice: al reordenarse la serie React reutilizaba
+          // nodos SVG de otro punto.
+          <g key={p.date}>
             <circle
               cx={x(i)}
               cy={y(p.score)}
@@ -130,7 +132,7 @@ export function ScoreChart({
             style={{ fontSize: 10 }}
             textAnchor="middle"
           >
-            {formatDate(points[0].date)}
+            {formatDate(points[0]?.date)}
           </text>
         )}
         {points.length > 1 && (
@@ -141,7 +143,7 @@ export function ScoreChart({
             style={{ fontSize: 10 }}
             textAnchor="middle"
           >
-            {formatDate(points[points.length - 1].date)}
+            {formatDate(points[points.length - 1]?.date)}
           </text>
         )}
       </svg>

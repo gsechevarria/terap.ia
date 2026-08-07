@@ -1,4 +1,4 @@
-import { TZ, fromWallClock, todayYMD, wallClockParts } from "@/lib/tz";
+import { TZ, fromWallClock, todayYMD, wallClockParts, ymdParts } from "@/lib/tz";
 
 /*
  * Todos los formateadores fijan `timeZone: TZ`. Sin ello, el mismo instante se
@@ -72,8 +72,10 @@ export function ageFromBirthDate(date: string | null | undefined): number | null
   if (!date) return null;
   const birth = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
   if (!birth) return null;
-  const [, by, bm, bd] = birth.map(Number);
-  const [ty, tm, td] = todayYMD().split("-").map(Number);
+  const by = Number(birth[1]);
+  const bm = Number(birth[2]);
+  const bd = Number(birth[3]);
+  const [ty, tm, td] = ymdParts(todayYMD());
   let age = ty - by;
   if (tm < bm || (tm === bm && td < bd)) age--;
   return age >= 0 && age < 130 ? age : null;

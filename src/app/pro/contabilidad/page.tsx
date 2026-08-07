@@ -28,7 +28,9 @@ export default async function ContabilidadPage() {
 
   const data = await getFiscalArrays(anio);
   const resumen = calcularResumenAnual(data, anio, params);
-  const q = resumen.trimestres[trimestre - 1];
+  // `calcularResumenAnual` produce siempre los cuatro trimestres, pero el
+  // acceso indexado no lo sabe.
+  const q = resumen.trimestres[trimestre - 1] ?? resumen.trimestres[0]!;
   const prox = proximoVencimiento(ref, params);
   const alertas = alertasVencimiento(ref, params, 45);
   const sinDatos = data.ingresos.length === 0 && data.gastos.length === 0;

@@ -625,8 +625,10 @@ export type Database = {
           channel: Database["public"]["Enums"]["notification_channel"]
           created_at: string
           id: string
+          next_attempt_at: string | null
           patient_id: string | null
           payload: Json | null
+          retry_count: number
           professional_id: string | null
           read_at: string | null
           scheduled_for: string | null
@@ -641,8 +643,10 @@ export type Database = {
           channel?: Database["public"]["Enums"]["notification_channel"]
           created_at?: string
           id?: string
+          next_attempt_at?: string | null
           patient_id?: string | null
           payload?: Json | null
+          retry_count?: number
           professional_id?: string | null
           read_at?: string | null
           scheduled_for?: string | null
@@ -657,8 +661,10 @@ export type Database = {
           channel?: Database["public"]["Enums"]["notification_channel"]
           created_at?: string
           id?: string
+          next_attempt_at?: string | null
           patient_id?: string | null
           payload?: Json | null
+          retry_count?: number
           professional_id?: string | null
           read_at?: string | null
           scheduled_for?: string | null
@@ -837,6 +843,7 @@ export type Database = {
           appointment_id: string | null
           created_at: string
           currency: string
+          fecha_efectiva: string | null
           id: string
           method: string | null
           note: string | null

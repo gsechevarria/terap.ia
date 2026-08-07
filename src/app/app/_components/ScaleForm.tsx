@@ -34,7 +34,11 @@ export function ScaleForm({
       return;
     }
     const payload: ScaleAnswers = {};
-    for (const it of definition.items) payload[String(it.id)] = answers[it.id];
+    for (const it of definition.items) {
+      const v = answers[it.id];
+      if (v == null) return; // `allAnswered` ya lo garantiza; el tipo no.
+      payload[String(it.id)] = v;
+    }
 
     // El envío va envuelto: si la action lanza (red caída, sesión expirada),
     // el paciente vería la pantalla de error y perdería las 9 respuestas del
@@ -160,7 +164,7 @@ export function ScaleForm({
       </div>
 
       {error && (
-        <p className="mt-4 rounded bg-danger-soft p-3 text-sm text-danger">
+        <p role="alert" className="mt-4 rounded bg-danger-soft p-3 text-sm text-danger">
           {error}
         </p>
       )}

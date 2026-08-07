@@ -6,7 +6,7 @@ import { TriangleAlert } from "lucide-react";
 import { createAppointmentAction } from "@/lib/actions/appointments";
 import { actionErrorMessage } from "@/lib/errors";
 import { fromDatetimeLocal } from "@/lib/format";
-import { fromWallClock } from "@/lib/tz";
+import { fromWallClock, ymdParts } from "@/lib/tz";
 
 type Freq = "none" | "weekly" | "biweekly" | "monthly";
 
@@ -66,7 +66,7 @@ export function NewAppointment({
     // "Hasta" es un día inclusivo: se convierte al final de ESE día en Madrid.
     const untilISO = (() => {
       if (!until) return null;
-      const [uy, um, ud] = until.split("-").map(Number);
+      const [uy, um, ud] = ymdParts(until);
       return fromWallClock(uy, um, ud, 23, 59).toISOString();
     })();
 
@@ -246,10 +246,14 @@ export function NewAppointment({
         </label>
       </div>
 
-      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-danger">
+          {error}
+        </p>
+      )}
 
       {conflict ? (
-        <div className="mt-3 rounded-md border border-warn/30 bg-warn-soft p-3">
+        <div role="alert" className="mt-3 rounded-md border border-warn/30 bg-warn-soft p-3">
           <div className="flex items-start gap-2 text-sm text-warn">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
             <p>{conflict}</p>

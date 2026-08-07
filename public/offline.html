@@ -3,13 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>terap.ia</title>
+    <title>Sin conexión · terap.ia</title>
     <!--
-      Esta página solo se ve en la app NATIVA cuando no hay red: Capacitor carga
-      la PWA desplegada desde `server.url` y cae aquí si no puede alcanzarla.
-      Antes era un placeholder de 537 bytes, así que sin conexión la app abría
-      en blanco. El teléfono de emergencia va aquí a propósito: es lo único que
-      tiene que funcionar aunque no haya nada más.
+      Fallback de navegación del service worker. Autónoma a propósito: sin CSS
+      ni JS externos, porque justamente se sirve cuando no hay red.
+      El 024 va aquí porque es lo único que tiene que funcionar siempre.
     -->
     <style>
       :root { color-scheme: light dark; }
@@ -60,8 +58,8 @@
     <main>
       <h1>Sin conexión</h1>
       <p>
-        No hemos podido conectar con terap.ia. Comprueba tu conexión a internet
-        y vuelve a intentarlo.
+        Esta página necesita conexión a internet. Comprueba tu red y vuelve a
+        intentarlo.
       </p>
       <button type="button" onclick="location.reload()">Reintentar</button>
       <a class="emergencia" href="tel:024">

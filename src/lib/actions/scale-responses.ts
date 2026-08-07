@@ -59,7 +59,7 @@ export async function submitScaleResponseAction(input: {
     keys.length === ids.length &&
     ids.every((id) => {
       const v = input.answers[id];
-      return Number.isInteger(v) && valid.has(v);
+      return v != null && Number.isInteger(v) && valid.has(v);
     });
 
   if (!completa) {

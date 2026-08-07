@@ -6,18 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test:rls": "node --env-file=.env.local scripts/test-rls.mjs",
-    "test:pro": "node --env-file=.env.local scripts/test-pro-flow.mjs",
-    "test:onboarding": "node --env-file=.env.local scripts/test-onboarding.mjs",
-    "test:scales": "node --env-file=.env.local scripts/test-scales.mjs",
-    "test:agenda": "node --env-file=.env.local scripts/test-agenda.mjs",
-    "test:payments": "node --env-file=.env.local scripts/test-payments.mjs",
-    "test:wellbeing": "node --env-file=.env.local scripts/test-wellbeing.mjs",
-    "test:notifications": "node --env-file=.env.local scripts/test-notifications.mjs",
-    "test:analytics": "node --env-file=.env.local scripts/test-analytics.mjs",
-    "test:contabilidad": "node --env-file=.env.local scripts/test-contabilidad.mjs",
     "seed": "node --env-file=.env.local scripts/seed.mjs",
     "db:push": "supabase db push",
     "gen:types": "supabase gen types typescript --project-id levufuoigdlexscpvlgk --schema public > src/lib/database.types.ts",
@@ -27,7 +17,21 @@
     "cap:add:ios": "cap add ios",
     "cap:open:android": "cap open android",
     "cap:open:ios": "cap open ios",
-    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#4f9d8b' --splashBackgroundColor '#f7f7f5'"
+    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#4f9d8b' --splashBackgroundColor '#f7f7f5'",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "test:integration:rls": "node --env-file=.env.test scripts/test-rls.mjs",
+    "test:integration:pro": "node --env-file=.env.test scripts/test-pro-flow.mjs",
+    "test:integration:onboarding": "node --env-file=.env.test scripts/test-onboarding.mjs",
+    "test:integration:scales": "node --env-file=.env.test scripts/test-scales.mjs",
+    "test:integration:agenda": "node --env-file=.env.test scripts/test-agenda.mjs",
+    "test:integration:payments": "node --env-file=.env.test scripts/test-payments.mjs",
+    "test:integration:wellbeing": "node --env-file=.env.test scripts/test-wellbeing.mjs",
+    "test:integration:notifications": "node --env-file=.env.test scripts/test-notifications.mjs",
+    "test:integration:analytics": "node --env-file=.env.test scripts/test-analytics.mjs",
+    "test:integration:contabilidad": "node --env-file=.env.test scripts/test-contabilidad.mjs",
+    "test:integration": "npm run test:integration:rls && npm run test:integration:pro && npm run test:integration:onboarding && npm run test:integration:scales && npm run test:integration:agenda && npm run test:integration:payments && npm run test:integration:wellbeing && npm run test:integration:notifications && npm run test:integration:analytics && npm run test:integration:contabilidad"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
@@ -36,6 +40,7 @@
     "@capacitor/core": "^8.4.2",
     "@capacitor/ios": "^8.4.2",
     "@capacitor/push-notifications": "^8.1.2",
+    "@sentry/nextjs": "^10.69.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.7",
     "lucide-react": "^1.25.0",
@@ -55,10 +60,15 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "supabase": "^2.109.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=20.11"
   }
 }

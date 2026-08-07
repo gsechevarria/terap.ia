@@ -55,12 +55,35 @@ Es idempotente. **Usa la `service_role` contra la base de datos real.**
 | Comando | Qué hace |
 |---|---|
 | `npm run dev` / `build` / `start` | ciclo de Next.js |
-| `npm run lint` | ESLint 9 (flat config) |
+| `npm run lint` | ESLint 9 (flat config), sin warnings permitidos |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | **vitest**: lógica pura, sin base de datos |
+| `npm run test:cov` | lo mismo con cobertura |
+| `npm run test:integration` | batería contra **Supabase local** (ver abajo) |
 | `npm run db:push` | aplica las migraciones al proyecto remoto |
 | `npm run gen:types` | regenera `src/lib/database.types.ts` |
-| `npm run test:*` | baterías contra Supabase real (rls, pro, agenda, pagos…) |
 | `npm run cap:*` | Capacitor (sync, add, open) |
+
+## Tests
+
+**`npm test` no toca ninguna base de datos.** Cubre el motor fiscal, la
+aritmética de fechas y zonas horarias, el reparto en carriles de la agenda y la
+puntuación de las escalas. Se ejecuta en UTC en CI a propósito: es la zona del
+runtime de Vercel y donde estaban los fallos de fecha.
+
+La batería de **integración** sí necesita base de datos, y va contra una local:
+
+```bash
+supabase start                 # imprime URL y claves
+cp .env.test.example .env.test # y pega esos valores
+supabase db reset              # aplica todas las migraciones en limpio
+npm run test:integration
+```
+
+> ⚠️ **Nunca la apuntes al proyecto remoto.** Crea usuarios en Auth e inserta
+> pacientes, citas, pagos y ficheros. Limpia en un `finally`, pero si el proceso
+> muere (timeout, Ctrl-C) ese `finally` no corre y deja basura en producción.
+> Por eso los scripts leen `.env.test` y no `.env.local`.
 
 ## Estructura
 

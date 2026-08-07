@@ -19,6 +19,7 @@ import {
 } from "@/lib/format";
 import { actionErrorMessage } from "@/lib/errors";
 import { safeExternalUrl } from "@/lib/url";
+import { layoutDay, type LayoutBox } from "@/lib/appointment-layout";
 import {
   TZ,
   addDaysYMD,
@@ -372,47 +373,22 @@ function MonthGrid({
 
 /* ---------------------------------------------------- vista día/semana --- */
 
-type Placed = {
-  appt: AgendaAppointment;
-  top: number;
-  height: number;
-  leftPct: number;
-  widthPct: number;
-};
+type Placed = LayoutBox & { appt: AgendaAppointment };
 
-/** Coloca las citas de un día en carriles para resolver solapes. */
-function layoutDay(appts: AgendaAppointment[]): Placed[] {
-  const evs = appts
-    .map((a) => {
-      const s = Math.max(minutesOfDay(a.starts_at), HOUR_START * 60);
-      const e = Math.min(
-        Math.max(minutesOfDay(a.ends_at), s + 25),
-        HOUR_END * 60,
-      );
-      return { a, s, e };
-    })
-    .filter((ev) => ev.e > ev.s)
-    .sort((x, y) => x.s - y.s);
-
-  const laneEnds: number[] = [];
-  const withLane = evs.map((ev) => {
-    let lane = laneEnds.findIndex((end) => end <= ev.s);
-    if (lane === -1) {
-      lane = laneEnds.length;
-      laneEnds.push(0);
-    }
-    laneEnds[lane] = ev.e;
-    return { ...ev, lane };
-  });
-  const lanes = Math.max(1, laneEnds.length);
-
-  return withLane.map(({ a, s, e, lane }) => ({
-    appt: a,
-    top: ((s - HOUR_START * 60) / 60) * HOUR_PX,
-    height: Math.max(((e - s) / 60) * HOUR_PX - 2, 18),
-    leftPct: (lane / lanes) * 100,
-    widthPct: 100 / lanes,
-  }));
+/**
+ * Coloca las citas de un día en carriles. El algoritmo vive en
+ * `lib/appointment-layout.ts` para poder testearlo sin DOM.
+ */
+function placeDay(appts: AgendaAppointment[]): Placed[] {
+  const byId = new Map(appts.map((a) => [a.id, a]));
+  return layoutDay(
+    appts.map((a) => ({
+      id: a.id,
+      startMin: minutesOfDay(a.starts_at),
+      endMin: minutesOfDay(a.ends_at),
+    })),
+    { hourStart: HOUR_START, hourEnd: HOUR_END, hourPx: HOUR_PX },
+  ).map((box) => ({ ...box, appt: byId.get(box.id)! }));
 }
 
 function TimeGrid({
@@ -504,7 +480,7 @@ function TimeGrid({
           {cols.map((c) => {
             const k = formatYMD(c);
             const isToday = todayYMD === k;
-            const placed = layoutDay(apptByDay.get(k) ?? []);
+            const placed = placeDay(apptByDay.get(k) ?? []);
             // Instantes reales de las 07:00 y las 21:00 EN MADRID de ese día.
             // Con `c.getTime() + 7h` se obtenían las 07:00 UTC y los bloqueos
             // se pintaban desplazados una o dos horas.
@@ -938,13 +914,13 @@ function EditModal({
         </div>
 
         {error && (
-          <p className="mt-3 rounded bg-danger-soft p-3 text-sm text-danger">
+          <p role="alert" className="mt-3 rounded bg-danger-soft p-3 text-sm text-danger">
             {error}
           </p>
         )}
 
         {conflict && (
-          <div className="mt-3 flex items-start gap-2 rounded-md border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
+          <div role="alert" className="mt-3 flex items-start gap-2 rounded-md border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
             <p>{conflict}</p>
           </div>

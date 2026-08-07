@@ -23,7 +23,9 @@ export function PushToggle() {
 
   useEffect(() => {
     let active = true;
-    (async () => {
+    // `void`: la IIFE gestiona sus propios errores, pero la promesa quedaba
+    // suelta y `no-floating-promises` la marcaba con razón.
+    void (async () => {
       const ok =
         typeof window !== "undefined" &&
         "serviceWorker" in navigator &&
@@ -37,8 +39,13 @@ export function PushToggle() {
         const reg = await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.getSubscription();
         if (active) setSubscribed(!!sub);
-      } catch {
-        /* ignorar */
+      } catch (e) {
+        // De cara al usuario sigue siendo silencioso (no poder consultar la
+        // suscripción no es un error que deba interrumpirle), pero deja rastro:
+        // antes el `catch {}` mudo escondía cualquier fallo del service worker.
+        console.error("[push] no se ha podido leer la suscripción", {
+          message: e instanceof Error ? e.message : "desconocido",
+        });
       }
     })();
     return () => {

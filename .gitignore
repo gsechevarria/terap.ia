@@ -34,6 +34,7 @@ yarn-error.log*
 .env*
 # ...excepto la plantilla de ejemplo (sin secretos)
 !.env.example
+!.env.test.example
 
 # vercel
 .vercel

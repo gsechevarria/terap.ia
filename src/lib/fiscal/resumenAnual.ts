@@ -132,6 +132,8 @@ export function calcularResumenAnual(
   );
 
   const q4 = trimestres[3];
+  // El bucle de arriba recorre [1,2,3,4], así que siempre hay cuatro.
+  if (!q4) throw new Error("El cálculo anual no ha producido los 4 trimestres.");
   const gastosCorrientesTotal = gastosCorrientesAcum(4);
   const gastosDeduciblesTotales = redondear(
     gastosCorrientesTotal + amortizacionesTotales,
@@ -161,5 +163,7 @@ export function modelo130DeTrimestre(
   trimestre: Trimestre,
   params: ParamsFiscales,
 ): Modelo130Result {
-  return calcularResumenAnual(data, ejercicio, params).trimestres[trimestre - 1];
+  const r = calcularResumenAnual(data, ejercicio, params).trimestres[trimestre - 1];
+  if (!r) throw new Error("Trimestre fuera de rango.");
+  return r;
 }

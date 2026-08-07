@@ -1,4 +1,4 @@
-import { formatYMD, fromWallClock, todayYMD } from "@/lib/tz";
+import { formatYMD, fromWallClock, todayYMD, ymdParts } from "@/lib/tz";
 
 /**
  * Presets de rango de fechas para el filtro de citas. Funciones puras: reciben
@@ -25,7 +25,7 @@ function at(y: number, monthIndex: number, day: number): string {
 }
 
 export function presetRange(key: PresetKey, ref: Date): DateRange {
-  const [y, m, d] = todayYMD(ref).split("-").map(Number);
+  const [y, m, d] = ymdParts(todayYMD(ref));
   const mi = m - 1; // índice de mes base 0
   switch (key) {
     case "this-month":
@@ -52,7 +52,7 @@ export const PRESETS: { key: PresetKey; label: string }[] = [
 /** Valida `YYYY-MM-DD` y que sea una fecha real (31 de febrero no cuela). */
 export function isValidYMD(s: string | undefined): s is string {
   if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-  const [y, m, d] = s.split("-").map(Number);
+  const [y, m, d] = ymdParts(s);
   return at(y, m - 1, d) === s;
 }
 
@@ -62,12 +62,12 @@ export function isValidYMD(s: string | undefined): s is string {
  * y colaba en el rango las citas o pagos de la última franja del día anterior.
  */
 export function fromDateToISO(ymdStr: string): string {
-  const [y, m, d] = ymdStr.split("-").map(Number);
+  const [y, m, d] = ymdParts(ymdStr);
   return fromWallClock(y, m, d, 0, 0).toISOString();
 }
 
 /** `YYYY-MM-DD` inclusivo → medianoche de Madrid del día siguiente (exclusivo). */
 export function toDateToISO(ymdStr: string): string {
-  const [y, m, d] = ymdStr.split("-").map(Number);
+  const [y, m, d] = ymdParts(ymdStr);
   return fromWallClock(y, m, d + 1, 0, 0).toISOString();
 }

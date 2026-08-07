@@ -121,8 +121,22 @@ export function lastDayOfMonth(y: number, m: number): number {
  * horario. Para obtener el instante real de un día a una hora concreta en TZ,
  * usar `fromWallClock`, no esto.
  */
+/**
+ * `'YYYY-MM-DD'` → `[año, mes(1-12), día]`.
+ *
+ * Devuelve una TUPLA de longitud fija a propósito: con
+ * `noUncheckedIndexedAccess`, el `const [y, m, d] = s.split("-").map(Number)`
+ * que había repartido por el repo tipa las tres como `number | undefined`, y
+ * ese es justo el caso que producía `Invalid Date` en silencio cuando la cadena
+ * venía mal formada. Los `NaN` se propagan de forma visible.
+ */
+export function ymdParts(s: string): [number, number, number] {
+  const p = s.split("-");
+  return [Number(p[0]), Number(p[1]), Number(p[2])];
+}
+
 export function parseYMD(s: string): Date {
-  const [y, m, d] = s.split("-").map(Number);
+  const [y, m, d] = ymdParts(s);
   return new Date(Date.UTC(y, m - 1, d));
 }
 

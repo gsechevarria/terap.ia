@@ -136,7 +136,7 @@ export function LoginForm({ invite }: { invite?: string }) {
 
       {status === "sent" ? (
         <div className="mt-6">
-          <p className="rounded bg-accent-soft p-4 text-sm text-accent">
+          <p role="status" className="rounded bg-accent-soft p-4 text-sm text-accent">
             {message}
           </p>
           {method === "reset" && (
@@ -177,7 +177,7 @@ export function LoginForm({ invite }: { invite?: string }) {
           </label>
 
           {status === "error" && (
-            <p className="rounded bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
               {message}
             </p>
           )}
@@ -213,7 +213,7 @@ export function LoginForm({ invite }: { invite?: string }) {
           </label>
 
           {status === "error" && (
-            <p className="rounded bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
               {message}
             </p>
           )}
@@ -258,7 +258,7 @@ export function LoginForm({ invite }: { invite?: string }) {
           )}
 
           {status === "error" && (
-            <p className="rounded bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
               {message}
             </p>
           )}

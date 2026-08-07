@@ -719,6 +719,87 @@ notifications 9, analytics 6, scales 12, contabilidad 14). `build`/`typecheck`/
 - **Barrido de rendimiento** (opcional): envolver los helpers en `(select …)` en
   las ~50 políticas existentes de más volumen.
 
+### Auditoría técnica (ago 2026) 🟡 (código en verde; **migraciones pendientes de aplicar**)
+
+Corrección completa de la auditoría en cuatro fases, rama `fix/auditoria-2026-08`.
+
+**Fase 1 — lo que estaba roto en producción.** Toda la aritmética y el formateo
+de fechas pasa por `src/lib/tz.ts` (`Europe/Madrid`): el runtime de Vercel es UTC
+y las horas se mostraban con 2 h de desfase entre servidor y cliente. Las series
+recurrentes se anclan en la cita original (respetan el cambio de horario y el
+31 de mes). `revalidatePath` apuntaba a rutas inexistentes bajo `/contabilidad`
+(no-op silencioso). Contraste AA en `--ink-3`, zoom desbloqueado, `error.tsx` y
+`loading.tsx`, `try/catch` en las server actions del cliente.
+
+**Fase 2 — control de acceso.** El rol pasa a `app_metadata`; se cierra el
+autorregistro de profesionales; `createInvitationAction` y `accept_invitation`
+validan propiedad y destinatario; Storage respeta `shared_with_patient`;
+cabeceras de seguridad en `next.config.ts`; 401 explícito en los route handlers;
+`?next=` validado; cron con `timingSafeEqual` y sin query string.
+
+**Fase 3 — dinero y datos clínicos.** Los bonos se registran como ingreso al
+venderlos; la liquidación de citas es atómica con operación inversa; las escalas
+se validan en servidor y en trigger, y el ítem de riesgo avisa al profesional;
+IVA sujeto/mixto, amortización prorrateada, tope del 130 prorrateado, trimestre
+en hora española; zod en las actions de dinero y datos clínicos.
+
+**Fase 4 — que no se rompa otra vez.** 76 tests de vitest sobre lógica pura
+(motor fiscal, fechas, layout de agenda, escalas), integración movida a Supabase
+local, Sentry con depuración de PII por lista blanca, `/api/health`, CI con build
+y audit, `noUncheckedIndexedAccess`, paginación real del histórico de pagos y
+batching del cron.
+
+#### ⚠️ Migraciones pendientes de aplicar — ver `docs/MIGRACIONES-PENDIENTES.md`
+
+Seis migraciones nuevas con orden y verificación documentados. Dos bloqueantes:
+el `migration repair` de las dos migraciones aplicadas por el SQL editor, y el
+**backfill del rol a `app_metadata`**, que va ANTES de desplegar el código —
+sin él nadie puede entrar.
+
+#### ⚠️ Cambios fiscales que necesitan validación
+
+Todos cambian cifras que ya se han mostrado. Los cinco están implementados y
+marcados aquí para que se validen con un asesor antes de darlos por buenos:
+
+1. **IVA repercutido.** Con actividad `sujeta`/`mixta`, un cobro de 121 € ya no
+   se registra como base 121 € / IVA 0 €. El rendimiento neto y los pagos
+   fraccionados **bajan**. Con `exenta` (el caso normal) no cambia nada.
+2. **Ingresos por base, no por total.** `resumenAnual` acumulaba `i.total`
+   mientras calculaba la retención sobre `i.base`. El IRPF grava la base.
+3. **Prorrata de IVA en régimen mixto.** Campo nuevo en Configuración. Sin él,
+   el cálculo se **detiene** en vez de suponer el caso más favorable.
+4. **Amortización prorrateada por días** desde la compra, e imputada solo desde
+   su trimestre. Un bien comprado en noviembre ya no se amortiza el año entero.
+5. **Tope de difícil justificación prorrateado por trimestre** (2000 × t/4).
+
+Además, los parámetros sin confirmar contra la AEAT (`% y tope de difícil
+justificación`) viajan marcados y el XLSX lleva una fila de aviso dentro.
+
+#### Queda abierto
+
+- **`FORCE ROW LEVEL SECURITY`**: ninguna tabla lo tiene, así que `service_role`
+  y `postgres` lo leen todo. Activarlo exige antes dar políticas explícitas al
+  propietario, porque `accept_invitation`, `patient_accept_consent` y
+  `patient_respond_appointment` dependen de ese bypass. Trabajo aparte, con
+  pruebas propias.
+- **Editar una serie de citas completa.** Hoy la edición afecta solo a la
+  ocurrencia, y la interfaz lo dice explícitamente. Falta el
+  "esta / esta y siguientes / toda la serie".
+- **Deep links nativos** (`assetlinks.json` / `apple-app-site-association`) para
+  que `/invite/<token>` abra la app y no el navegador.
+- **`FLAG_SECURE` en Android y overlay en `applicationWillResignActive` en iOS**:
+  `NativeGate` ya no monta los hijos hasta desbloquear, pero la captura del
+  conmutador de apps la hace el sistema y solo se evita desde la capa nativa.
+- **Offline real.** Hay página de "sin conexión" y precache del shell; no hay
+  funcionamiento sin red (y cachear datos clínicos en el dispositivo es una
+  decisión de producto, no técnica).
+- **`email_fallback`** se lee en el cron pero no se envía ningún correo: la
+  opción sigue en la interfaz sin hacer nada. O se implementa o se quita.
+- **Agregados del histórico de pagos en SQL.** Hoy se calculan en JS sobre un
+  máximo de 5.000 filas; con más habría que pasarlos a una RPC.
+- **`xlsx@0.18.5`**: excepción de `npm audit` documentada en
+  `docs/DEPENDENCIAS.md` (solo se usa para escribir, nunca para parsear).
+
 ---
 
 ## Resumen del proyecto (plan v2)

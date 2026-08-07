@@ -1,0 +1,29 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Agrupadas: un PR por grupo y semana en vez de veinte sueltos, que nadie
+    # revisa y acaban ignorados.
+    groups:
+      next:
+        patterns: ["next", "eslint-config-next", "@next/*", "react", "react-dom"]
+      supabase:
+        patterns: ["@supabase/*", "supabase"]
+      capacitor:
+        patterns: ["@capacitor/*", "@aparajita/*"]
+      dev:
+        dependency-type: development
+      resto:
+        patterns: ["*"]
+    labels: ["dependencias"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    labels: ["dependencias"]

@@ -48,7 +48,7 @@ function fold(line: string): string {
     // Retrocede hasta el inicio de un carácter (los bytes de continuación de
     // UTF-8 son 10xxxxxx).
     if (end < bytes.length) {
-      while (end > start && (bytes[end] & 0xc0) === 0x80) end--;
+      while (end > start && ((bytes[end] ?? 0) & 0xc0) === 0x80) end--;
     }
     const chunk = bytes.subarray(start, end).toString("utf8");
     out.push(out.length === 0 ? chunk : ` ${chunk}`);

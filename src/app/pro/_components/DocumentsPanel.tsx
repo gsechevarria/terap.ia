@@ -124,7 +124,7 @@ export function DocumentsPanel({
                   type="button"
                   onClick={() => run(() => deleteDocumentAction(d.id, patientId))}
                   disabled={pending}
-                  className="btn-danger btn-sm opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100"
+                  className="btn-danger btn-sm opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                 >
                   Eliminar
                 </button>

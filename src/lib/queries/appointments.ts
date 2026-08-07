@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
-import { fromWallClock, todayYMD } from "@/lib/tz";
+import { fromWallClock, todayYMD, ymdParts } from "@/lib/tz";
 import type { Appointment } from "@/lib/types";
 
 export type AgendaAppointment = Appointment & { patientName: string | null };
@@ -17,7 +17,7 @@ export type AgendaBlock = {
  * de la primera franja del día quedaban fuera de la agenda.
  */
 function startOfToday(): string {
-  const [y, m, d] = todayYMD().split("-").map(Number);
+  const [y, m, d] = ymdParts(todayYMD());
   return fromWallClock(y, m, d, 0, 0).toISOString();
 }
 

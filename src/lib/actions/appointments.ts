@@ -14,10 +14,10 @@ import {
 import { revalidateAgenda, revalidatePayments } from "@/lib/revalidate";
 import { formatDateTime } from "@/lib/format";
 import { safeExternalUrl } from "@/lib/url";
-import { TZ, fromWallClock, lastDayOfMonth, wallClockParts } from "@/lib/tz";
+import { TZ } from "@/lib/tz";
+import { occurrenceAt, type Freq } from "@/lib/recurrence";
 import type { TablesInsert } from "@/lib/types";
 
-type Freq = "none" | "daily" | "weekly" | "biweekly" | "monthly";
 const RECURRENCE_CAP = 26;
 
 /**
@@ -36,34 +36,6 @@ function checkVideoLink(raw: string | undefined): string | null {
     );
   }
   return safe;
-}
-
-/**
- * i-ésima ocurrencia de una serie, contada SIEMPRE desde la cita original.
- *
- * Dos motivos para no usar `setDate`/`setMonth` ni encadenar desde la anterior:
- *
- *  - `setDate`/`setMonth` operan en la zona del proceso (UTC en Vercel), que no
- *    preserva la hora de pared en Madrid: una serie semanal que cruzase el fin
- *    del horario de verano se desplazaba una hora a partir de ahí.
- *  - Encadenar desde la ocurrencia anterior pierde el día original en cuanto un
- *    mes lo recorta: 31-ene → 28-feb dejaba la serie clavada en el 28 (28-mar,
- *    28-abr…). Anclando en la cita original vuelve al 31 cuando el mes da.
- */
-function occurrenceAt(anchor: Date, freq: Freq, i: number): Date {
-  const { y, m, d, hh, mm } = wallClockParts(anchor);
-  if (freq === "daily") return fromWallClock(y, m, d + i, hh, mm);
-  if (freq === "weekly") return fromWallClock(y, m, d + 7 * i, hh, mm);
-  if (freq === "biweekly") return fromWallClock(y, m, d + 14 * i, hh, mm);
-  if (freq === "monthly") {
-    // Normaliza el año antes de recortar el día: `lastDayOfMonth` necesita un
-    // mes real, y la serie puede saltar de diciembre a enero.
-    const total = m - 1 + i;
-    const ny = y + Math.floor(total / 12);
-    const nm = (total % 12) + 1;
-    return fromWallClock(ny, nm, Math.min(d, lastDayOfMonth(ny, nm)), hh, mm);
-  }
-  return anchor;
 }
 
 export type CreateAppointmentResult =
@@ -194,6 +166,7 @@ function findSelfOverlap(
     for (let j = i + 1; j < occurrences.length; j++) {
       const a = occurrences[i];
       const b = occurrences[j];
+      if (!a || !b) continue;
       if (b.start.getTime() < a.end.getTime() && b.end.getTime() > a.start.getTime()) {
         return `Las repeticiones se solapan entre sí (${formatDateTime(
           a.start.toISOString(),
@@ -216,8 +189,11 @@ async function findConflict(
   occurrences: { start: Date; end: Date }[],
   excludeId?: string,
 ): Promise<string | null> {
-  const windowStart = occurrences[0].start.toISOString();
-  const windowEnd = occurrences[occurrences.length - 1].end.toISOString();
+  const primera = occurrences[0];
+  const ultima = occurrences[occurrences.length - 1];
+  if (!primera || !ultima) return null;
+  const windowStart = primera.start.toISOString();
+  const windowEnd = ultima.end.toISOString();
 
   // `order` + `limit` explícitos: sin ellos, la ventana de una serie de 26
   // ocurrencias (medio año) puede superar el `db-max-rows` de PostgREST y el
@@ -287,9 +263,9 @@ async function findConflict(
     }
   }
 
-  if (hits.length === 0) return null;
-
   const first = hits[0];
+  if (!first) return null;
+
   const when = first.occ.toLocaleString("es-ES", {
     timeZone: TZ,
     weekday: "long",

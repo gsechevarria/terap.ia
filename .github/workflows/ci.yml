@@ -5,17 +5,94 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  quality:
+  calidad:
+    name: Lint · typecheck · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests de lógica pura
+        # En UTC a propósito: es la zona del runtime de Vercel y donde estaban
+        # los fallos de fecha. Las funciones deben dar el mismo resultado aquí
+        # que en Europe/Madrid.
+        run: npm test
+        env:
+          TZ: UTC
+
+      - name: Build
+        # Lo único que detecta errores de RSC/"use client", de metadata y de
+        # rutas dinámicas. Sin esto, un build roto solo se descubría en Vercel.
+        run: npm run build
+        env:
+          # Valores de relleno: el build no contacta con Supabase, pero
+          # `next.config.ts` lee la URL para construir la CSP.
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: clave-de-relleno-para-el-build
+          NEXT_PUBLIC_SITE_URL: https://example.invalid
+
+  auditoria:
+    name: npm audit (dependencias de producción)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: package.json
           cache: npm
       - run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Typecheck
-        run: npm run typecheck
+      # `--omit=dev`: las herramientas de desarrollo no llegan al binario
+      # desplegado. Ver docs/DEPENDENCIAS.md para la excepción de `xlsx`.
+      - run: npm audit --audit-level=high --omit=dev
+
+  integracion:
+    name: Integración contra Supabase local
+    runs-on: ubuntu-latest
+    # Opcional en PR, obligatoria en main: la batería levanta una base de datos
+    # y tarda, pero en `main` no puede saltarse.
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'integracion')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Levantar Supabase local
+        run: supabase start
+
+      - name: Volcar las variables locales a .env.test
+        # NUNCA se usa .env.local: esta batería crea usuarios y datos, y contra
+        # el proyecto de producción dejaba basura si el proceso moría antes del
+        # `finally`.
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL=$(supabase status -o env --override-name api.url=URL | grep URL= | cut -d= -f2- | tr -d '"')" >> .env.test
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(supabase status -o env --override-name auth.anon_key=KEY | grep KEY= | cut -d= -f2- | tr -d '"')" >> .env.test
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(supabase status -o env --override-name auth.service_role_key=SRK | grep SRK= | cut -d= -f2- | tr -d '"')" >> .env.test
+
+      - name: Batería de integración
+        run: npm run test:integration
+        env:
+          TZ: UTC

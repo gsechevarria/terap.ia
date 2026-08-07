@@ -43,7 +43,10 @@ export function BarChart({
           const h = (d.value / max) * plotH;
           const y = padT + plotH - h;
           return (
-            <g key={i}>
+            // `key` por la etiqueta, no por el índice: al cambiar los filtros
+            // del histórico el array se reordena y React reutilizaba nodos SVG
+            // que no correspondían (barras que "saltan" a otro valor).
+            <g key={d.label}>
               <rect
                 x={cx - barW / 2}
                 y={y}
