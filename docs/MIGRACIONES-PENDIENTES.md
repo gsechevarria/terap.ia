@@ -21,6 +21,7 @@ generado trae todas las columnas y funciones de las seis migraciones
 | 4 | `20260807120004_data_integrity` | ✅ aplicada |
 | 5 | `20260807130001_pagos_fiscal_escalas` | ✅ aplicada |
 | 6 | `20260807140001_rendimiento` | ✅ aplicada |
+| 7 | `20260809100001_unsettle_informativo` | 🔴 **PENDIENTE** |
 
 `src/lib/database.types.ts` está **regenerado** desde el remoto (ya no hay tipos
 escritos a mano).
@@ -33,7 +34,8 @@ así que `supabase db push` y `supabase migration list` ya dicen la verdad.
 migración, más abajo. No se sustituyen por que el esquema exista: que la columna
 esté no demuestra que la RLS haga lo que debe.
 
-Copia de los ficheros lista para el editor SQL: [`migrations/`](../migrations/).
+El SQL de cada una está en [`supabase/migrations/`](../supabase/migrations/),
+que es la única fuente de verdad.
 
 Las secciones de abajo se conservan como registro de qué hizo cada una y qué
 comprobar.
@@ -55,7 +57,7 @@ supabase migration repair --status applied <version> ...
 supabase migration list
 ```
 
-o, sin CLI, `migrations/00_reparar-historial.sql`, que trae un diagnóstico de
+o, sin CLI, [`supabase/scripts/reparar-historial.sql`](../supabase/scripts/reparar-historial.sql), que trae un diagnóstico de
 qué falta.
 
 ### 0.b · Backfill del rol — ✅ ya aplicado (era el bloqueante principal)
@@ -248,6 +250,44 @@ un `SubPlan` por fila, y uso de `scale_responses_pat_sub_idx`.
 
 ---
 
+---
+
+## 7. `20260809100001_unsettle_informativo.sql` 🔴 PENDIENTE
+
+**Qué hace:** `unsettle_appointment` pasa de `void` a devolver `text` con lo que
+ha hecho: `sin_pago`, `bono_devuelto`, `borrado` o `conservado_cobrado`.
+
+**Por qué:** salió probando a mano. Al corregir un "acudió" a "no acudió", el
+pago a veces no desaparecía y la aplicación no decía nada. La causa es una
+decisión deliberada —no borrar un pago YA marcado como cobrado, porque destruiría
+el registro de un cobro real— pero se tomaba **en silencio**, y desde fuera era
+indistinguible de un fallo. Ahora el modal de la cita muestra el aviso y enlaza a
+la pestaña Pagos de la ficha.
+
+De paso corrige otra cosa que salía del mismo caso: al deshacer un "acudió", la
+cita se quedaba con `status = 'completed'`. Ahora vuelve a `confirmed`.
+
+**Después:** `npm run gen:types` (el tipo de retorno de la RPC está puesto a mano).
+
+**Verificar a mano**, que es como apareció:
+
+1. Cita sin bono → marcar "acudió" → se crea un pago **pendiente**.
+2. Marcar "no acudió" → el pago **desaparece** y la cita deja de estar completada.
+3. Repetir, pero marcando antes el pago como **cobrado** en la pestaña Pagos.
+   Al poner "no acudió", el pago **se conserva** y aparece el aviso explicándolo.
+
+Si en el paso 2 el pago no desaparece, ejecuta esto para ver en qué estado está:
+
+```sql
+select p.id, p.status, p.amount_cents, p.session_pack_id, p.note
+  from public.payments p
+ where p.appointment_id = '<id de la cita>';
+```
+
+- `status='pending'` y sin `session_pack_id` → debería haberse borrado.
+- `session_pack_id` no nulo → debería haberse borrado y devuelto la sesión.
+- `status='paid'` sin `session_pack_id` → **conservado a propósito**, con aviso.
+
 ## Orden resumido
 
 ```
@@ -259,6 +299,7 @@ un `SubPlan` por fila, y uso de `scale_responses_pat_sub_idx`.
 5.   20260807130001_pagos_fiscal_escalas.sql    ✅ aplicada
 6.   20260807140001_rendimiento.sql             ✅ aplicada
      npm run gen:types                          ✅ hecho
+7.   20260809100001_unsettle_informativo.sql    🔴 PENDIENTE → npm run gen:types
 ```
 
 Y después: `npm run test:integration` contra Supabase local (ver README), no

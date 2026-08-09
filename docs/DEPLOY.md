@@ -40,19 +40,14 @@ vercel --prod          # despliega a producción
 - Authentication → **URL Configuration**: *Site URL* = `https://<dominio>` y
   añade `https://<dominio>/**` a **Redirect URLs** (para el enlace mágico).
 
-## 3 bis. Reparación del historial de migraciones — **pendiente, hazlo antes del próximo `db push`**
+## 3 bis. Reparación del historial de migraciones — ✅ hecho (9-ago-2026)
 
-Dos migraciones se aplicaron desde el editor SQL del panel y por tanto **no
-están registradas** en la tabla `supabase_migrations.schema_migrations`:
+Aplicar una migración pegándola en el editor SQL del panel **no** actualiza
+`supabase_migrations.schema_migrations`, así que el CLI la sigue viendo
+pendiente y un `db push` futuro intentaría reejecutarla.
 
-- `20260725090001_rls_patient_hardening.sql`
-- `20260725100001_invitation_token_hash.sql`
-
-Como el CLI las ve pendientes, el próximo `supabase db push` intentaría
-reejecutarlas. Ambas se han hecho reejecutables (`drop policy if exists` antes
-de cada `create policy`, y el backfill del token y el `drop column` envueltos en
-guardas que comprueban que la columna `token` todavía existe), así que ya no
-reventarían la cola — pero el registro sigue estando mal y conviene arreglarlo.
+Ya está reparado, pero **vuelve a pasar cada vez que apliques algo desde el
+panel**. Cuando ocurra:
 
 Con el CLI (requiere `SUPABASE_ACCESS_TOKEN` o `supabase login`):
 
@@ -61,13 +56,10 @@ supabase migration repair --status applied 20260725090001 20260725100001
 supabase migration list   # verificar que ambas figuran como aplicadas
 ```
 
-**Sin CLI**, desde el editor SQL del panel: `migrations/00_reparar-historial.sql`
-hace lo mismo. Trae un diagnóstico que compara las 25 migraciones del repositorio
-con lo que el CLI tiene registrado y marca cuáles faltan; repara solo esas.
-
-⚠️ Lo mismo aplica a **todas** las migraciones aplicadas por el editor SQL, no
-solo a estas dos: las seis de la auditoría de agosto están en la misma
-situación si se pegaron ahí. El diagnóstico las cubre.
+**Sin CLI**, desde el editor SQL del panel: `supabase/scripts/reparar-historial.sql`
+hace lo mismo. Trae un diagnóstico que compara todas las migraciones del
+repositorio con lo que el CLI tiene registrado y marca cuáles faltan; repara
+solo esas.
 
 Comprueba que la salida de `migration list` coincide en local y en remoto antes
 de lanzar ningún `db push` nuevo.

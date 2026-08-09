@@ -755,17 +755,38 @@ Seis migraciones nuevas, **todas aplicadas al remoto**, verificado con
 `npm run gen:types`: el esquema generado trae todas sus columnas y funciones.
 `src/lib/database.types.ts` ya no lleva nada escrito a mano.
 
-Copia de los ficheros y guía de verificación en `migrations/README.md`; el
+Guía de verificación en `docs/MIGRACIONES-PENDIENTES.md`; el
 detalle de qué hace cada una, en `docs/MIGRACIONES-PENDIENTES.md`.
 
-El **historial del CLI está reparado**: las 25 migraciones del repositorio
-constan en `supabase_migrations.schema_migrations`, así que `db push` y
-`migration list` vuelven a decir la verdad.
+El **historial del CLI está reparado**: las migraciones del repositorio constan
+en `supabase_migrations.schema_migrations`, así que `db push` y `migration list`
+vuelven a decir la verdad. Vuelve a desajustarse cada vez que se aplica algo
+desde el editor SQL del panel; el arreglo está en
+`supabase/scripts/reparar-historial.sql`.
+
+🔴 **Queda una migración por aplicar:** `20260809100001_unsettle_informativo`,
+salida de las pruebas manuales (ver abajo).
 
 **Sigue pendiente:** las **comprobaciones funcionales**. Que el esquema tenga la
 columna no demuestra que la RLS haga lo que debe. Están listadas por migración
-en `migrations/README.md`: doble clic en "acudió", canje de invitación con el
+en `docs/MIGRACIONES-PENDIENTES.md`: doble clic en "acudió", canje de invitación con el
 correo equivocado, `list()` de Storage desde una sesión de paciente.
+
+#### Hallazgos de las pruebas manuales (9-ago-2026)
+
+- ✅ **Doble "acudió" → un solo pago.** El índice único sobre
+  `payments(appointment_id)` y la RPC transaccional funcionan.
+- 🔧 **"No acudió" no borraba el pago en un caso.** `unsettle_appointment` se
+  niega —a propósito— a borrar un pago ya marcado como cobrado, pero lo hacía en
+  silencio. Corregido en `20260809100001`: la RPC devuelve qué ha hecho y el
+  modal lo enseña. De paso, deshacer un "acudió" ya devuelve el `status` de la
+  cita de `completed` a `confirmed`.
+- ℹ️ **La invitación con un correo distinto NO se rechaza en el login**, y es
+  correcto: rechazarla ahí revelaría a quién va dirigida. `accept_invitation`
+  la rechaza después, al volver del enlace del correo, en `/onboarding`.
+  **Efecto colateral conocido:** ese intento crea una cuenta de auth huérfana
+  (rol `patient`, sin fila en `patients`). No da acceso a nada, pero acumula
+  basura en Auth. Sin resolver.
 
 #### ⚠️ Cambios fiscales que necesitan validación
 

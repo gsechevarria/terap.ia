@@ -367,7 +367,15 @@ const ATTENDANCE_VALUES = [
 ] as const;
 type Attendance = (typeof ATTENDANCE_VALUES)[number];
 
-export async function setAttendanceAction(id: string, attendance: Attendance) {
+export type SetAttendanceResult = {
+  /** Mensaje para el profesional cuando la reversión no ha sido total. */
+  warning?: string;
+};
+
+export async function setAttendanceAction(
+  id: string,
+  attendance: Attendance,
+): Promise<SetAttendanceResult> {
   const pro = await requireProfessional();
   // El tipo de TypeScript no existe en runtime y esto es un endpoint HTTP.
   if (!(ATTENDANCE_VALUES as readonly string[]).includes(attendance)) {
@@ -381,18 +389,36 @@ export async function setAttendanceAction(id: string, attendance: Attendance) {
   // que había pagado.
   const { data: prev } = await supabase
     .from("appointments")
-    .select("patient_id, attendance")
+    .select("patient_id, attendance, status")
     .eq("id", id)
     .eq("professional_id", pro.id)
     .maybeSingle();
   if (!prev) throw new Error("Cita no encontrada.");
 
-  if (prev.attendance === "attended" && attendance !== "attended") {
-    await unsettleAppointment(id);
+  const deshaciendo = prev.attendance === "attended" && attendance !== "attended";
+  let warning: string | undefined;
+
+  if (deshaciendo) {
+    const resultado = await unsettleAppointment(id);
+    if (resultado === "conservado_cobrado") {
+      // La reversión automática se detiene ante un cobro real. Antes esto
+      // pasaba en silencio y parecía que la app no había hecho nada.
+      warning =
+        "El pago de esta sesión ya estaba marcado como cobrado, así que no se ha borrado: bórralo o ajústalo a mano desde la pestaña Pagos de la ficha si procede una devolución.";
+    }
   }
 
-  const patch: { attendance: Attendance; status?: "completed" } = { attendance };
-  if (attendance === "attended") patch.status = "completed";
+  const patch: {
+    attendance: Attendance;
+    status?: "completed" | "confirmed";
+  } = { attendance };
+  if (attendance === "attended") {
+    patch.status = "completed";
+  } else if (deshaciendo && prev.status === "completed") {
+    // El "acudió" había marcado la cita como completada; al deshacerlo hay que
+    // devolver el estado, o queda una cita "completada" con "no acudió".
+    patch.status = "confirmed";
+  }
 
   const { data: updated, error } = await supabase
     .from("appointments")
@@ -415,6 +441,8 @@ export async function setAttendanceAction(id: string, attendance: Attendance) {
   if (attendance === "attended" || prev.attendance === "attended") {
     revalidatePayments(updated.patient_id);
   }
+
+  return { warning };
 }
 
 // ---- Bloqueos de agenda ----------------------------------------------------

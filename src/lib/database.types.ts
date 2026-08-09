@@ -1400,7 +1400,7 @@ export type Database = {
       }
       unsettle_appointment: {
         Args: { p_appointment_id: string }
-        Returns: undefined
+        Returns: string
       }
     }
     Enums: {

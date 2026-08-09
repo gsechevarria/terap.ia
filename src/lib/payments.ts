@@ -25,6 +25,13 @@ export async function settleAttendedAppointment(
   if (error) throw new Error(error.message);
 }
 
+/** Qué ha hecho `unsettle_appointment`. */
+export type UnsettleResult =
+  | "sin_pago"
+  | "bono_devuelto"
+  | "borrado"
+  | "conservado_cobrado";
+
 /**
  * Deshace la liquidación de una cita.
  *
@@ -33,14 +40,18 @@ export async function settleAttendedAppointment(
  * una sesión pagada) y, al borrar, `payments.appointment_id` pasaba a NULL
  * dejando un pago huérfano imposible de reconciliar.
  *
- * La RPC es conservadora: devuelve la sesión al bono y borra el pago
- * automático, pero NO borra un pago suelto que ya estuviera marcado como
- * cobrado — eso sería perder un cobro real.
+ * Es conservadora: devuelve la sesión al bono y borra el pago automático, pero
+ * NO borra un pago que ya estuviera marcado como cobrado — eso sería perder el
+ * registro de un cobro real. **Devuelve qué ha hecho** para que la interfaz lo
+ * pueda decir: hacerlo en silencio era indistinguible de un fallo.
  */
-export async function unsettleAppointment(appointmentId: string): Promise<void> {
+export async function unsettleAppointment(
+  appointmentId: string,
+): Promise<UnsettleResult> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("unsettle_appointment", {
+  const { data, error } = await supabase.rpc("unsettle_appointment", {
     p_appointment_id: appointmentId,
   });
   if (error) throw new Error(error.message);
+  return (data as UnsettleResult | null) ?? "sin_pago";
 }

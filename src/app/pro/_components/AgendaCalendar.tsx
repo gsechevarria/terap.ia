@@ -705,6 +705,8 @@ function EditModal({
   const [attendance, setAttendance] = useState(appt.attendance);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState("");
+  /** Aviso informativo: la acción se ha hecho, pero hay algo que contar. */
+  const [aviso, setAviso] = useState("");
   const esDeSerie =
     appt.parent_appointment_id != null || appt.recurrence_freq !== "none";
 
@@ -763,7 +765,14 @@ function EditModal({
           return;
         }
         if (attendance !== appt.attendance) {
-          await setAttendanceAction(appt.id, attendance);
+          const res = await setAttendanceAction(appt.id, attendance);
+          if (res.warning) {
+            // El modal NO se cierra: si se cerrara, el aviso se perdería y el
+            // profesional se quedaría pensando que el pago se ha borrado.
+            setAviso(res.warning);
+            router.refresh();
+            return;
+          }
         }
         router.refresh();
         onClose();
@@ -917,6 +926,24 @@ function EditModal({
           <p role="alert" className="mt-3 rounded bg-danger-soft p-3 text-sm text-danger">
             {error}
           </p>
+        )}
+
+        {aviso && (
+          <div
+            role="status"
+            className="mt-3 flex items-start gap-2 rounded-md border border-info/30 bg-info-soft p-3 text-sm text-info"
+          >
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
+            <div>
+              <p>{aviso}</p>
+              <Link
+                href={`/pro/patients/${appt.patient_id}?tab=pagos`}
+                className="mt-1 inline-block font-medium underline underline-offset-2"
+              >
+                Ir a Pagos de la ficha
+              </Link>
+            </div>
+          </div>
         )}
 
         {conflict && (
