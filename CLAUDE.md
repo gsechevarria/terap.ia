@@ -758,14 +758,14 @@ Seis migraciones nuevas, **todas aplicadas al remoto**, verificado con
 Copia de los ficheros y guía de verificación en `migrations/README.md`; el
 detalle de qué hace cada una, en `docs/MIGRACIONES-PENDIENTES.md`.
 
-**Sigue pendiente:**
+El **historial del CLI está reparado**: las 25 migraciones del repositorio
+constan en `supabase_migrations.schema_migrations`, así que `db push` y
+`migration list` vuelven a decir la verdad.
 
-- `supabase migration repair --status applied 20260725090001 20260725100001`,
-  necesario antes de cualquier `db push` futuro.
-- Las **comprobaciones funcionales**: que el esquema tenga la columna no
-  demuestra que la RLS haga lo que debe. Están listadas por migración en
-  `migrations/README.md` (doble clic en "acudió", canje de invitación con el
-  correo equivocado, `list()` de Storage desde una sesión de paciente…).
+**Sigue pendiente:** las **comprobaciones funcionales**. Que el esquema tenga la
+columna no demuestra que la RLS haga lo que debe. Están listadas por migración
+en `migrations/README.md`: doble clic en "acudió", canje de invitación con el
+correo equivocado, `list()` de Storage desde una sesión de paciente.
 
 #### ⚠️ Cambios fiscales que necesitan validación
 

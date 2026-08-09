@@ -3,8 +3,11 @@
 Copia de las seis migraciones de `supabase/migrations/`, juntas aquí para
 pegarlas cómodamente en el **editor SQL del panel de Supabase**.
 
-> La fuente de verdad sigue siendo `supabase/migrations/`. Esta carpeta es solo
-> una copia de conveniencia: si editas algo, edítalo allí.
+> ⚠️ **La fuente de verdad es `supabase/migrations/`.** Esta carpeta es una copia
+> de conveniencia y, ya aplicadas todas, es también un riesgo: dos copias del
+> mismo SQL pueden divergir sin que nadie lo note. Si hay que editar algo, se
+> edita en `supabase/migrations/`. Si esta carpeta deja de ser útil, bórrala —
+> `00_reparar-historial.sql` es lo único que no tiene copia allí.
 
 **Todas son idempotentes y reejecutables.** Si tienes dudas de si una se aplicó,
 vuelve a lanzarla: no rompe nada.
@@ -99,7 +102,16 @@ mano fueron solo cosméticas (orden alfabético, la clave foránea de
 
 ---
 
-## Registro del historial — [`00_reparar-historial.sql`](00_reparar-historial.sql)
+## Registro del historial — ✅ reparado (9-ago-2026)
+
+Las 25 migraciones del repositorio constan como aplicadas en
+`supabase_migrations.schema_migrations`. `supabase db push` y
+`supabase migration list` ya reflejan la realidad.
+
+[`00_reparar-historial.sql`](00_reparar-historial.sql) se conserva porque el
+problema **se repite cada vez que aplicas una migración desde el editor SQL del
+panel**: esa vía no toca la tabla de control. Si vuelve a pasar, ejecuta su
+PASO 1 (diagnóstico) y repara lo que salga.
 
 Aplicar una migración pegándola en el editor SQL **no** actualiza
 `supabase_migrations.schema_migrations`, así que el CLI la sigue viendo

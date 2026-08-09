@@ -25,13 +25,13 @@ generado trae todas las columnas y funciones de las seis migraciones
 `src/lib/database.types.ts` está **regenerado** desde el remoto (ya no hay tipos
 escritos a mano).
 
-**Lo que sigue pendiente:**
+**Historial del CLI: ✅ reparado** (9-ago-2026). Las 25 migraciones del
+repositorio constan como aplicadas en `supabase_migrations.schema_migrations`,
+así que `supabase db push` y `supabase migration list` ya dicen la verdad.
 
-- El `supabase migration repair` del punto 0.a, para que el CLI deje de ver
-  `20260725090001` y `20260725100001` como pendientes.
-- Las **verificaciones funcionales** de cada migración, que están más abajo y no
-  se sustituyen por que el esquema exista: que el esquema tenga la columna no
-  demuestra que la RLS haga lo que debe.
+**Lo que sigue pendiente:** las **verificaciones funcionales** de cada
+migración, más abajo. No se sustituyen por que el esquema exista: que la columna
+esté no demuestra que la RLS haga lo que debe.
 
 Copia de los ficheros lista para el editor SQL: [`migrations/`](../migrations/).
 
@@ -42,16 +42,21 @@ comprobar.
 
 ## 0. BLOQUEANTES previos (no son migraciones nuevas)
 
-### 0.a · Reparar el historial de migraciones — **antes de cualquier `db push`**
+### 0.a · Reparar el historial de migraciones — ✅ hecho (9-ago-2026)
 
-`20260725090001` y `20260725100001` se aplicaron desde el editor SQL del panel,
-así que `supabase_migrations` no las tiene registradas y el CLI las ve
-pendientes. Ya se han hecho reejecutables (fase 1), pero el registro sigue mal:
+Varias migraciones se aplicaron desde el editor SQL del panel, que no actualiza
+`supabase_migrations.schema_migrations`, así que el CLI las veía pendientes. Ya
+están registradas las 25.
+
+Si vuelve a pasar (cualquier migración aplicada por el panel), el arreglo es:
 
 ```bash
-supabase migration repair --status applied 20260725090001 20260725100001
-supabase migration list   # las dos deben figurar como aplicadas
+supabase migration repair --status applied <version> ...
+supabase migration list
 ```
+
+o, sin CLI, `migrations/00_reparar-historial.sql`, que trae un diagnóstico de
+qué falta.
 
 ### 0.b · Backfill del rol — ✅ ya aplicado (era el bloqueante principal)
 
@@ -246,7 +251,7 @@ un `SubPlan` por fila, y uso de `scale_responses_pat_sub_idx`.
 ## Orden resumido
 
 ```
-0.a  supabase migration repair --status applied 20260725090001 20260725100001   🔴 PENDIENTE
+0.a  supabase migration repair (historial del CLI)  ✅ hecho
 1.   20260807120001_role_in_app_metadata.sql    ✅ aplicada
 2.   20260807120002_invitation_hardening.sql    ✅ aplicada
 3.   20260807120003_storage_hardening.sql       ✅ aplicada
