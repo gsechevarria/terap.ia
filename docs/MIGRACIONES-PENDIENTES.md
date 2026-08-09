@@ -1,9 +1,29 @@
-# Migraciones pendientes — auditoría ago 2026
+# Migraciones de la auditoría (ago 2026)
 
 Orden de aplicación y qué verificar después de cada una.
 
 > **Regla general:** aplica de una en una y comprueba antes de seguir. Todas son
 > idempotentes, así que reejecutar una no rompe nada.
+
+## Estado a 9-ago-2026
+
+Las **1 a 4** (fase 2) están **aplicadas**: se lanzaron cuando la rama solo
+tenía escrita esa fase. Las **5 y 6** llegaron después, con las fases 3 y 4, y
+siguen **PENDIENTES**.
+
+| # | Migración | Estado |
+|---|---|---|
+| 1 | `20260807120001_role_in_app_metadata` | ✅ aplicada |
+| 2 | `20260807120002_invitation_hardening` | ✅ aplicada |
+| 3 | `20260807120003_storage_hardening` | ✅ aplicada |
+| 4 | `20260807120004_data_integrity` | ✅ aplicada |
+| 5 | `20260807130001_pagos_fiscal_escalas` | 🔴 **pendiente** |
+| 6 | `20260807140001_rendimiento` | 🔴 **pendiente** |
+
+Copia lista para pegar en el editor SQL del panel: [`migrations/`](../migrations/).
+
+Las secciones de las 1-4 se conservan abajo por si hay que reaplicar o auditar
+qué hizo cada una.
 
 ---
 
@@ -20,12 +40,15 @@ supabase migration repair --status applied 20260725090001 20260725100001
 supabase migration list   # las dos deben figurar como aplicadas
 ```
 
-### 0.b · Backfill del rol — 🔴 **sin esto NADIE puede entrar**
+### 0.b · Backfill del rol — ✅ ya aplicado (era el bloqueante principal)
 
-Va dentro de la migración `20260807120001` (punto 1). Se destaca aquí porque el
-orden importa: **la migración va ANTES del despliegue del código**. `getUserRole`
-deja de leer `user_metadata`, y todas las cuentas existentes tienen el rol solo
-ahí. Si despliegas primero, te quedas fuera tú también.
+Va dentro de la migración `20260807120001` (punto 1), que ya está aplicada.
+
+Se conserva la nota porque el orden importaba: la migración tenía que ir **antes**
+del despliegue del código, ya que `getUserRole` dejó de leer `user_metadata` y
+todas las cuentas existentes tenían el rol solo ahí. Si en algún momento
+restauras una copia de seguridad anterior a esa migración, vuelve a aplicarla
+antes de desplegar.
 
 ---
 
@@ -210,13 +233,13 @@ un `SubPlan` por fila, y uso de `scale_responses_pat_sub_idx`.
 ## Orden resumido
 
 ```
-0.a  supabase migration repair --status applied 20260725090001 20260725100001
-1.   20260807120001_role_in_app_metadata.sql   ← ANTES de desplegar el código
-2.   20260807120002_invitation_hardening.sql
-3.   20260807120003_storage_hardening.sql
-4.   20260807120004_data_integrity.sql          → npm run gen:types
-5.   20260807130001_pagos_fiscal_escalas.sql    → npm run gen:types
-6.   20260807140001_rendimiento.sql             → npm run gen:types
+0.a  supabase migration repair --status applied 20260725090001 20260725100001   (pendiente)
+1.   20260807120001_role_in_app_metadata.sql    ✅ aplicada
+2.   20260807120002_invitation_hardening.sql    ✅ aplicada
+3.   20260807120003_storage_hardening.sql       ✅ aplicada
+4.   20260807120004_data_integrity.sql          ✅ aplicada
+5.   20260807130001_pagos_fiscal_escalas.sql    🔴 PENDIENTE  → npm run gen:types
+6.   20260807140001_rendimiento.sql             🔴 PENDIENTE  → npm run gen:types
 ```
 
 Y después: `npm run test:integration` contra Supabase local (ver README), no

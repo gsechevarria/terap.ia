@@ -749,12 +749,21 @@ local, Sentry con depuración de PII por lista blanca, `/api/health`, CI con bui
 y audit, `noUncheckedIndexedAccess`, paginación real del histórico de pagos y
 batching del cron.
 
-#### ⚠️ Migraciones pendientes de aplicar — ver `docs/MIGRACIONES-PENDIENTES.md`
+#### Migraciones — ver `docs/MIGRACIONES-PENDIENTES.md` y `migrations/`
 
-Seis migraciones nuevas con orden y verificación documentados. Dos bloqueantes:
-el `migration repair` de las dos migraciones aplicadas por el SQL editor, y el
-**backfill del rol a `app_metadata`**, que va ANTES de desplegar el código —
-sin él nadie puede entrar.
+Seis migraciones nuevas. **Las cuatro de la fase 2 están aplicadas** (incluido el
+backfill del rol a `app_metadata`, que era el bloqueante del despliegue).
+
+**Quedan pendientes dos**, las de las fases 3 y 4:
+
+- `20260807130001_pagos_fiscal_escalas.sql` — 🟡 cambia cifras ya mostradas
+- `20260807140001_rendimiento.sql`
+
+Ambas exigen `npm run gen:types` después. Copia lista para pegar en el editor SQL
+del panel, con su guía de verificación, en `migrations/README.md`.
+
+Sigue pendiente también el `supabase migration repair --status applied
+20260725090001 20260725100001`, necesario antes de cualquier `db push` futuro.
 
 #### ⚠️ Cambios fiscales que necesitan validación
 
