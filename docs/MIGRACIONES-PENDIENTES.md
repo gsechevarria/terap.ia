@@ -5,11 +5,13 @@ Orden de aplicación y qué verificar después de cada una.
 > **Regla general:** aplica de una en una y comprueba antes de seguir. Todas son
 > idempotentes, así que reejecutar una no rompe nada.
 
-## Estado a 9-ago-2026
+## Estado a 9-ago-2026 — ✅ LAS SEIS APLICADAS
 
-Las **1 a 4** (fase 2) están **aplicadas**: se lanzaron cuando la rama solo
-tenía escrita esa fase. Las **5 y 6** llegaron después, con las fases 3 y 4, y
-siguen **PENDIENTES**.
+Verificado ejecutando `npm run gen:types` contra el proyecto remoto: el esquema
+generado trae todas las columnas y funciones de las seis migraciones
+(`content_body`, `deleted_at`, `prorrata_iva_pct`, `tipo_iva_repercutido`,
+`acknowledged_at`, `acknowledged_by`, `settle_attended_appointment`,
+`unsettle_appointment`, `retry_count`, `next_attempt_at`, `fecha_efectiva`).
 
 | # | Migración | Estado |
 |---|---|---|
@@ -17,13 +19,24 @@ siguen **PENDIENTES**.
 | 2 | `20260807120002_invitation_hardening` | ✅ aplicada |
 | 3 | `20260807120003_storage_hardening` | ✅ aplicada |
 | 4 | `20260807120004_data_integrity` | ✅ aplicada |
-| 5 | `20260807130001_pagos_fiscal_escalas` | 🔴 **pendiente** |
-| 6 | `20260807140001_rendimiento` | 🔴 **pendiente** |
+| 5 | `20260807130001_pagos_fiscal_escalas` | ✅ aplicada |
+| 6 | `20260807140001_rendimiento` | ✅ aplicada |
 
-Copia lista para pegar en el editor SQL del panel: [`migrations/`](../migrations/).
+`src/lib/database.types.ts` está **regenerado** desde el remoto (ya no hay tipos
+escritos a mano).
 
-Las secciones de las 1-4 se conservan abajo por si hay que reaplicar o auditar
-qué hizo cada una.
+**Lo que sigue pendiente:**
+
+- El `supabase migration repair` del punto 0.a, para que el CLI deje de ver
+  `20260725090001` y `20260725100001` como pendientes.
+- Las **verificaciones funcionales** de cada migración, que están más abajo y no
+  se sustituyen por que el esquema exista: que el esquema tenga la columna no
+  demuestra que la RLS haga lo que debe.
+
+Copia de los ficheros lista para el editor SQL: [`migrations/`](../migrations/).
+
+Las secciones de abajo se conservan como registro de qué hizo cada una y qué
+comprobar.
 
 ---
 
@@ -233,13 +246,14 @@ un `SubPlan` por fila, y uso de `scale_responses_pat_sub_idx`.
 ## Orden resumido
 
 ```
-0.a  supabase migration repair --status applied 20260725090001 20260725100001   (pendiente)
+0.a  supabase migration repair --status applied 20260725090001 20260725100001   🔴 PENDIENTE
 1.   20260807120001_role_in_app_metadata.sql    ✅ aplicada
 2.   20260807120002_invitation_hardening.sql    ✅ aplicada
 3.   20260807120003_storage_hardening.sql       ✅ aplicada
 4.   20260807120004_data_integrity.sql          ✅ aplicada
-5.   20260807130001_pagos_fiscal_escalas.sql    🔴 PENDIENTE  → npm run gen:types
-6.   20260807140001_rendimiento.sql             🔴 PENDIENTE  → npm run gen:types
+5.   20260807130001_pagos_fiscal_escalas.sql    ✅ aplicada
+6.   20260807140001_rendimiento.sql             ✅ aplicada
+     npm run gen:types                          ✅ hecho
 ```
 
 Y después: `npm run test:integration` contra Supabase local (ver README), no

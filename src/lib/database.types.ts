@@ -628,9 +628,9 @@ export type Database = {
           next_attempt_at: string | null
           patient_id: string | null
           payload: Json | null
-          retry_count: number
           professional_id: string | null
           read_at: string | null
+          retry_count: number
           scheduled_for: string | null
           sent_at: string | null
           status: Database["public"]["Enums"]["notification_status"]
@@ -646,9 +646,9 @@ export type Database = {
           next_attempt_at?: string | null
           patient_id?: string | null
           payload?: Json | null
-          retry_count?: number
           professional_id?: string | null
           read_at?: string | null
+          retry_count?: number
           scheduled_for?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["notification_status"]
@@ -664,9 +664,9 @@ export type Database = {
           next_attempt_at?: string | null
           patient_id?: string | null
           payload?: Json | null
-          retry_count?: number
           professional_id?: string | null
           read_at?: string | null
+          retry_count?: number
           scheduled_for?: string | null
           sent_at?: string | null
           status?: Database["public"]["Enums"]["notification_status"]
@@ -859,6 +859,7 @@ export type Database = {
           appointment_id?: string | null
           created_at?: string
           currency?: string
+          fecha_efectiva?: string | null
           id?: string
           method?: string | null
           note?: string | null
@@ -874,6 +875,7 @@ export type Database = {
           appointment_id?: string | null
           created_at?: string
           currency?: string
+          fecha_efectiva?: string | null
           id?: string
           method?: string | null
           note?: string | null
@@ -1132,6 +1134,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "scale_responses_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "scale_responses_assignment_id_fkey"
             columns: ["assignment_id"]
             isOneToOne: false
@@ -1376,13 +1385,14 @@ export type Database = {
           valid: boolean
         }[]
       }
-      patient_accept_consent: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      patient_accept_consent: { Args: never; Returns: string }
       patient_respond_appointment: {
-        Args: { p_appointment_id: string; p_action: string }
+        Args: { p_action: string; p_appointment_id: string }
         Returns: undefined
+      }
+      professional_owns_patient: {
+        Args: { p_patient_id: string }
+        Returns: boolean
       }
       settle_attended_appointment: {
         Args: { p_appointment_id: string }
@@ -1391,10 +1401,6 @@ export type Database = {
       unsettle_appointment: {
         Args: { p_appointment_id: string }
         Returns: undefined
-      }
-      professional_owns_patient: {
-        Args: { p_patient_id: string }
-        Returns: boolean
       }
     }
     Enums: {

@@ -11,46 +11,39 @@ vuelve a lanzarla: no rompe nada.
 
 ---
 
-## Estado
+## Estado — ✅ las seis aplicadas (9-ago-2026)
 
-| # | Fichero | Estado | `gen:types` después |
-|---|---|---|---|
-| 1 | `20260807120001_role_in_app_metadata.sql` | ✅ me dijiste que ya la lanzaste | no |
-| 2 | `20260807120002_invitation_hardening.sql` | ✅ ya lanzada | no |
-| 3 | `20260807120003_storage_hardening.sql` | ✅ ya lanzada | no |
-| 4 | `20260807120004_data_integrity.sql` | ✅ ya lanzada | **sí** |
-| 5 | `20260807130001_pagos_fiscal_escalas.sql` | 🔴 **PENDIENTE** | **sí** |
-| 6 | `20260807140001_rendimiento.sql` | 🔴 **PENDIENTE** | **sí** |
+Verificado con `npm run gen:types`: el esquema del remoto trae todas las
+columnas y funciones de las seis. `src/lib/database.types.ts` está regenerado.
 
-Las 1–4 son de la fase 2, que es la que estaba escrita cuando me confirmaste que
-habías lanzado los SQL. Las 5 y 6 llegaron con las fases 3 y 4, después de esa
-confirmación. **Si tu "ya están lanzados" incluía menos de cuatro, lánzalas
-todas en orden: son idempotentes.**
+| # | Fichero | Estado |
+|---|---|---|
+| 1 | `20260807120001_role_in_app_metadata.sql` | ✅ aplicada |
+| 2 | `20260807120002_invitation_hardening.sql` | ✅ aplicada |
+| 3 | `20260807120003_storage_hardening.sql` | ✅ aplicada |
+| 4 | `20260807120004_data_integrity.sql` | ✅ aplicada |
+| 5 | `20260807130001_pagos_fiscal_escalas.sql` | ✅ aplicada |
+| 6 | `20260807140001_rendimiento.sql` | ✅ aplicada |
 
-Si la 4 no llegaste a aplicarla, mira su aviso de duplicados antes (abajo).
+Esta carpeta queda como copia por si hay que reaplicar alguna (son idempotentes)
+o restaurar una copia de seguridad anterior.
+
+**Lo que el esquema NO demuestra:** que la columna exista no prueba que la RLS
+haga lo que debe. Las comprobaciones funcionales de abajo siguen pendientes.
 
 ---
 
-## Orden y qué comprobar
+## Comprobaciones funcionales pendientes
 
-Aplica **de una en una** y verifica antes de seguir.
+Ya aplicadas todas, queda verificar el **comportamiento**. Esto es lo que de
+verdad importa y no se deduce del esquema.
 
-### 5 · `20260807130001_pagos_fiscal_escalas.sql` 🔴
+### 5 · `20260807130001_pagos_fiscal_escalas.sql`
 
 Liquidación atómica de citas, vista fiscal con IVA y fecha española, trigger de
 escalas endurecido y alerta del ítem de riesgo.
 
-**Antes de lanzarla**, comprueba si hay pagos duplicados por cita (la migración
-los borra sola, conservando el más antiguo, pero conviene saber cuántos son):
-
-```sql
-select appointment_id, count(*)
-  from public.payments
- where appointment_id is not null
- group by 1 having count(*) > 1;
-```
-
-**Después:**
+**Comprobar:**
 
 ```sql
 -- La vista devuelve una `date` (hora española), no un timestamptz.
@@ -72,18 +65,11 @@ porque hasta ahora el IVA repercutido se contaba como ingreso. Con `exenta` —e
 caso normal en psicología— no cambia nada. El detalle está en `CLAUDE.md`,
 sección "Cambios fiscales que necesitan validación".
 
-### 6 · `20260807140001_rendimiento.sql` 🔴
+### 6 · `20260807140001_rendimiento.sql`
 
 Reintentos en la cola de notificaciones, `payments.fecha_efectiva` para paginar
 en SQL, índices de claves foráneas y compuestos, y reescritura de cuatro
 políticas RLS.
-
-**Después:**
-
-```sql
-select column_name from information_schema.columns
- where table_name = 'payments' and column_name = 'fecha_efectiva';
-```
 
 No afirmo ninguna mejora de rendimiento: no he medido contra tu base. Para
 comprobarlo, con una sesión de **profesional real** (no desde el editor SQL, que
@@ -104,17 +90,12 @@ vez de un `SubPlan` por fila, y uso de `scale_responses_pat_sub_idx`.
 
 ---
 
-## Después de aplicar la 5 y la 6
+## Tipos — ✅ ya regenerados
 
-```bash
-npm run gen:types
-```
-
-`consents.content_body`, `professionals.deleted_at`, `acknowledged_at`,
-`acknowledged_by`, `tipo_iva_repercutido`, `prorrata_iva_pct`, `retry_count`,
-`next_attempt_at`, `fecha_efectiva` y las RPC nuevas están puestos **a mano** en
-`src/lib/database.types.ts` para que el build pase. Regenerarlos confirma que
-coinciden con el esquema real.
+`npm run gen:types` se ejecutó el 9-ago-2026 y `src/lib/database.types.ts` viene
+ahora del esquema real. Las diferencias contra los tipos que estaban escritos a
+mano fueron solo cosméticas (orden alfabético, la clave foránea de
+`acknowledged_by` y el formato de los `Args` de las RPC): ningún tipo estaba mal.
 
 ---
 

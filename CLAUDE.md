@@ -719,7 +719,7 @@ notifications 9, analytics 6, scales 12, contabilidad 14). `build`/`typecheck`/
 - **Barrido de rendimiento** (opcional): envolver los helpers en `(select …)` en
   las ~50 políticas existentes de más volumen.
 
-### Auditoría técnica (ago 2026) 🟡 (código en verde; **migraciones pendientes de aplicar**)
+### Auditoría técnica (ago 2026) ✅ (código en verde; migraciones aplicadas y tipos regenerados)
 
 Corrección completa de la auditoría en cuatro fases, rama `fix/auditoria-2026-08`.
 
@@ -749,21 +749,23 @@ local, Sentry con depuración de PII por lista blanca, `/api/health`, CI con bui
 y audit, `noUncheckedIndexedAccess`, paginación real del histórico de pagos y
 batching del cron.
 
-#### Migraciones — ver `docs/MIGRACIONES-PENDIENTES.md` y `migrations/`
+#### Migraciones — ✅ las seis aplicadas (9-ago-2026)
 
-Seis migraciones nuevas. **Las cuatro de la fase 2 están aplicadas** (incluido el
-backfill del rol a `app_metadata`, que era el bloqueante del despliegue).
+Seis migraciones nuevas, **todas aplicadas al remoto**, verificado con
+`npm run gen:types`: el esquema generado trae todas sus columnas y funciones.
+`src/lib/database.types.ts` ya no lleva nada escrito a mano.
 
-**Quedan pendientes dos**, las de las fases 3 y 4:
+Copia de los ficheros y guía de verificación en `migrations/README.md`; el
+detalle de qué hace cada una, en `docs/MIGRACIONES-PENDIENTES.md`.
 
-- `20260807130001_pagos_fiscal_escalas.sql` — 🟡 cambia cifras ya mostradas
-- `20260807140001_rendimiento.sql`
+**Sigue pendiente:**
 
-Ambas exigen `npm run gen:types` después. Copia lista para pegar en el editor SQL
-del panel, con su guía de verificación, en `migrations/README.md`.
-
-Sigue pendiente también el `supabase migration repair --status applied
-20260725090001 20260725100001`, necesario antes de cualquier `db push` futuro.
+- `supabase migration repair --status applied 20260725090001 20260725100001`,
+  necesario antes de cualquier `db push` futuro.
+- Las **comprobaciones funcionales**: que el esquema tenga la columna no
+  demuestra que la RLS haga lo que debe. Están listadas por migración en
+  `migrations/README.md` (doble clic en "acudió", canje de invitación con el
+  correo equivocado, `list()` de Storage desde una sesión de paciente…).
 
 #### ⚠️ Cambios fiscales que necesitan validación
 
