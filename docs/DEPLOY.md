@@ -54,15 +54,23 @@ de cada `create policy`, y el backfill del token y el `drop column` envueltos en
 guardas que comprueban que la columna `token` todavía existe), así que ya no
 reventarían la cola — pero el registro sigue estando mal y conviene arreglarlo.
 
-Ejecútalo tú (requiere `SUPABASE_ACCESS_TOKEN` o `supabase login`):
+Con el CLI (requiere `SUPABASE_ACCESS_TOKEN` o `supabase login`):
 
 ```bash
 supabase migration repair --status applied 20260725090001 20260725100001
 supabase migration list   # verificar que ambas figuran como aplicadas
 ```
 
-Comprueba que la salida de `migration list` marca las dos como aplicadas en
-local y en remoto antes de lanzar ningún `db push` nuevo.
+**Sin CLI**, desde el editor SQL del panel: `migrations/00_reparar-historial.sql`
+hace lo mismo. Trae un diagnóstico que compara las 25 migraciones del repositorio
+con lo que el CLI tiene registrado y marca cuáles faltan; repara solo esas.
+
+⚠️ Lo mismo aplica a **todas** las migraciones aplicadas por el editor SQL, no
+solo a estas dos: las seis de la auditoría de agosto están en la misma
+situación si se pegaron ahí. El diagnóstico las cubre.
+
+Comprueba que la salida de `migration list` coincide en local y en remoto antes
+de lanzar ningún `db push` nuevo.
 
 ## 3 ter. Configuración de Auth en el panel de Supabase — **pendiente**
 

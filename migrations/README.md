@@ -99,16 +99,30 @@ mano fueron solo cosméticas (orden alfabético, la clave foránea de
 
 ---
 
-## Registro del historial (independiente de todo lo anterior)
+## Registro del historial — [`00_reparar-historial.sql`](00_reparar-historial.sql)
 
-`20260725090001` y `20260725100001` se aplicaron en su día desde el editor SQL,
-así que el CLI las sigue viendo pendientes. Antes de cualquier `supabase db push`
-futuro:
+Aplicar una migración pegándola en el editor SQL **no** actualiza
+`supabase_migrations.schema_migrations`, así que el CLI la sigue viendo
+pendiente. Con el CLI se arregla así:
 
 ```bash
 supabase migration repair --status applied 20260725090001 20260725100001
 supabase migration list
 ```
+
+Si prefieres hacerlo desde el panel, `00_reparar-historial.sql` hace lo mismo en
+SQL. **No es una migración**: no la copies a `supabase/migrations/`.
+
+Trae un diagnóstico previo que compara las 25 migraciones del repositorio con lo
+que el CLI tiene registrado, y marca cada una como `✅ registrada` o `❌ FALTA`.
+Ejecútalo primero y repara solo lo que salga en rojo.
+
+⚠️ **Ojo:** si aplicaste las seis de agosto por el editor SQL, también les
+faltará el registro, no solo a las dos de julio. El fichero las trae en un
+bloque comentado, listo para descomentar si el diagnóstico las marca.
+
+⚠️ **Nunca marques como aplicada una migración que no lo esté.** `db push` la
+saltaría para siempre y el esquema quedaría incompleto sin ningún aviso.
 
 ---
 
