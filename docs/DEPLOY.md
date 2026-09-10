@@ -1,3 +1,5 @@
+> Actualización 10/09/2026: Vercel Hobby rechaza cron cada minuto. `vercel.json` ya no registra el cron; el despliegue requiere programar la llamada GET autenticada a `/api/cron/notifications` desde Supabase Cron (pg_cron + pg_net), con CRON_SECRET en Vault. No se debe dar por activa la entrega de notificaciones hasta verificar la ejecución remota.
+
 > Estado de la copia de correcciones (10-sep-2026): consultar primero
 > [CORRECCIONES-2026-09.md](CORRECCIONES-2026-09.md). No hay despliegue realizado.
 > El código nuevo necesita las once migraciones de septiembre antes de servir
