@@ -1,3 +1,10 @@
+> Actualización de la copia de correcciones, 10-sep-2026: las once migraciones
+> `20260909190001`–`20260909190011` están verificadas en PostgreSQL embebido y
+> **no están aplicadas al proyecto remoto**. El estado remoto que se relata
+> abajo es histórico y no se ha vuelto a comprobar. Las nuevas migraciones
+> se ejecutan una sola vez por el historial de Supabase; no son scripts para
+> reejecutar manualmente. Véase [el informe actual](CORRECCIONES-2026-09.md).
+
 # Migraciones de la auditoría (ago 2026)
 
 Orden de aplicación y qué verificar después de cada una.

@@ -931,3 +931,16 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
   (client), por lo que usar `new Date()` para "hoy" no rompe la hidratación. Usado
   en el alta de paciente y en la pestaña Información de la ficha.
 @AGENTS.md
+
+
+### Correcciones integrales — copia aislada, 10-sep-2026
+
+Rama `fix/correcciones-integrales-20260909-185808`. Once migraciones nuevas,
+transacciones económicas, consentimiento versionado, guardas de escritura,
+subidas firmadas, cron recuperable, históricos fiscales, errores estructurados,
+CSP por nonce y dependencias corregidas. Informe y verificación actualizados en
+[docs/CORRECCIONES-2026-09.md](docs/CORRECCIONES-2026-09.md).
+
+No se ha desplegado ni migrado el remoto. La integración HTTP está preparada;
+el motor de Docker local no está disponible. La validación de navegador sigue
+pendiente del arranque permitido del servidor. Publicación Git pendiente por falta de remoto.

@@ -1,51 +1,11 @@
-# Dependencias: excepciones y por qué
+# Dependencias y reproducibilidad
 
-Este fichero existe para que las excepciones aceptadas en `npm audit` estén
-documentadas **en el repositorio**, y no solo en la cabeza de quien las aceptó.
+Verificado el 10 de septiembre de 2026 en Node 24.15.0 con `npm audit --audit-level=low`: **0 vulnerabilidades conocidas**, incluyendo desarrollo. No hay exclusiones de advisories.
 
-## `xlsx@0.18.5` — advisories aceptados
+- Next.js y eslint-config-next: 16.3.4, fijados conjuntamente.
+- SheetJS: tarball oficial 0.20.3 con integridad en package-lock.json. Sustituye xlsx 0.18.5 y elimina la excepción anterior. La instalación desde este CDN es el método publicado por [SheetJS](https://docs.sheetjs.com/docs/getting-started/installation/frameworks/).
+- Vitest y cobertura: 4.1.11. La configuración `.mts` declara ESM explícitamente.
+- PGlite 0.5.8: PostgreSQL embebido para ejecutar migraciones y comprobar RLS, sin servidores ni conexión remota. Auth y Storage se modelan para esta batería; no sustituye su integración HTTP.
+- Overrides de desarrollo: sharp ^0.35.4 y tar ^7.5.21 dentro de @capacitor/assets, uuid ^11.1.1 dentro de xcode. Eliminan dependencias transitivas vulnerables. `capacitor-assets --help`, generación de UUID con xcode y conversión de imagen a PNG con sharp se han ejecutado correctamente; la generación completa y las compilaciones nativas quedan para un entorno Android/iOS.
 
-`npm audit` marca `xlsx` por *prototype pollution* y *ReDoS*. 0.18.5 es la
-última versión publicada en el registro público de npm y esos avisos **no están
-corregidos en ese canal**: el mantenedor publica los parches fuera de npm, en
-`cdn.sheetjs.com`.
-
-**Por qué se acepta hoy:** ambos advisories afectan al *parser*. Aquí la
-librería se usa **solo para escribir**, desde datos propios y ya validados:
-
-- `XLSX.utils.book_new()`
-- `XLSX.utils.aoa_to_sheet()`
-- `XLSX.write()`
-
-No se llama a `XLSX.read` ni a `XLSX.readFile` en ningún punto del repositorio,
-así que no hay entrada no confiable que pueda alcanzar el parser. El único
-consumidor es `src/app/pro/contabilidad/export/route.ts`, que lleva un comentario
-apuntando aquí.
-
-**Condición para revisar esta excepción:** en cuanto se importe un XLSX de un
-tercero —por ejemplo, para cargar gastos desde el fichero de la gestoría— esta
-excepción deja de ser válida y hay que migrar antes de escribir esa función.
-
-### Cómo salir de la excepción
-
-Dos caminos, por orden de preferencia:
-
-1. **Fijar el tarball oficial por integridad**, que sí trae los parches:
-   ```
-   npm i https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz
-   ```
-   Contra: la instalación depende de un CDN externo, lo que complica los
-   entornos sin salida a internet y las builds reproducibles.
-
-2. **Sustituir por `exceljs`**, que está en npm y se mantiene. Es la opción
-   limpia; cuesta reescribir `buildXlsx` (unas 60 líneas).
-
-Mientras tanto, la CI ejecuta `npm audit --audit-level=high --omit=dev`, que no
-incluye este paquete por ser dependencia de producción con el aviso conocido: si
-apareciera un advisory **nuevo** de severidad alta, el job fallaría.
-
-## Actualizaciones automáticas
-
-`.github/dependabot.yml` abre PR semanales agrupados (Next, Supabase, Capacitor,
-desarrollo y resto) para que la revisión sea abordable en vez de veinte PR
-sueltos que nadie mira.
+`npm ci` usa el lockfile. Repetir lint, typecheck, test, test:types, build y audit al actualizar dependencias. Un audit limpio informa de avisos conocidos; no prueba por sí solo la seguridad del producto.

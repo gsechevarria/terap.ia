@@ -1,3 +1,14 @@
+> Estado de la copia de correcciones (10-sep-2026): consultar primero
+> [CORRECCIONES-2026-09.md](CORRECCIONES-2026-09.md). No hay despliegue realizado.
+> El código nuevo necesita las once migraciones de septiembre antes de servir
+> tráfico. `vercel.json` solicita cron cada minuto: confirmar plan compatible
+> o configurar un programador externo autenticado antes de desplegar.
+> Vercel Hobby limita cron a una ejecución diaria, según su
+> [documentación](https://vercel.com/docs/cron-jobs/usage-and-pricing).
+> Mantener `NEXT_PUBLIC_NATIVE_PUSH_ENABLED=false`: no existe emisor FCM/APNs.
+> El fallback por email no está disponible; la interfaz ya no lo ofrece.
+> Sentry requiere activación explícita; nunca se habilitan trazas de salud.
+
 # Deploy (Vercel) y Lighthouse
 
 ## 1. Variables de entorno (Vercel → Project → Settings → Environment Variables)
