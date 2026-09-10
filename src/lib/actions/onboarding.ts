@@ -1,4 +1,5 @@
 "use server";
+import { runAction } from "@/lib/action-server";
 
 import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
@@ -32,7 +33,7 @@ function invitationError(error: { code?: string; message?: string }): string {
  * registra la firma del consentimiento. Idempotente si se reintenta.
  * Devuelve un resultado (la navegación la hace el cliente).
  */
-export async function completeOnboardingAction(token: string): Promise<Result> {
+async function completeOnboardingActionImpl(token: string, templateId: string, contentHash: string): Promise<Result> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -48,39 +49,11 @@ export async function completeOnboardingAction(token: string): Promise<Result> {
     };
   }
 
-  // 1) Vincular la cuenta a la fila patient (si no lo está ya).
-  let { data: patient } = await supabase
-    .from("patients")
-    .select("id, professional_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!patient) {
-    const { error } = await supabase.rpc("accept_invitation", {
-      p_token: token,
-    });
-    if (error) return { ok: false, error: invitationError(error) };
-    const res = await supabase
-      .from("patients")
-      .select("id, professional_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    patient = res.data;
-  }
-  if (!patient) return { ok: false, error: "No se pudo vincular la cuenta." };
-
-  // 2) Registrar la firma del consentimiento. La RPC (SECURITY DEFINER) resuelve
-  //    profesional + plantilla activa y hashea el texto ALMACENADO EN BD, de modo
-  //    que el paciente no puede fabricar la evidencia (professional_id, versión,
-  //    accepted, hash). Es idempotente: si ya firmó, no duplica.
-  const { error } = await supabase.rpc("patient_accept_consent");
-  if (error) {
-    return {
-      ok: false,
-      error:
-        "Tu cuenta ha quedado vinculada, pero no hemos podido registrar el consentimiento. Vuelve a intentarlo.",
-    };
-  }
-
+  const { error } = await supabase.rpc("complete_onboarding", {
+    p_token: token, p_template_id: templateId, p_content_hash: contentHash,
+  });
+  if (error) return { ok: false, error: invitationError(error) };
   return { ok: true };
 }
+
+export async function completeOnboardingAction(...args: Parameters<typeof completeOnboardingActionImpl>) { return runAction(() => completeOnboardingActionImpl(...args)); }

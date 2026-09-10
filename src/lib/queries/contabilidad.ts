@@ -1,3 +1,4 @@
+import { checked, allRows } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfessional } from "@/lib/queries/identity";
 import type {
@@ -35,7 +36,10 @@ function toConfigDomain(row: ConfiguracionFiscal | null): ConfigFiscal {
 }
 
 function toIngresoFiscal(row: IngresoFiscalRow): IngresoFiscal | null {
-  if (!row.id || !row.fecha) return null;
+  if (!row.id || !row.fecha) throw new Error("Ingreso incompleto.");
+  if (row.fiscal_review_required || row.base_cents == null || row.cuota_iva_cents == null) {
+    throw new Error("Hay cobros pendientes de revisión fiscal. Confirma su tratamiento en Pagos de la ficha del paciente antes de calcular o exportar.");
+  }
   return {
     id: row.id,
     fecha: row.fecha,
@@ -44,11 +48,13 @@ function toIngresoFiscal(row: IngresoFiscalRow): IngresoFiscal | null {
     cuotaIva: c2e(row.cuota_iva_cents),
     tipoOperacion: row.tipo_operacion === "sujeta" ? "sujeta" : "exenta",
     retencionAplicable: !!row.retencion_aplicable,
+    retencion: c2e(row.retencion_cents),
     nombrePagador: row.nombre_pagador,
   };
 }
 
 function toGastoFiscal(g: Gasto): GastoFiscal {
+  if (g.iva_recuperable_pct == null) throw new Error("Revisa el IVA recuperable de los gastos históricos antes de calcular o exportar.");
   return {
     id: g.id,
     fecha: g.fecha,
@@ -62,10 +68,12 @@ function toGastoFiscal(g: Gasto): GastoFiscal {
     total: c2e(g.total_cents),
     porcentajeAfectacion: g.porcentaje_afectacion,
     esBienInversion: g.es_bien_inversion,
+    ivaRecuperablePct: g.iva_recuperable_pct,
   };
 }
 
 function toBienFiscal(b: BienInversion): BienInversionFiscal {
+  if (b.fiscal_review_required) throw new Error("Revisa el gasto de origen de los bienes históricos antes de calcular o exportar.");
   return {
     id: b.id,
     descripcion: b.descripcion,
@@ -81,11 +89,11 @@ export async function getConfiguracionFiscal(): Promise<ConfiguracionFiscal | nu
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
   if (!pro) return null;
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("configuracion_fiscal")
     .select("*")
     .eq("professional_id", pro.id)
-    .maybeSingle();
+    .maybeSingle());
   return data ?? null;
 }
 
@@ -93,11 +101,11 @@ export async function getGastos(): Promise<Gasto[]> {
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
   if (!pro) return [];
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("gastos")
     .select("*")
     .eq("professional_id", pro.id)
-    .order("fecha", { ascending: false });
+    .order("fecha", { ascending: false }));
   return data ?? [];
 }
 
@@ -105,11 +113,11 @@ export async function getBienesInversion(): Promise<BienInversion[]> {
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
   if (!pro) return [];
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("bienes_inversion")
     .select("*")
     .eq("professional_id", pro.id)
-    .order("fecha_adquisicion", { ascending: false });
+    .order("fecha_adquisicion", { ascending: false }));
   return data ?? [];
 }
 
@@ -129,24 +137,24 @@ export async function getFiscalArrays(ejercicio: number): Promise<FiscalArrays> 
   const to = `${ejercicio + 1}-01-01`;
 
   const [cfgRes, ingRes, gasRes, bienRes] = await Promise.all([
-    supabase
+    checked(supabase
       .from("configuracion_fiscal")
       .select("*")
       .eq("professional_id", pro.id)
-      .maybeSingle(),
-    supabase
+      .maybeSingle()),
+    allRows(supabase
       .from("v_ingresos_fiscales")
       .select("*")
       .eq("professional_id", pro.id)
       .gte("fecha", from)
-      .lt("fecha", to),
-    supabase
+      .lt("fecha", to)),
+    allRows(supabase
       .from("gastos")
       .select("*")
       .eq("professional_id", pro.id)
       .gte("fecha", from)
-      .lt("fecha", to),
-    supabase.from("bienes_inversion").select("*").eq("professional_id", pro.id),
+      .lt("fecha", to)),
+    allRows(supabase.from("bienes_inversion").select("*").eq("professional_id", pro.id)),
   ]);
 
   return {

@@ -1,3 +1,6 @@
+import { ActionInputError } from "@/lib/action-result";
+import { getUserRole } from "@/lib/auth/roles";
+import { checked } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import type { Patient, Professional } from "@/lib/types";
 
@@ -13,13 +16,14 @@ export async function getCurrentProfessional(): Promise<Pick<
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user || getUserRole(user) !== "professional") return null;
 
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("professionals")
     .select("id, user_id, full_name, email")
     .eq("user_id", user.id)
-    .maybeSingle();
+    .is("deleted_at", null)
+    .maybeSingle());
 
   return data ?? null;
 }
@@ -38,11 +42,11 @@ export async function getCurrentPatient(): Promise<Pick<
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("patients")
     .select("id, professional_id, full_name, user_id")
     .eq("user_id", user.id)
-    .maybeSingle();
+    .maybeSingle());
 
   return data ?? null;
 }
@@ -64,7 +68,7 @@ export async function requireProfessional(): Promise<
   NonNullable<Awaited<ReturnType<typeof getCurrentProfessional>>>
 > {
   const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  if (!pro) throw new ActionInputError("No autenticado.");
   return pro;
 }
 
@@ -85,16 +89,16 @@ export async function requireOwnedPatient(
   patient: OwnedPatient;
 }> {
   const pro = await requireProfessional();
-  if (!patientId) throw new Error("Falta el paciente.");
+  if (!patientId) throw new ActionInputError("Falta el paciente.");
 
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("patients")
     .select("id, email, user_id, full_name")
     .eq("id", patientId)
     .eq("professional_id", pro.id)
-    .maybeSingle();
+    .maybeSingle());
 
-  if (!data) throw new Error("Paciente no encontrado.");
+  if (!data) throw new ActionInputError("Paciente no encontrado.");
   return { pro, patient: data };
 }

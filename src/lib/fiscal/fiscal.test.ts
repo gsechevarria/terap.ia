@@ -177,9 +177,9 @@ describe("amortizacionEjercicio", () => {
     expect(amortizacionEjercicio(bien("2027-02-01"), 2026)).toBe(0);
   });
 
-  it("fuera de la vida útil declarada → 0", () => {
+  it("conserva el saldo aunque los años declarados no coincidan con el coeficiente", () => {
     // Comprado en 2023 con 3 años de vida: 2023, 2024 y 2025.
-    expect(amortizacionEjercicio(bien("2023-01-01", 3000, 25, 3), 2026)).toBe(0);
+    expect(amortizacionEjercicio(bien("2023-01-01", 3000, 25, 3), 2026)).toBe(750);
     expect(amortizacionEjercicio(bien("2023-01-01", 3000, 25, 3), 2025)).toBe(750);
   });
 });

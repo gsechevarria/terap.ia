@@ -1,3 +1,4 @@
+import { allRows, checked } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Appointment,
@@ -23,18 +24,18 @@ export async function getScaleAssignments(
   patientId: string,
 ): Promise<ScaleAssignmentView[]> {
   const supabase = await createClient();
-  const { data: assignments } = await supabase
+  const { data: assignments } = await allRows(supabase
     .from("scale_assignments")
     .select("id, assignment_type, active, starts_on, scales(code, name)")
     .eq("patient_id", patientId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false }));
   if (!assignments || assignments.length === 0) return [];
 
-  const { data: responses } = await supabase
+  const { data: responses } = await allRows(supabase
     .from("scale_responses")
     .select("assignment_id, score, severity, submitted_at")
     .eq("patient_id", patientId)
-    .order("submitted_at", { ascending: false });
+    .order("submitted_at", { ascending: false }));
 
   const latest = new Map<
     string,
@@ -72,13 +73,13 @@ export async function getUpcomingAppointments(
   patientId: string,
 ): Promise<Appointment[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("appointments")
     .select("*")
     .eq("patient_id", patientId)
     .gt("starts_at", new Date().toISOString())
     .in("status", ["scheduled", "confirmed"])
-    .order("starts_at", { ascending: true });
+    .order("starts_at", { ascending: true }));
   return data ?? [];
 }
 
@@ -94,15 +95,15 @@ export async function getPaymentsSummary(
 ): Promise<PaymentsSummary> {
   const supabase = await createClient();
   const [{ data: payments }, { data: packs }] = await Promise.all([
-    supabase
+    allRows(supabase
       .from("payments")
       .select("*")
       .eq("patient_id", patientId)
-      .order("created_at", { ascending: false }),
-    supabase
+      .order("created_at", { ascending: false })),
+    allRows(supabase
       .from("session_packs")
       .select("total_sessions, used_sessions, active")
-      .eq("patient_id", patientId),
+      .eq("patient_id", patientId)),
   ]);
 
   const debtCents = (payments ?? [])
@@ -121,22 +122,22 @@ export async function getRecentMoodEntries(
   limit = 30,
 ): Promise<MoodEntry[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("mood_entries")
     .select("*")
     .eq("patient_id", patientId)
     .order("entry_date", { ascending: false })
-    .limit(limit);
+    .limit(limit));
   return data ?? [];
 }
 
 /** Documentos del paciente. */
 export async function getDocuments(patientId: string): Promise<DocumentRow[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("documents")
     .select("*")
     .eq("patient_id", patientId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false }));
   return data ?? [];
 }

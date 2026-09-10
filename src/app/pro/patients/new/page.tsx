@@ -1,3 +1,4 @@
+import { ActionForm } from "@/components/ui/ActionForm";
 import Link from "next/link";
 import { createPatientAction } from "@/lib/actions/patients";
 import { DateField } from "@/components/ui/DateField";
@@ -14,7 +15,7 @@ export default function NewPatientPage() {
         se dé de alta.
       </p>
 
-      <form action={createPatientAction} className="mt-8 flex flex-col gap-5">
+      <ActionForm action={createPatientAction} className="mt-8 flex flex-col gap-5">
         <label className="block">
           <span className="field-label">Nombre completo</span>
           {/* Sin `autoFocus`: mueve el foco antes de que el usuario haya leído
@@ -66,7 +67,7 @@ export default function NewPatientPage() {
         <button type="submit" className="btn-primary h-9 self-start px-5">
           Crear paciente
         </button>
-      </form>
+      </ActionForm>
     </div>
   );
 }

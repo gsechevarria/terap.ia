@@ -18,7 +18,7 @@ import {
   deducibleIrpf,
   redondear,
   tasaRetencion,
-  trimestreAdquisicion,
+  amortizacionHastaTrimestre,
   trimestreDeFecha,
 } from "./helpers";
 import { calcularModelo130 } from "./modelo130";
@@ -39,16 +39,8 @@ export function calcularResumenAnual(
 
   // Amortización del ejercicio, prorrateada por días desde la adquisición, y
   // guardada junto al trimestre a partir del cual procede imputarla.
-  const amortizaciones = data.bienes
-    .map((b) => ({
-      importe: amortizacionEjercicio(b, ejercicio),
-      desdeTrimestre: trimestreAdquisicion(b, ejercicio),
-    }))
-    .filter((a) => a.importe > 0 && a.desdeTrimestre != null);
-
-  const amortizacionesTotales = redondear(
-    amortizaciones.reduce((s, a) => s + a.importe, 0),
-  );
+  const amortizacionesTotales = redondear(data.bienes.reduce((sum, bien) =>
+    sum + amortizacionEjercicio(bien, ejercicio), 0));
 
   // Acumulados hasta el final de un trimestre.
   //
@@ -67,7 +59,7 @@ export function calcularResumenAnual(
     redondear(
       ingresos
         .filter((i) => i.retencionAplicable && trimestreDeFecha(i.fecha) <= t)
-        .reduce((s, i) => s + i.base * tasaRet, 0),
+        .reduce((s, i) => s + (i.retencion ?? i.base * tasaRet), 0),
     );
   const gastosCorrientesAcum = (t: Trimestre) =>
     redondear(
@@ -82,16 +74,8 @@ export function calcularResumenAnual(
    * era `total × t/4`, que imputaba amortización de un bien en trimestres
    * anteriores a su compra.
    */
-  const amortizacionAcum = (t: Trimestre) =>
-    redondear(
-      amortizaciones.reduce((s, a) => {
-        const desde = a.desdeTrimestre!;
-        if (t < desde) return s;
-        const trimestresVivos = 4 - desde + 1;
-        const transcurridos = t - desde + 1;
-        return s + (a.importe * transcurridos) / trimestresVivos;
-      }, 0),
-    );
+  const amortizacionAcum = (t: Trimestre) => redondear(data.bienes.reduce((sum, bien) =>
+    sum + amortizacionHastaTrimestre(bien, ejercicio, t), 0));
 
   const gastosDeduciblesAcum = (t: Trimestre) =>
     redondear(gastosCorrientesAcum(t) + amortizacionAcum(t));

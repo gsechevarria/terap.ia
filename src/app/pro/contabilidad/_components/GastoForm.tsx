@@ -1,20 +1,16 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
-import { useActionState, useState } from "react";
+import { uploadFormFile } from "@/lib/upload-client";
+
+import { useRef, useState, useTransition } from "react";
 import { createGastoAction } from "@/lib/actions/contabilidad";
 import { CATEGORIAS_GASTO, CATEGORIA_LABEL } from "@/lib/fiscal";
 import { actionErrorMessage } from "@/lib/errors";
 import { formatEur } from "@/lib/format";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 
-/**
- * Valores del formulario devueltos cuando el guardado falla, para repoblarlo.
- *
- * React 19 resetea los `<form action={…}>` no controlados cuando la acción
- * termina, y capturar el error dentro hacía que "terminara bien": el gasto se
- * perdía entero (fecha, categoría, proveedor, NIF, concepto, importes y el
- * justificante). Ahora el estado viaja de vuelta y los campos se rellenan.
- */
+/** Valores iniciales del formulario. Un fallo conserva el DOM y su input file. */
 type GastoValues = {
   fecha: string;
   categoria_deducible: string;
@@ -31,61 +27,29 @@ type GastoValues = {
   hadFile: boolean;
 };
 
-type State = {
-  ok: boolean;
-  error?: string;
-  values?: GastoValues;
-  /** Cambia en cada intento para forzar el remontaje y aplicar los defaultValue. */
-  attempt: number;
-};
-
-const INITIAL: State = { ok: false, attempt: 0 };
-
-function readValues(fd: FormData): GastoValues {
-  const s = (k: string) => String(fd.get(k) ?? "");
-  const file = fd.get("adjunto");
-  return {
-    fecha: s("fecha"),
-    categoria_deducible: s("categoria_deducible"),
-    proveedor_nombre: s("proveedor_nombre"),
-    proveedor_nif: s("proveedor_nif"),
-    concepto: s("concepto"),
-    base: s("base"),
-    tipo_iva: s("tipo_iva"),
-    porcentaje_afectacion: s("porcentaje_afectacion"),
-    es_bien_inversion: fd.get("es_bien_inversion") != null,
-    porcentaje_amortizacion: s("porcentaje_amortizacion"),
-    anios_amortizacion: s("anios_amortizacion"),
-    hadFile: file instanceof File && file.size > 0,
-  };
-}
-
+/** El formulario solo se reinicia tras confirmar el guardado, incluido el archivo. */
 export function GastoForm() {
-  const [state, formAction] = useActionState<State, FormData>(
-    async (prev, fd) => {
-      try {
-        await createGastoAction(fd);
-        return { ok: true, attempt: prev.attempt + 1 };
-      } catch (e) {
-        return {
-          ok: false,
-          error: actionErrorMessage(e),
-          values: readValues(fd),
-          attempt: prev.attempt + 1,
-        };
-      }
-    },
-    INITIAL,
-  );
-
-  // `key` remonta el formulario en cada intento. Es lo que hace efectivos los
-  // `defaultValue` repoblados y, de paso, reinicia los campos controlados de
-  // `GastoFields` desde sus props: así no hace falta sincronizarlos con un
-  // efecto (que además cascadea renders y lo prohíbe el React Compiler).
-  // La revalidación la dispara `revalidateContabilidad()` dentro de la action.
+  const [error, setError] = useState("");
+  const [revision, setRevision] = useState(0);
+  const [pending, startTransition] = useTransition();
+  const sending = useRef(false);
   return (
-    <form key={state.attempt} action={formAction} className="card bg-panel p-4">
-      <GastoFields values={state.values} error={state.error} />
+    <form key={revision} aria-busy={pending} className="card bg-panel p-4" onSubmit={event => {
+      event.preventDefault();
+      if (sending.current) return;
+      const fd = new FormData(event.currentTarget);
+      sending.current = true; setError("");
+      startTransition(async () => {
+        try {
+          await uploadFormFile(fd, "adjunto", "receipts");
+          await callAction(createGastoAction, fd);
+          setRevision(value => value + 1);
+        } catch (e) { setError(actionErrorMessage(e)); }
+        finally { sending.current = false; }
+      });
+    }}>
+      <fieldset disabled={pending} className="contents"><GastoFields error={error} /></fieldset>
+      {pending && <p role="status" className="mt-2 text-sm">Guardando…</p>}
     </form>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useEffect, useRef, useState } from "react";
 import { createInvitationAction } from "@/lib/actions/invitations";
@@ -38,7 +39,7 @@ export function InvitePanel({
 
   function generate() {
     run(async () => {
-      const res = await createInvitationAction(patientId);
+      const res = await callAction(createInvitationAction, patientId);
       setToken(res.token);
       setExpiresAt(res.expiresAt);
       setCopied(false);

@@ -1,4 +1,6 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +42,7 @@ function scaleError(error: { code?: string; message?: string }): string {
  * Se valida aquí (mensaje claro) y también en el trigger (barrera real, cubre
  * cualquier ruta de inserción).
  */
-export async function submitScaleResponseAction(input: {
+async function submitScaleResponseActionImpl(input: {
   assignmentId: string;
   scaleId: string;
   answers: ScaleAnswers;
@@ -92,7 +94,7 @@ export async function submitScaleResponseAction(input: {
  * Sin acuse, el contador de alertas de la ficha es un recuento histórico que
  * nunca vuelve a cero y deja de servir como señal.
  */
-export async function acknowledgeFlaggedResponseAction(
+async function acknowledgeFlaggedResponseActionImpl(
   responseId: string,
   patientId: string,
 ) {
@@ -110,8 +112,12 @@ export async function acknowledgeFlaggedResponseAction(
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Respuesta no encontrada.");
+  if (!data) throw new ActionInputError("Respuesta no encontrada.");
 
   revalidatePath("/pro");
   revalidatePath(`/pro/patients/${patientId}`);
 }
+
+export async function submitScaleResponseAction(...args: Parameters<typeof submitScaleResponseActionImpl>) { return runAction(() => submitScaleResponseActionImpl(...args)); }
+
+export async function acknowledgeFlaggedResponseAction(...args: Parameters<typeof acknowledgeFlaggedResponseActionImpl>) { return runAction(() => acknowledgeFlaggedResponseActionImpl(...args)); }

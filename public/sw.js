@@ -60,7 +60,8 @@ self.addEventListener("push", (event) => {
     body: data.body || "",
     icon: "/icon-192.png",
     badge: "/icon-192.png",
-    data: { url: data.url || "/app" },
+    tag: typeof data.tag === "string" ? data.tag : undefined,
+    data: { url: safePath(data.url) },
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
@@ -68,7 +69,7 @@ self.addEventListener("push", (event) => {
 // Click en la notificación → abrir/enfocar la app en la URL indicada.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/app";
+  const url = safePath(event.notification.data && event.notification.data.url);
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
@@ -80,3 +81,7 @@ self.addEventListener("notificationclick", (event) => {
       }),
   );
 });
+
+function safePath(value) {
+  return typeof value === "string" && /^\/(app|pro)(?:\/[a-zA-Z0-9_/-]*)?$/.test(value) ? value : "/";
+}

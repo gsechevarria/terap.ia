@@ -1,3 +1,4 @@
+import { allRows, checked } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfessional } from "@/lib/queries/identity";
 import type { Patient, PatientStatus } from "@/lib/types";
@@ -71,27 +72,27 @@ export async function listPatientsWithOverview(
 
   const [tasksRes, completionsRes, alertsRes, apptsRes, moodsRes] =
     await Promise.all([
-      supabase.from("tasks").select("id, patient_id").in("patient_id", ids),
-      supabase
+      allRows(supabase.from("tasks").select("id, patient_id").in("patient_id", ids)),
+      allRows(supabase
         .from("task_completions")
         .select("task_id, patient_id, completed_at")
-        .in("patient_id", ids),
-      supabase
+        .in("patient_id", ids)),
+      allRows(supabase
         .from("scale_responses")
         .select("patient_id, submitted_at")
-        .eq("flagged", true)
-        .in("patient_id", ids),
-      supabase
+        .eq("flagged", true).is("acknowledged_at", null)
+        .in("patient_id", ids)),
+      allRows(supabase
         .from("appointments")
         .select("patient_id, starts_at, status")
         .in("patient_id", ids)
         .gt("starts_at", nowIso)
         .in("status", ["scheduled", "confirmed"])
-        .order("starts_at", { ascending: true }),
-      supabase
+        .order("starts_at", { ascending: true })),
+      allRows(supabase
         .from("mood_entries")
         .select("patient_id, created_at")
-        .in("patient_id", ids),
+        .in("patient_id", ids)),
     ]);
 
   const completedTaskIds = new Set(
@@ -144,10 +145,10 @@ export async function listPatientTags(): Promise<string[]> {
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
   if (!pro) return [];
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("patients")
     .select("tags")
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id));
   const set = new Set<string>();
   for (const row of data ?? []) for (const t of row.tags ?? []) set.add(t);
   return [...set].sort();
@@ -156,10 +157,10 @@ export async function listPatientTags(): Promise<string[]> {
 /** Ficha del paciente (RLS garantiza pertenencia al profesional actual). */
 export async function getPatient(id: string): Promise<Patient | null> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("patients")
     .select("*")
     .eq("id", id)
-    .maybeSingle();
+    .maybeSingle());
   return data ?? null;
 }

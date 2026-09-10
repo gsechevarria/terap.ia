@@ -1,40 +1,34 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
+import { requireUploadedFile } from "@/lib/upload-server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnedPatient } from "@/lib/queries/identity";
 
-function storagePath(patientId: string, fileName: string): string {
-  const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `${patientId}/${crypto.randomUUID()}-${safe}`;
-}
-
 /** El profesional sube un documento al repositorio del paciente (Storage). */
-export async function addDocumentAction(formData: FormData) {
+async function addDocumentActionImpl(formData: FormData) {
   const patientId = String(formData.get("patientId") ?? "");
   // El patientId venía del FormData sin validar propiedad: solo lo frenaba, de
   // rebote, la RLS de Storage.
   const { pro, patient } = await requireOwnedPatient(patientId);
 
   const title = String(formData.get("title") ?? "").trim();
-  const file = formData.get("file") as File | null;
-  if (!file || file.size === 0) throw new Error("Falta el archivo.");
+  const pathInput = String(formData.get("file_path") ?? "");
+  if (!pathInput) throw new ActionInputError("Falta el archivo.");
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = storagePath(patient.id, file.name);
-  const up = await supabase.storage
-    .from("files")
-    .upload(path, file, { contentType: file.type || undefined });
-  if (up.error) throw new Error(up.error.message);
+  const path = await requireUploadedFile(pathInput, "files", pro.id, patientId);
 
   const { error } = await supabase.from("documents").insert({
     professional_id: pro.id,
     patient_id: patient.id,
-    title: title || file.name,
+    title: title || String(formData.get("file_name") ?? "Documento"),
     storage_path: path,
     uploaded_by: user?.id ?? null,
     // Explícito aunque el default ya sea false: los documentos del expediente
@@ -46,7 +40,7 @@ export async function addDocumentAction(formData: FormData) {
 }
 
 /** Borra un documento (fila + binario). Antes no comprobaba ni sesión ni rol. */
-export async function deleteDocumentAction(id: string, patientId: string) {
+async function deleteDocumentActionImpl(id: string, patientId: string) {
   const { pro } = await requireOwnedPatient(patientId);
 
   const supabase = await createClient();
@@ -57,11 +51,8 @@ export async function deleteDocumentAction(id: string, patientId: string) {
     .eq("patient_id", patientId)
     .eq("professional_id", pro.id)
     .maybeSingle();
-  if (!doc) throw new Error("Documento no encontrado.");
+  if (!doc) throw new ActionInputError("Documento no encontrado.");
 
-  if (doc.storage_path) {
-    await supabase.storage.from("files").remove([doc.storage_path]);
-  }
   const { error } = await supabase
     .from("documents")
     .delete()
@@ -81,7 +72,7 @@ export async function deleteDocumentAction(id: string, patientId: string) {
  * profesional y a los datos de terceros, así que el reparto es deliberado y por
  * documento, nunca masivo.
  */
-export async function setDocumentSharedAction(
+async function setDocumentSharedActionImpl(
   id: string,
   patientId: string,
   shared: boolean,
@@ -99,3 +90,9 @@ export async function setDocumentSharedAction(
   revalidatePath(`/pro/patients/${patientId}`);
   revalidatePath("/app/resources");
 }
+
+export async function addDocumentAction(...args: Parameters<typeof addDocumentActionImpl>) { return runAction(() => addDocumentActionImpl(...args)); }
+
+export async function deleteDocumentAction(...args: Parameters<typeof deleteDocumentActionImpl>) { return runAction(() => deleteDocumentActionImpl(...args)); }
+
+export async function setDocumentSharedAction(...args: Parameters<typeof setDocumentSharedActionImpl>) { return runAction(() => setDocumentSharedActionImpl(...args)); }

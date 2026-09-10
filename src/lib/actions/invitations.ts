@@ -1,4 +1,6 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
 import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -19,15 +21,15 @@ import { requireOwnedPatient } from "@/lib/queries/identity";
  * desde otra cuenta y `accept_invitation` reasignaba `patients.user_id`: el
  * paciente legítimo perdía el acceso a su ficha.
  */
-export async function createInvitationAction(
+async function createInvitationActionImpl(
   patientId: string,
 ): Promise<{ token: string; expiresAt: string }> {
-  const { pro, patient } = await requireOwnedPatient(patientId);
+  const { patient } = await requireOwnedPatient(patientId);
 
   // `accept_invitation` exige que el correo de la invitación coincida con el de
   // la cuenta que la canjea, así que sin correo la invitación sería inservible.
   if (!patient.email) {
-    throw new Error(
+    throw new ActionInputError(
       "Añade el correo del paciente en su ficha antes de invitarle: la invitación solo puede aceptarla esa dirección.",
     );
   }
@@ -36,18 +38,11 @@ export async function createInvitationAction(
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
 
-  const { data, error } = await supabase
-    .from("invitations")
-    .insert({
-      professional_id: pro.id,
-      patient_id: patient.id,
-      email: patient.email,
-      token_hash: tokenHash,
-    })
-    .select("expires_at")
-    .single();
+  const { data, error } = await supabase.rpc("issue_invitation", { p_patient_id: patient.id, p_token_hash: tokenHash });
   if (error) throw new Error(error.message);
 
   revalidatePath(`/pro/patients/${patientId}`);
-  return { token, expiresAt: data.expires_at };
+  return { token, expiresAt: data };
 }
+
+export async function createInvitationAction(...args: Parameters<typeof createInvitationActionImpl>) { return runAction(() => createInvitationActionImpl(...args)); }

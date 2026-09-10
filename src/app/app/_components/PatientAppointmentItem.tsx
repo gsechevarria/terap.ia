@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { respondAppointmentAction } from "@/lib/actions/appointments";
 import { formatDateTime } from "@/lib/format";
@@ -25,7 +26,7 @@ export function PatientAppointmentItem({
   const cancelled = appt.status === "cancelled";
 
   function respond(action: "confirm" | "cancel") {
-    run(() => respondAppointmentAction(appt.id, action));
+    run(() => callAction(respondAppointmentAction, appt.id, action));
   }
 
   return (

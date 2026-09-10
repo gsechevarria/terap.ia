@@ -85,9 +85,14 @@ export function fromWallClock(
   mm: number,
 ): Date {
   const guess = Date.UTC(y, m - 1, d, hh, mm);
-  let t = guess - offsetAt(guess);
-  t = guess - offsetAt(t);
-  return new Date(t);
+  const normal = new Date(guess);
+  const offsets = new Set([offsetAt(guess - 86400000), offsetAt(guess), offsetAt(guess + 86400000)]);
+  const candidates = [...offsets].map(offset => guess - offset).filter(t => {
+    const p = wallClockParts(new Date(t));
+    return p.y === normal.getUTCFullYear() && p.m === normal.getUTCMonth() + 1 && p.d === normal.getUTCDate() && p.hh === normal.getUTCHours() && p.mm === normal.getUTCMinutes();
+  });
+  // La hora inexistente se rechaza; una hora repetida elige la primera ocurrencia.
+  return new Date(candidates.length ? Math.min(...candidates) : NaN);
 }
 
 /** Día de calendario en TZ ('YYYY-MM-DD') al que pertenece un instante. */

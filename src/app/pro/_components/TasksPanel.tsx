@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useState } from "react";
 import { CalendarDays } from "lucide-react";
@@ -52,7 +53,7 @@ export function TasksPanel({
     if (!creating.title.trim()) return;
     run(
       () =>
-        createTaskAction({
+        callAction(createTaskAction, {
           patientId,
           title: creating.title,
           description: creating.description,
@@ -75,7 +76,7 @@ export function TasksPanel({
     if (!editDraft.title.trim() || !editingId) return;
     run(
       () =>
-        updateTaskAction({
+        callAction(updateTaskAction, {
           taskId: editingId,
           patientId,
           title: editDraft.title,
@@ -87,7 +88,7 @@ export function TasksPanel({
   }
 
   function remove(id: string) {
-    run(() => deleteTaskAction(id, patientId));
+    run(() => callAction(deleteTaskAction, id, patientId));
   }
 
   return (

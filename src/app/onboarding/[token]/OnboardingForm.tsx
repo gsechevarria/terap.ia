@@ -1,10 +1,12 @@
 "use client";
+import { actionErrorMessage } from "@/lib/errors";
+import { callAction } from "@/lib/action-result";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { completeOnboardingAction } from "@/lib/actions/onboarding";
 
-export function OnboardingForm({ token }: { token: string }) {
+export function OnboardingForm({ token, templateId, contentHash }: { token: string; templateId: string; contentHash: string }) {
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
@@ -13,12 +15,14 @@ export function OnboardingForm({ token }: { token: string }) {
   function submit() {
     setError("");
     startTransition(async () => {
-      const res = await completeOnboardingAction(token);
+      try {
+      const res = await callAction(completeOnboardingAction, token, templateId, contentHash);
       if (res.ok) {
         router.replace("/app");
       } else {
         setError(res.error);
       }
+      } catch (e) { setError(actionErrorMessage(e)); }
     });
   }
 

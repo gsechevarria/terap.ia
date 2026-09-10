@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -36,7 +37,7 @@ export function ScalesPanel({
     if (!chosen) return;
     run(
       () =>
-        createScaleAssignmentAction({
+        callAction(createScaleAssignmentAction, {
           patientId,
           scaleId: chosen,
           type,
@@ -47,7 +48,7 @@ export function ScalesPanel({
   }
 
   function toggle(id: string, active: boolean) {
-    run(() => setScaleAssignmentActiveAction(id, patientId, active));
+    run(() => callAction(setScaleAssignmentActiveAction, id, patientId, active));
   }
 
   return (

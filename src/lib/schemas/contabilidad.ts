@@ -25,6 +25,7 @@ export const gastoBaseSchema = z.object({
   concepto: textoOpcional.optional().default(null),
   base: importeEuros,
   tipo_iva: porcentaje.optional().default(21),
+  iva_recuperable_pct: porcentaje.optional(),
   porcentaje_afectacion: porcentaje.optional().default(100),
   es_bien_inversion: checkbox.optional().default(false),
   porcentaje_amortizacion: porcentaje.optional().default(0),
@@ -42,15 +43,20 @@ export const gastoBaseSchema = z.object({
 });
 
 export const createGastoSchema = gastoBaseSchema;
-export const updateGastoSchema = gastoBaseSchema.extend({ id: UUID });
+export const updateGastoSchema = gastoBaseSchema.extend({
+  id: UUID,
+  es_bien_inversion: checkbox.optional(),
+  porcentaje_amortizacion: porcentaje.optional(),
+  anios_amortizacion: gastoBaseSchema.shape.anios_amortizacion.optional(),
+});
 
 export const configuracionFiscalSchema = z.object({
   regimen: z
     .enum(["estimacion_directa_simplificada", "estimacion_directa_normal"])
-    .catch("estimacion_directa_simplificada"),
-  situacion_iva: z.enum(["exenta", "sujeta", "mixta"]).catch("exenta"),
+    .default("estimacion_directa_simplificada"),
+  situacion_iva: z.enum(["exenta", "sujeta", "mixta"]).default("exenta"),
   epigrafe_iae: textoOpcional.optional().default(null),
-  fecha_alta_actividad: YMD.nullable().optional().default(null),
+  fecha_alta_actividad: z.preprocess((v) => v === "" ? null : v, YMD.nullable().optional().default(null)),
   aplica_retencion_default: checkbox.optional().default(false),
   tipo_iva_repercutido: porcentaje.optional().default(21),
   // Solo obligatoria en régimen mixto; se valida abajo.

@@ -1,4 +1,6 @@
 "use client";
+import { useDialogFocus } from "@/lib/use-dialog-focus";
+import { callAction } from "@/lib/action-result";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
@@ -653,10 +655,12 @@ function BlockPreview({
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
   const fmt = (iso: string) => formatDateTime(iso);
   return (
     <div>
       <p className="text-sm font-semibold">Bloqueo</p>
+      {error && <p role="alert" className="text-danger">{error}</p>}
       <p className="mt-1 text-sm text-ink-2">
         {fmt(block.starts_at)} → {fmt(block.ends_at)}
       </p>
@@ -667,8 +671,8 @@ function BlockPreview({
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
-              await deleteBlockAction(block.id);
-              onDone();
+              try { await callAction(deleteBlockAction, block.id); onDone(); }
+              catch (e) { setError(actionErrorMessage(e)); }
             })
           }
           className="btn-danger h-7 text-xs"
@@ -689,6 +693,7 @@ function EditModal({
   appt: AgendaAppointment;
   onClose: () => void;
 }) {
+  const dialogRef = useDialogFocus(onClose);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const initialMin = Math.round(
@@ -718,13 +723,14 @@ function EditModal({
     if (conflict) setConflict("");
   }
 
-  function run(fn: () => Promise<void>, close = true) {
+  function run(fn: () => Promise<void | { warning?: string }>, close = true) {
     setError("");
     startTransition(async () => {
       try {
-        await fn();
+        const result = await fn();
         router.refresh();
-        if (close) onClose();
+        if (result?.warning) setAviso(result.warning);
+        else if (close) onClose();
       } catch (e) {
         setError(actionErrorMessage(e));
       }
@@ -751,7 +757,7 @@ function EditModal({
     const endsAt = new Date(startDate.getTime() + minutes * 60_000).toISOString();
     startTransition(async () => {
       try {
-        const res = await updateAppointmentAction({
+        const res = await callAction(updateAppointmentAction, {
           id: appt.id,
           patientId: appt.patient_id,
           startsAt: startDate.toISOString(),
@@ -765,7 +771,7 @@ function EditModal({
           return;
         }
         if (attendance !== appt.attendance) {
-          const res = await setAttendanceAction(appt.id, attendance);
+          const res = await callAction(setAttendanceAction, appt.id, attendance);
           if (res.warning) {
             // El modal NO se cierra: si se cerrara, el aviso se perdería y el
             // profesional se quedaría pensando que el pago se ha borrado.
@@ -788,9 +794,12 @@ function EditModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
+        aria-label="Modificar cita"
         aria-modal
-        className="card w-full max-w-md p-6"
+        className="card max-h-[90dvh] w-full max-w-md overflow-y-auto p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -959,7 +968,7 @@ function EditModal({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => run(() => cancelAppointmentAction(appt.id))}
+                onClick={() => run(() => callAction(cancelAppointmentAction, appt.id))}
                 className="btn-subtle btn-sm text-warn hover:text-warn"
               >
                 Cancelar cita
@@ -970,7 +979,7 @@ function EditModal({
               disabled={pending}
               onClick={() => {
                 if (window.confirm("¿Eliminar esta cita definitivamente?")) {
-                  run(() => deleteAppointmentAction(appt.id));
+                  run(() => callAction(deleteAppointmentAction, appt.id));
                 }
               }}
               className="btn-danger btn-sm"

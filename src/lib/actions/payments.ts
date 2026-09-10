@@ -1,4 +1,6 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePayments } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
@@ -9,9 +11,9 @@ import { isPaymentMethod } from "@/lib/payment-methods";
 const eurosToCents = (euros: number) => Math.round(euros * 100);
 
 /** Precio por sesión del paciente (upsert sobre payment_settings). */
-export async function upsertPriceAction(patientId: string, priceEuros: number) {
+async function upsertPriceActionImpl(patientId: string, priceEuros: number) {
   const { pro } = await requireOwnedPatient(patientId);
-  if (!(priceEuros >= 0)) throw new Error("Precio no válido.");
+  if (!(Number.isFinite(priceEuros) && priceEuros >= 0 && priceEuros <= 21474836.47)) throw new ActionInputError("Precio no válido.");
 
   const supabase = await createClient();
   const { error } = await supabase.from("payment_settings").upsert(
@@ -41,58 +43,28 @@ export async function upsertPriceAction(patientId: string, priceEuros: number) {
  * Se registra como PENDIENTE: el profesional lo marca como cobrado cuando
  * efectivamente lo cobre, igual que cualquier otro pago.
  */
-export async function addPackAction(
-  patientId: string,
-  totalSessions: number,
-  priceEuros: number,
-) {
-  const { pro } = await requireOwnedPatient(patientId);
-  if (!(totalSessions > 0)) throw new Error("Nº de sesiones no válido.");
-  if (!(priceEuros >= 0)) throw new Error("Precio no válido.");
-
+async function addPackActionImpl(patientId: string, totalSessions: number, priceEuros: number, requestId: string = crypto.randomUUID()) {
+  await requireOwnedPatient(patientId);
+  if (!Number.isInteger(totalSessions) || totalSessions < 1 || totalSessions > 1000) throw new ActionInputError("Número de sesiones no válido.");
+  if (!Number.isFinite(priceEuros) || priceEuros < 0 || priceEuros > 21474836.47) throw new ActionInputError("Precio no válido.");
   const supabase = await createClient();
-  const priceCents = eurosToCents(priceEuros);
-
-  const { data: pack, error } = await supabase
-    .from("session_packs")
-    .insert({
-      professional_id: pro.id,
-      patient_id: patientId,
-      total_sessions: totalSessions,
-      used_sessions: 0,
-      price_cents: priceCents,
-      currency: "EUR",
-      active: true,
-    })
-    .select("id")
-    .single();
+  const { error } = await supabase.rpc("create_session_pack", {
+    p_patient_id: patientId, p_total_sessions: totalSessions,
+    p_price_cents: eurosToCents(priceEuros), p_request_id: requestId,
+  });
   if (error) throw new Error(error.message);
-
-  if (priceCents > 0) {
-    const { error: payErr } = await supabase.from("payments").insert({
-      professional_id: pro.id,
-      patient_id: patientId,
-      session_pack_id: pack.id,
-      amount_cents: priceCents,
-      currency: "EUR",
-      status: "pending",
-      note: `Compra de bono (${totalSessions} sesiones)`,
-    });
-    if (payErr) throw new Error(payErr.message);
-  }
-
   revalidatePayments(patientId);
 }
 
 /** Registra un pago manual (sin vincular a cita), con método opcional. */
-export async function registerPaymentAction(
+async function registerPaymentActionImpl(
   patientId: string,
   amountEuros: number,
   status: "paid" | "pending",
   method?: string | null,
 ) {
   const { pro } = await requireOwnedPatient(patientId);
-  if (!(amountEuros >= 0)) throw new Error("Importe no válido.");
+  if (!(Number.isFinite(amountEuros) && amountEuros >= 0 && amountEuros <= 21474836.47)) throw new ActionInputError("Importe no válido.");
 
   const supabase = await createClient();
   const { error } = await supabase.from("payments").insert({
@@ -109,7 +81,7 @@ export async function registerPaymentAction(
 }
 
 /** Fija/cambia el método de pago de un registro (transferencia/bizum/efectivo). */
-export async function setPaymentMethodAction(
+async function setPaymentMethodActionImpl(
   paymentId: string,
   patientId: string,
   method: string | null,
@@ -128,7 +100,7 @@ export async function setPaymentMethodAction(
 }
 
 /** Cambia el estado de un pago (pagado/pendiente). */
-export async function setPaymentStatusAction(
+async function setPaymentStatusActionImpl(
   paymentId: string,
   patientId: string,
   status: "paid" | "pending",
@@ -149,7 +121,7 @@ export async function setPaymentStatusAction(
   revalidatePayments(patientId);
 }
 
-export async function deletePaymentAction(paymentId: string, patientId: string) {
+async function deletePaymentActionImpl(paymentId: string, patientId: string) {
   const { pro } = await requireOwnedPatient(patientId);
 
   const supabase = await createClient();
@@ -161,4 +133,39 @@ export async function deletePaymentAction(paymentId: string, patientId: string) 
     .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
   revalidatePayments(patientId);
+}
+
+async function setPaymentFiscalActionImpl(paymentId: string, patientId: string, tipo: "exenta" | "sujeta", iva: number, retencionEuros: number) {
+  await requireOwnedPatient(patientId);
+  if (!Number.isInteger(iva) || iva < 0 || iva > 100 || !Number.isFinite(retencionEuros) || retencionEuros < 0) throw new ActionInputError("Datos fiscales no válidos.");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_payment_fiscal", { p_id: paymentId, p_tipo: tipo, p_iva: iva, p_retencion_cents: eurosToCents(retencionEuros) });
+  if (error) throw new Error(error.message);
+  revalidatePayments(patientId);
+}
+
+export async function upsertPriceAction(...args: Parameters<typeof upsertPriceActionImpl>) { return runAction(() => upsertPriceActionImpl(...args)); }
+
+export async function addPackAction(...args: Parameters<typeof addPackActionImpl>) { return runAction(() => addPackActionImpl(...args)); }
+
+export async function registerPaymentAction(...args: Parameters<typeof registerPaymentActionImpl>) { return runAction(() => registerPaymentActionImpl(...args)); }
+
+export async function setPaymentMethodAction(...args: Parameters<typeof setPaymentMethodActionImpl>) { return runAction(() => setPaymentMethodActionImpl(...args)); }
+
+export async function setPaymentStatusAction(...args: Parameters<typeof setPaymentStatusActionImpl>) { return runAction(() => setPaymentStatusActionImpl(...args)); }
+
+export async function deletePaymentAction(...args: Parameters<typeof deletePaymentActionImpl>) { return runAction(() => deletePaymentActionImpl(...args)); }
+
+export async function setPaymentFiscalAction(...args: Parameters<typeof setPaymentFiscalActionImpl>) { return runAction(() => setPaymentFiscalActionImpl(...args)); }
+
+export async function setPackActiveAction(patientId: string, packId: string, active: boolean) {
+  return runAction(async () => {
+    const { pro } = await requireOwnedPatient(patientId);
+    if (typeof active !== "boolean") throw new ActionInputError("Estado de bono no válido.");
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("session_packs").update({ active }).eq("id", packId).eq("patient_id", patientId).eq("professional_id", pro.id).select("id").maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw new ActionInputError("Bono no encontrado.");
+    revalidatePayments(patientId);
+  });
 }

@@ -1,3 +1,4 @@
+import { contentSecurityPolicy } from "./src/lib/csp";
 import type { NextConfig } from "next";
 
 /**
@@ -10,26 +11,7 @@ import type { NextConfig } from "next";
  * y viajaban en el `Referer` a cualquier recurso externo.
  */
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-
-const csp = [
-  "default-src 'self'",
-  // 'unsafe-inline' es necesario mientras Next inyecte los scripts de arranque
-  // sin nonce. Endurecer con nonce en una iteración posterior (requiere mover
-  // las cabeceras a `proxy.ts` para generar uno por petición).
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  // `blob:` lo usan las descargas de export (XLSX/PDF); `data:` los iconos.
-  "img-src 'self' data: blob:",
-  "font-src 'self'",
-  // Supabase: REST y Storage por HTTPS, Realtime por WSS.
-  `connect-src 'self' ${supabaseUrl} https://*.supabase.co wss://*.supabase.co`.trim(),
-  "frame-ancestors 'none'",
-  "form-action 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "upgrade-insecure-requests",
-].join("; ");
+const csp = contentSecurityPolicy();
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,

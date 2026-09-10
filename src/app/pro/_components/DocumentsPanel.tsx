@@ -1,4 +1,7 @@
 "use client";
+import { callAction } from "@/lib/action-result";
+
+import { uploadFormFile } from "@/lib/upload-client";
 
 import { useRef, useState } from "react";
 import { Eye } from "lucide-react";
@@ -33,7 +36,8 @@ export function DocumentsPanel({
     fd.append("title", title);
     fd.append("file", f);
     run(async () => {
-      await addDocumentAction(fd);
+      await uploadFormFile(fd, "file", "files");
+      await callAction(addDocumentAction, fd);
       setTitle("");
       if (fileRef.current) fileRef.current.value = "";
     });
@@ -108,7 +112,7 @@ export function DocumentsPanel({
                     disabled={pending}
                     onChange={(e) =>
                       run(() =>
-                        setDocumentSharedAction(d.id, patientId, e.target.checked),
+                        callAction(setDocumentSharedAction, d.id, patientId, e.target.checked),
                       )
                     }
                   />
@@ -122,7 +126,7 @@ export function DocumentsPanel({
                 </a>
                 <button
                   type="button"
-                  onClick={() => run(() => deleteDocumentAction(d.id, patientId))}
+                  onClick={() => run(() => callAction(deleteDocumentAction, d.id, patientId))}
                   disabled={pending}
                   className="btn-danger btn-sm opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                 >

@@ -1,3 +1,5 @@
+import { csvCell } from "@/lib/csv";
+import { ymdInTZ } from "@/lib/tz";
 import {
   getProfessionalPayments,
   PAYMENT_METHOD_FILTERS,
@@ -9,10 +11,7 @@ import { getCurrentProfessional } from "@/lib/queries/identity";
 /** El CSV lleva nombres de pacientes e importes: fuera de cualquier caché. */
 const NO_STORE = { "Cache-Control": "private, no-store, max-age=0" } as const;
 
-function cell(v: string | number | null | undefined): string {
-  const s = v == null ? "" : String(v);
-  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
+const cell = (value: string | number | null | undefined) => csvCell(value, ",");
 
 /**
  * Export CSV de pagos para la gestoría (no es una factura). Respeta los mismos
@@ -50,7 +49,7 @@ export async function GET(request: Request) {
 
   const header = ["fecha", "paciente", "importe_eur", "moneda", "estado", "metodo"];
   const body = rows.map((p) => [
-    (p.paid_at ?? p.created_at).slice(0, 10),
+    ymdInTZ(new Date(p.paid_at ?? p.created_at)),
     p.patientName ?? "",
     (p.amount_cents / 100).toFixed(2),
     p.currency,

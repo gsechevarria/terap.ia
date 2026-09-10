@@ -18,7 +18,7 @@ const AUTH_MESSAGES: Record<string, string> = {
     "Demasiados intentos seguidos. Espera unos minutos antes de volver a intentarlo.",
   invalid_credentials: "El correo o la contraseña no son correctos.",
   weak_password:
-    "La contraseña es demasiado débil. Usa al menos 8 caracteres, combinando letras y números.",
+    "La contraseña es demasiado débil. Usa al menos 12 caracteres, con mayúscula, minúscula, número y símbolo.",
   email_address_invalid: "Esa dirección de correo no es válida.",
   email_exists: "Ya existe una cuenta con ese correo.",
   user_already_exists: "Ya existe una cuenta con ese correo.",

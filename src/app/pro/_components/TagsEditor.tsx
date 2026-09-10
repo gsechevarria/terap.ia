@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useState } from "react";
 import { updatePatientTagsAction } from "@/lib/actions/patients";
@@ -21,7 +22,7 @@ export function TagsEditor({
       .map((t) => t.trim())
       .filter(Boolean);
     run(
-      () => updatePatientTagsAction(patientId, parsed),
+      () => callAction(updatePatientTagsAction, patientId, parsed),
       () => setEditing(false),
     );
   }

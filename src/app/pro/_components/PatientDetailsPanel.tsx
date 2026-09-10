@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -38,7 +39,7 @@ export function PatientDetailsPanel({
     setError(null);
     startTransition(async () => {
       try {
-        await updatePatientDetailsAction(patientId, formData);
+        await callAction(updatePatientDetailsAction, patientId, formData);
         setEditing(false);
         router.refresh();
       } catch (err) {

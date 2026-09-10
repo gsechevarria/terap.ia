@@ -1,3 +1,5 @@
+import { ymdInTZ, parseYMD, mondayOfYMD, formatYMD, addDaysYMD } from "@/lib/tz";
+import { allRows } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfessional } from "@/lib/queries/identity";
 import { getPaymentsOverview, type MonthIncome } from "@/lib/queries/payments";
@@ -22,11 +24,7 @@ export type Analytics = {
 };
 
 function weekStartISO(d: Date): string {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  const day = (x.getDay() + 6) % 7; // lunes = 0
-  x.setDate(x.getDate() - day);
-  return x.toISOString().slice(0, 10);
+  return formatYMD(mondayOfYMD(parseYMD(ymdInTZ(d))));
 }
 
 const WEEKS = 8;
@@ -43,20 +41,18 @@ export async function getProfessionalAnalytics(): Promise<Analytics> {
   };
   if (!pro) return empty;
 
-  const since = new Date();
-  since.setDate(since.getDate() - WEEKS * 7);
-  since.setHours(0, 0, 0, 0);
+  const today = parseYMD(ymdInTZ(new Date()));
 
   const [patientsRes, apptRes, incomeRes, scaleRes] = await Promise.all([
-    supabase.from("patients").select("status").eq("professional_id", pro.id),
-    supabase
+    allRows(supabase.from("patients").select("status").eq("professional_id", pro.id)),
+    allRows(supabase
       .from("appointments")
       .select("starts_at, status, attendance")
-      .eq("professional_id", pro.id),
+      .eq("professional_id", pro.id)),
     getPaymentsOverview(),
-    supabase
+    allRows(supabase
       .from("scale_responses")
-      .select("score, submitted_at, scales(code, definition)"),
+      .select("score, submitted_at, scales(code, definition)")),
   ]);
 
   // Pacientes activos / archivados.
@@ -70,9 +66,7 @@ export async function getProfessionalAnalytics(): Promise<Analytics> {
   const noShow = { total: 0, attended: 0, noShow: 0, lateCancel: 0, rate: 0 };
   const weekBuckets = new Map<string, number>();
   for (let i = WEEKS - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i * 7);
-    weekBuckets.set(weekStartISO(d), 0);
+    weekBuckets.set(formatYMD(mondayOfYMD(addDaysYMD(today, -i * 7))), 0);
   }
   for (const a of apptRes.data ?? []) {
     if (a.attendance === "attended") {
@@ -85,7 +79,7 @@ export async function getProfessionalAnalytics(): Promise<Analytics> {
       noShow.lateCancel++;
       noShow.total++;
     }
-    if (a.status !== "cancelled" && new Date(a.starts_at) >= since) {
+    if (a.status !== "cancelled") {
       const wk = weekStartISO(new Date(a.starts_at));
       if (weekBuckets.has(wk)) weekBuckets.set(wk, (weekBuckets.get(wk) ?? 0) + 1);
     }
@@ -109,7 +103,7 @@ export async function getProfessionalAnalytics(): Promise<Analytics> {
     const agg =
       byScale.get(scale.code) ??
       { max: scale.definition?.scoring?.max ?? 27, months: new Map() };
-    const month = r.submitted_at.slice(0, 7);
+    const month = ymdInTZ(new Date(r.submitted_at)).slice(0, 7);
     const cur = agg.months.get(month) ?? { sum: 0, n: 0 };
     cur.sum += r.score;
     cur.n += 1;

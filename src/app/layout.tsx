@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+// Nonce por petición: el HTML no puede prerenderizarse ni reutilizarse.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "terap.ia",
   description:

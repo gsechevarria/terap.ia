@@ -1,3 +1,5 @@
+import { assignmentIsDue } from "@/lib/assignment-due";
+import { allRows, checked } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient } from "@/lib/queries/identity";
 import type { ScaleAnswers, ScaleDefinition } from "@/lib/scales";
@@ -7,11 +9,11 @@ export type CatalogScale = { id: string; code: string; name: string };
 /** Catálogo de escalas activas (para el selector de activación). */
 export async function getScaleCatalog(): Promise<CatalogScale[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("scales")
     .select("id, code, name")
     .eq("is_active", true)
-    .order("code", { ascending: true });
+    .order("code", { ascending: true }));
   return data ?? [];
 }
 
@@ -27,11 +29,11 @@ export async function getScaleForForm(
   scaleId: string,
 ): Promise<ScaleForForm | null> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("scales")
     .select("id, code, name, definition")
     .eq("id", scaleId)
-    .maybeSingle();
+    .maybeSingle());
   if (!data) return null;
   return {
     id: data.id,
@@ -66,20 +68,20 @@ export async function getAssignmentDetail(
   assignmentId: string,
 ): Promise<AssignmentDetail | null> {
   const supabase = await createClient();
-  const { data: a } = await supabase
+  const { data: a } = await checked(supabase
     .from("scale_assignments")
     .select(
       "id, patient_id, assignment_type, active, scales(code, name, definition)",
     )
     .eq("id", assignmentId)
-    .maybeSingle();
+    .maybeSingle());
   if (!a) return null;
 
-  const { data: responses } = await supabase
+  const { data: responses } = await allRows(supabase
     .from("scale_responses")
     .select("id, score, severity, flagged, submitted_at, answers")
     .eq("assignment_id", assignmentId)
-    .order("submitted_at", { ascending: true });
+    .order("submitted_at", { ascending: true }));
 
   const scale = a.scales as unknown as {
     code: string;
@@ -112,12 +114,12 @@ export async function getFlaggedCountForPatient(
   patientId: string,
 ): Promise<number> {
   const supabase = await createClient();
-  const { count } = await supabase
+  const { count } = await checked(supabase
     .from("scale_responses")
     .select("id", { count: "exact", head: true })
     .eq("patient_id", patientId)
     .eq("flagged", true)
-    .is("acknowledged_at", null);
+    .is("acknowledged_at", null));
   return count ?? 0;
 }
 
@@ -133,14 +135,13 @@ export async function getUnacknowledgedFlagged(
   patientId: string,
 ): Promise<FlaggedResponse[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("scale_responses")
     .select("id, submitted_at, assignment_id, scales(code)")
     .eq("patient_id", patientId)
     .eq("flagged", true)
     .is("acknowledged_at", null)
-    .order("submitted_at", { ascending: false })
-    .limit(20);
+    .order("submitted_at", { ascending: false }));
 
   return (data ?? []).map((r) => {
     const rel = r as typeof r & { scales: { code: string } | null };
@@ -166,13 +167,16 @@ export async function getMyActiveAssignments(): Promise<MyAssignment[]> {
   const supabase = await createClient();
   const patient = await getCurrentPatient();
   if (!patient) return [];
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("scale_assignments")
-    .select("id, scale_id, assignment_type, scales(code, name)")
+    .select("id, scale_id, assignment_type, starts_on, ends_on, active, recurrence_interval_days, scales(code, name)")
     .eq("patient_id", patient.id)
     .eq("active", true)
-    .order("created_at", { ascending: false });
-  return (data ?? []).map((a) => {
+    .order("created_at", { ascending: false }));
+  const { data: responses } = await allRows(supabase.from("scale_responses").select("assignment_id, submitted_at").eq("patient_id", patient.id));
+  const latest = new Map<string, string>();
+  for (const response of responses) if ((latest.get(response.assignment_id) ?? "") < response.submitted_at) latest.set(response.assignment_id, response.submitted_at);
+  return (data ?? []).filter(a => assignmentIsDue(a, latest.get(a.id) ?? null)).map((a) => {
     const s = a.scales as unknown as { code: string; name: string };
     return {
       id: a.id,
@@ -196,12 +200,13 @@ export type PatientAssignmentForm = {
 export async function getAssignmentForPatient(
   assignmentId: string,
 ): Promise<PatientAssignmentForm | null> {
+  if (!(await getMyActiveAssignments()).some(a => a.id === assignmentId)) return null;
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("scale_assignments")
     .select("id, active, scale_id, scales(code, name, definition)")
     .eq("id", assignmentId)
-    .maybeSingle();
+    .maybeSingle());
   if (!data || !data.active) return null;
   const scale = data.scales as unknown as {
     code: string;

@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useState } from "react";
 import { completeTaskAction } from "@/lib/actions/patient-tasks";
@@ -84,7 +85,7 @@ function PendingTask({
   const due = isDueSoon(task.due_date, today);
 
   function complete() {
-    run(() => completeTaskAction(task.id, text));
+    run(() => callAction(completeTaskAction, task.id, text));
   }
 
   return (

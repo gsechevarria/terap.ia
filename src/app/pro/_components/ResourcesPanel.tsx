@@ -1,4 +1,7 @@
 "use client";
+import { callAction } from "@/lib/action-result";
+
+import { uploadFormFile } from "@/lib/upload-client";
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -43,7 +46,7 @@ export function ResourcesPanel({
   function addLink() {
     if (!linkTitle.trim() || !linkUrl.trim()) return;
     run(async () => {
-      await addResourceLinkAction({
+      await callAction(addResourceLinkAction, {
         patientId: linkShared ? null : patientId,
         title: linkTitle,
         url: linkUrl,
@@ -65,7 +68,8 @@ export function ResourcesPanel({
     fd.append("kind", fileKind);
     fd.append("file", f);
     run(async () => {
-      await addResourceFileAction(fd);
+      await uploadFormFile(fd, "file", "files");
+      await callAction(addResourceFileAction, fd);
       setFileTitle("");
       if (fileRef.current) fileRef.current.value = "";
     });
@@ -178,7 +182,7 @@ export function ResourcesPanel({
                 ) : null}
                 <button
                   type="button"
-                  onClick={() => run(() => deleteResourceAction(r.id, patientId))}
+                  onClick={() => run(() => callAction(deleteResourceAction, r.id, patientId))}
                   disabled={pending}
                   className="btn-danger btn-sm opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                 >

@@ -37,6 +37,9 @@ jobs:
         env:
           TZ: UTC
 
+      - name: Migraciones y permisos SQL embebidos
+        run: npm run test:types
+
       - name: Build
         # Lo único que detecta errores de RSC/"use client", de metadata y de
         # rutas dinámicas. Sin esto, un build roto solo se descubría en Vercel.
@@ -49,7 +52,7 @@ jobs:
           NEXT_PUBLIC_SITE_URL: https://example.invalid
 
   auditoria:
-    name: npm audit (dependencias de producción)
+    name: npm audit (todas las dependencias)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,16 +61,11 @@ jobs:
           node-version-file: package.json
           cache: npm
       - run: npm ci
-      # `--omit=dev`: las herramientas de desarrollo no llegan al binario
-      # desplegado. Ver docs/DEPENDENCIAS.md para la excepción de `xlsx`.
-      - run: npm audit --audit-level=high --omit=dev
+      - run: npm audit --audit-level=high
 
   integracion:
     name: Integración contra Supabase local
     runs-on: ubuntu-latest
-    # Opcional en PR, obligatoria en main: la batería levanta una base de datos
-    # y tarda, pero en `main` no puede saltarse.
-    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'integracion')
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -76,21 +74,13 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
+      - name: Levantar Supabase local desechable
+        run: npx supabase start
 
-      - name: Levantar Supabase local
-        run: supabase start
-
-      - name: Volcar las variables locales a .env.test
-        # NUNCA se usa .env.local: esta batería crea usuarios y datos, y contra
-        # el proyecto de producción dejaba basura si el proceso moría antes del
-        # `finally`.
+      - name: Variables de la instancia local
         run: |
-          echo "NEXT_PUBLIC_SUPABASE_URL=$(supabase status -o env --override-name api.url=URL | grep URL= | cut -d= -f2- | tr -d '"')" >> .env.test
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(supabase status -o env --override-name auth.anon_key=KEY | grep KEY= | cut -d= -f2- | tr -d '"')" >> .env.test
-          echo "SUPABASE_SERVICE_ROLE_KEY=$(supabase status -o env --override-name auth.service_role_key=SRK | grep SRK= | cut -d= -f2- | tr -d '"')" >> .env.test
+          npx supabase status -o json > supabase-local.json
+          node scripts/write-local-env.mjs supabase-local.json
 
       - name: Batería de integración
         run: npm run test:integration

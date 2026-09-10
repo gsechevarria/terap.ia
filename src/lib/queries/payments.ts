@@ -1,3 +1,5 @@
+import { ymdInTZ } from "@/lib/tz";
+import { checked, allRows } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
 import type { Payment, PaymentSetting, SessionPack } from "@/lib/types";
@@ -21,22 +23,22 @@ export async function getPatientPaymentDetail(
 ): Promise<PatientPaymentDetail> {
   const supabase = await createClient();
   const [priceRes, packRes, payRes] = await Promise.all([
-    supabase
+    checked(supabase
       .from("payment_settings")
       .select("*")
       .eq("patient_id", patientId)
       .eq("session_type", DEFAULT_SESSION_TYPE)
-      .maybeSingle(),
-    supabase
+      .maybeSingle()),
+    allRows(supabase
       .from("session_packs")
       .select("*")
       .eq("patient_id", patientId)
-      .order("purchased_at", { ascending: false }),
-    supabase
+      .order("purchased_at", { ascending: false })),
+    allRows(supabase
       .from("payments")
       .select("*, appointments(starts_at)")
       .eq("patient_id", patientId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })),
   ]);
 
   const payments: PaymentWithSession[] = (payRes.data ?? []).map((row) => {
@@ -75,10 +77,10 @@ export async function getPaymentsOverview(): Promise<PaymentsOverview> {
   const pro = await getCurrentProfessional();
   if (!pro) return { byMonth: [], totalPaidCents: 0, totalPendingCents: 0 };
 
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("payments")
     .select("amount_cents, status, paid_at, created_at")
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id));
 
   const rows = data ?? [];
   const monthMap = new Map<string, { paidCents: number; count: number }>();
@@ -89,7 +91,7 @@ export async function getPaymentsOverview(): Promise<PaymentsOverview> {
     if (r.status === "paid") {
       totalPaidCents += r.amount_cents;
       const when = r.paid_at ?? r.created_at;
-      const month = when.slice(0, 7); // YYYY-MM
+      const month = ymdInTZ(new Date(when)).slice(0, 7); // YYYY-MM
       const cur = monthMap.get(month) ?? { paidCents: 0, count: 0 };
       cur.paidCents += r.amount_cents;
       cur.count += 1;
@@ -194,16 +196,7 @@ export async function getProfessionalPayments(
   // lo devuelto, así que un recorte silencioso falsearía los totales. Si algún
   // profesional lo supera habrá que mover los agregados a una RPC que sume en
   // SQL (anotado en docs/MIGRACIONES-PENDIENTES.md).
-  const { data, error } = await q
-    .order("fecha_efectiva", { ascending: false })
-    .limit(5000);
-
-  if (error) {
-    console.error("[queries/payments] fallo al leer el histórico", {
-      code: error.code,
-    });
-    return EMPTY_HISTORY;
-  }
+  const { data } = await allRows(q.order("fecha_efectiva", { ascending: false }));
 
   const effective = (p: Payment) => p.paid_at ?? p.created_at;
   const rows: PaymentHistoryRow[] = (data ?? []).map((row) => {
@@ -234,7 +227,7 @@ export async function getProfessionalPayments(
       m.paidCents += p.amount_cents;
       m.count += 1;
       methodMap.set(mKey, m);
-      const month = effective(p).slice(0, 7); // YYYY-MM
+      const month = ymdInTZ(new Date(effective(p))).slice(0, 7); // YYYY-MM
       const mm = monthMap.get(month) ?? { paidCents: 0, count: 0 };
       mm.paidCents += p.amount_cents;
       mm.count += 1;
@@ -276,15 +269,15 @@ export async function getMyPaymentSummary(): Promise<MyPaymentSummary> {
   if (!patient) return { payments: [], debtCents: 0, packRemaining: 0 };
 
   const [{ data: payments }, { data: packs }] = await Promise.all([
-    supabase
+    allRows(supabase
       .from("payments")
       .select("*")
       .eq("patient_id", patient.id)
-      .order("created_at", { ascending: false }),
-    supabase
+      .order("created_at", { ascending: false })),
+    allRows(supabase
       .from("session_packs")
       .select("total_sessions, used_sessions, active")
-      .eq("patient_id", patient.id),
+      .eq("patient_id", patient.id)),
   ]);
 
   const debtCents = (payments ?? [])

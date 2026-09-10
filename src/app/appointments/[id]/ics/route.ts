@@ -10,8 +10,7 @@ const NO_STORE = { "Cache-Control": "private, no-store, max-age=0" } as const;
  * (`getAppointment` filtra por propietario, además de la RLS).
  *
  * La comprobación de sesión va aquí: los route handlers NO ejecutan layouts,
- * así que la guardia de `/pro` y `/app` no les llega. El `.ics` incluye
- * `appt.notes`, que es campo clínico.
+ * así que la guardia de `/pro` y `/app` no les llega. El calendario externo solo recibe los datos necesarios de la cita.
  */
 export async function GET(
   _req: NextRequest,
@@ -33,7 +32,6 @@ export async function GET(
 
   const description =
     [
-      appt.notes,
       appt.video_link ? `Videollamada: ${appt.video_link}` : null,
     ]
       .filter(Boolean)

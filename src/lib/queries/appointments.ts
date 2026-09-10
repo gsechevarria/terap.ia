@@ -1,3 +1,4 @@
+import { checked, allRows } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
 import { fromWallClock, todayYMD, ymdParts } from "@/lib/tz";
@@ -30,18 +31,18 @@ export async function getProfessionalAgenda(): Promise<{
   const from = startOfToday();
 
   const [apptRes, blockRes] = await Promise.all([
-    supabase
+    allRows(supabase
       .from("appointments")
       .select(
         "id, professional_id, patient_id, starts_at, ends_at, status, attendance, video_link, recurrence_freq, recurrence_until, parent_appointment_id, notes, created_at, updated_at, patients(full_name)",
       )
       .gte("starts_at", from)
-      .order("starts_at", { ascending: true }),
-    supabase
+      .order("starts_at", { ascending: true })),
+    allRows(supabase
       .from("agenda_blocks")
       .select("id, starts_at, ends_at, reason")
       .gte("starts_at", from)
-      .order("starts_at", { ascending: true }),
+      .order("starts_at", { ascending: true })),
   ]);
 
   const appointments: AgendaAppointment[] = (apptRes.data ?? []).map((a) => {
@@ -65,20 +66,20 @@ export async function getProfessionalAgendaRange(
   const supabase = await createClient();
 
   const [apptRes, blockRes] = await Promise.all([
-    supabase
+    allRows(supabase
       .from("appointments")
       .select(
         "id, professional_id, patient_id, starts_at, ends_at, status, attendance, video_link, recurrence_freq, recurrence_until, parent_appointment_id, notes, created_at, updated_at, patients(full_name)",
       )
       .lt("starts_at", toISO)
       .gt("ends_at", fromISO)
-      .order("starts_at", { ascending: true }),
-    supabase
+      .order("starts_at", { ascending: true })),
+    allRows(supabase
       .from("agenda_blocks")
       .select("id, starts_at, ends_at, reason")
       .lt("starts_at", toISO)
       .gt("ends_at", fromISO)
-      .order("starts_at", { ascending: true }),
+      .order("starts_at", { ascending: true })),
   ]);
 
   const appointments: AgendaAppointment[] = (apptRes.data ?? []).map((a) => {
@@ -132,11 +133,11 @@ export async function listProfessionalAppointments(filter: {
   if (filter.status) q = q.eq("status", filter.status);
   if (filter.patientId) q = q.eq("patient_id", filter.patientId);
 
-  const pageSize = filter.pageSize ?? 25;
+  const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 25));
   const page = Math.max(1, filter.page ?? 1);
   q = q.range((page - 1) * pageSize, page * pageSize - 1);
 
-  const { data, count } = await q;
+  const { data, count } = await checked(q.order("id"));
   const rows = (data ?? []).map((a) => {
     const { patients, ...rest } = a as typeof a & {
       patients: { full_name: string | null } | null;
@@ -153,12 +154,12 @@ export async function getPatientsForSelect(): Promise<
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
   if (!pro) return [];
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("patients")
     .select("id, full_name")
     .eq("professional_id", pro.id)
     .eq("status", "active")
-    .order("full_name", { ascending: true });
+    .order("full_name", { ascending: true }));
   return data ?? [];
 }
 
@@ -200,11 +201,11 @@ export async function getMyAppointments(): Promise<Appointment[]> {
   const supabase = await createClient();
   const patient = await getCurrentPatient();
   if (!patient) return [];
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("appointments")
     .select("*")
     .eq("patient_id", patient.id)
-    .order("starts_at", { ascending: true });
+    .order("starts_at", { ascending: true }));
   return data ?? [];
 }
 

@@ -87,6 +87,8 @@ export function onNativeAppStateChange(
 export async function registerNativePush(
   save: (platform: NativePlatform, token: string) => Promise<void>,
 ): Promise<void> {
+  // Desactivado hasta disponer de emisor FCM/APNs y pruebas en dispositivos.
+  if (process.env.NEXT_PUBLIC_NATIVE_PUSH_ENABLED !== "true") return;
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return;

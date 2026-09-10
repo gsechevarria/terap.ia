@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useEffect, useState } from "react";
 import {
@@ -36,9 +37,17 @@ export function PushToggle() {
         return;
       }
       try {
+        await navigator.serviceWorker.register("/sw.js");
         const reg = await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.getSubscription();
-        if (active) setSubscribed(!!sub);
+        // La sesión anterior puede haber revocado la fila del servidor.
+        if (sub) {
+          const json = sub.toJSON();
+          try {
+            await callAction(savePushSubscriptionAction, { endpoint: sub.endpoint, p256dh: json.keys?.p256dh ?? "", auth: json.keys?.auth ?? "" });
+            if (active) setSubscribed(true);
+          } catch { await sub.unsubscribe(); if (active) setSubscribed(false); }
+        }
       } catch (e) {
         // De cara al usuario sigue siendo silencioso (no poder consultar la
         // suscripción no es un error que deba interrumpirle), pero deja rastro:
@@ -64,13 +73,16 @@ export function PushToggle() {
         setMsg("Permiso de notificaciones denegado.");
         return;
       }
-      const reg = await navigator.serviceWorker.ready;
+      await navigator.serviceWorker.register("/sw.js");
+        const reg = await navigator.serviceWorker.ready;
+      const previous = await reg.pushManager.getSubscription();
+      if (previous) await previous.unsubscribe();
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
       });
       const json = sub.toJSON();
-      await savePushSubscriptionAction({
+      await callAction(savePushSubscriptionAction, {
         endpoint: sub.endpoint,
         p256dh: json.keys?.p256dh ?? "",
         auth: json.keys?.auth ?? "",
@@ -88,10 +100,11 @@ export function PushToggle() {
     setBusy(true);
     setMsg("");
     try {
-      const reg = await navigator.serviceWorker.ready;
+      await navigator.serviceWorker.register("/sw.js");
+        const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
-        await deletePushSubscriptionAction(sub.endpoint);
+        await callAction(deletePushSubscriptionAction, sub.endpoint);
         await sub.unsubscribe();
       }
       setSubscribed(false);

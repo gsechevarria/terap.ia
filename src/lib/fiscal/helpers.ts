@@ -45,10 +45,13 @@ export function anioDeFecha(fecha: string): number {
  * Regla orientativa.
  */
 export function deducibleIrpf(
-  gasto: Pick<GastoFiscal, "base" | "cuotaIva" | "porcentajeAfectacion">,
+  gasto: Pick<GastoFiscal, "base" | "cuotaIva" | "porcentajeAfectacion" | "ivaRecuperablePct">,
   situacionIva: SituacionIva,
   prorrataIva?: number | null,
 ): number {
+  if (gasto.ivaRecuperablePct != null) {
+    return redondear((gasto.base + gasto.cuotaIva * (1 - gasto.ivaRecuperablePct / 100)) * gasto.porcentajeAfectacion / 100);
+  }
   let costeAfectable: number;
 
   if (situacionIva === "sujeta") {
@@ -83,27 +86,32 @@ export function amortizacionAnual(bien: BienInversionFiscal): number {
  * corresponden ~96 €. Y al repartirlo por trimestres se imputaban 187,50 € al
  * 1T, por un bien que todavía no existía.
  */
-export function amortizacionEjercicio(
-  bien: BienInversionFiscal,
-  ejercicio: number,
-): number {
-  const anual = (bien.valorAdquisicion * bien.porcentajeAmortizacion) / 100;
-  const adqYear = anioDeFecha(bien.fechaAdquisicion);
-
-  if (adqYear > ejercicio) return 0;
-  // Fuera de la vida útil declarada.
-  if (
-    bien.aniosAmortizacion != null &&
-    ejercicio > adqYear + bien.aniosAmortizacion - 1
-  ) {
-    return 0;
+/** Acumulado desde la adquisición hasta un límite exclusivo, con tope de coste. */
+function amortizacionAcumulada(bien: BienInversionFiscal, hasta: number): number {
+  const inicio = new Date(`${bien.fechaAdquisicion.slice(0, 10)}T00:00:00Z`).getTime();
+  if (hasta <= inicio) return 0;
+  const coste = Math.max(0, bien.valorAdquisicion);
+  const anual = coste * bien.porcentajeAmortizacion / 100;
+  let acumulado = 0;
+  // Los años declarados son informativos: nunca se pierde un saldo pendiente
+  // por cortar en el cuarto año natural de una compra realizada a mitad de año.
+  for (let y = new Date(inicio).getUTCFullYear(); Date.UTC(y, 0, 1) < hasta; y++) {
+    const desde = Math.max(inicio, Date.UTC(y, 0, 1));
+    const fin = Math.min(hasta, Date.UTC(y + 1, 0, 1));
+    acumulado += anual * Math.max(0, fin - desde) / (Date.UTC(y + 1, 0, 1) - Date.UTC(y, 0, 1));
+    if (acumulado >= coste) return coste;
   }
-  if (adqYear < ejercicio) return redondear(anual);
+  return Math.min(coste, acumulado);
+}
 
-  const adq = new Date(`${bien.fechaAdquisicion.slice(0, 10)}T00:00:00Z`);
-  const finAnio = Date.UTC(ejercicio, 11, 31);
-  const dias = Math.floor((finAnio - adq.getTime()) / 86_400_000) + 1;
-  return redondear((anual * Math.max(0, dias)) / 365);
+export function amortizacionHastaTrimestre(bien: BienInversionFiscal, ejercicio: number, trimestre: number): number {
+  const anterior = amortizacionAcumulada(bien, Date.UTC(ejercicio, 0, 1));
+  const cierre = amortizacionAcumulada(bien, Date.UTC(ejercicio, trimestre * 3, 1));
+  // Diferencia de acumulados redondeados: la suma de periodos conserva céntimos.
+  return redondear(redondear(cierre) - redondear(anterior));
+}
+export function amortizacionEjercicio(bien: BienInversionFiscal, ejercicio: number): number {
+  return amortizacionHastaTrimestre(bien, ejercicio, 4);
 }
 
 /** Trimestre (1-4) en el que se adquirió un bien, o null si es de otro año. */

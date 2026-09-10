@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
@@ -39,7 +40,7 @@ export function NativeGate({ children }: { children: ReactNode }) {
     const ok = await requireBiometricUnlock();
     setEstado(ok ? "open" : "locked");
     if (ok) {
-      registerNativePush(saveNativePushTokenAction).catch((e: unknown) => {
+      registerNativePush((platform, token) => callAction(saveNativePushTokenAction, platform, token)).catch((e: unknown) => {
         console.error("[native] no se ha podido registrar el push", {
           message: e instanceof Error ? e.message : "desconocido",
         });
@@ -60,7 +61,7 @@ export function NativeGate({ children }: { children: ReactNode }) {
       if (!activo) return;
       setEstado(ok ? "open" : "locked");
       if (ok) {
-        registerNativePush(saveNativePushTokenAction).catch((e: unknown) => {
+        registerNativePush((platform, token) => callAction(saveNativePushTokenAction, platform, token)).catch((e: unknown) => {
           console.error("[native] no se ha podido registrar el push", {
             message: e instanceof Error ? e.message : "desconocido",
           });
@@ -84,6 +85,7 @@ export function NativeGate({ children }: { children: ReactNode }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-canvas p-6 text-center">
+      <nav aria-label="Ayuda urgente" className="flex gap-4"><a href="tel:024">Ayuda · 024</a><a href="tel:112">Emergencias · 112</a></nav>
       {estado === "checking" ? (
         <p className="text-sm text-ink-2" role="status">
           Comprobando…

@@ -1,9 +1,12 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
-import { useState, useTransition } from "react";
+import { PaymentFiscalEditor } from "./PaymentFiscalEditor";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addPackAction,
+  setPackActiveAction,
   deletePaymentAction,
   registerPaymentAction,
   setPaymentMethodAction,
@@ -23,11 +26,12 @@ export function PaymentsPanel({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const run = (fn: () => Promise<void>) =>
-    startTransition(async () => {
-      await fn();
-      router.refresh();
-    });
+  const [error, setError] = useState("");
+  const packRequest = useRef<string | null>(null);
+  const run = (fn: () => Promise<void>) => startTransition(async () => {
+    setError("");
+    try { await fn(); router.refresh(); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar."); }
+  });
 
   const [price, setPrice] = useState(
     detail.price ? String(detail.price.price_cents / 100) : "",
@@ -40,6 +44,8 @@ export function PaymentsPanel({
 
   return (
     <div className="flex flex-col gap-5">
+      {error && <p role="alert" className="text-danger">{error}</p>}
+      <p className="text-xs text-ink-2">Importes brutos, incluido IVA y antes de retenciones. Seguimiento de pagos; no emite facturas.</p>
       {/* Resumen */}
       <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
         <div className="card px-4 py-3">
@@ -75,7 +81,7 @@ export function PaymentsPanel({
           <button
             type="button"
             disabled={pending}
-            onClick={() => run(() => upsertPriceAction(patientId, Number(price) || 0))}
+            onClick={() => run(() => callAction(upsertPriceAction, patientId, price === "" ? NaN : Number(price)))}
             className="btn-primary"
           >
             Guardar
@@ -94,6 +100,7 @@ export function PaymentsPanel({
                   Bono de {p.total_sessions} · usadas {p.used_sessions}/
                   {p.total_sessions}
                   {!p.active && " (inactivo)"}
+                  <button type="button" disabled={pending} className="btn-subtle ml-2 text-xs" onClick={() => run(() => callAction(setPackActiveAction, patientId, p.id, !p.active))}>{p.active ? "Archivar" : "Reactivar"}</button>
                 </span>
                 <span className="text-ink-2">
                   {p.price_cents != null ? formatCurrency(p.price_cents) : "—"}
@@ -105,7 +112,7 @@ export function PaymentsPanel({
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <select
             value={packSessions}
-            onChange={(e) => setPackSessions(Number(e.target.value))}
+            onChange={(e) => { setPackSessions(Number(e.target.value)); packRequest.current = null; }}
             className="field w-auto"
           >
             <option value={5}>5 sesiones</option>
@@ -116,7 +123,7 @@ export function PaymentsPanel({
             min={0}
             step="0.01"
             value={packPrice}
-            onChange={(e) => setPackPrice(e.target.value)}
+            onChange={(e) => { setPackPrice(e.target.value); packRequest.current = null; }}
             placeholder="Precio del bono €"
             className="field w-40"
           />
@@ -125,7 +132,7 @@ export function PaymentsPanel({
             disabled={pending}
             onClick={() =>
               run(() =>
-                addPackAction(patientId, packSessions, Number(packPrice) || 0),
+                callAction(addPackAction, patientId, packSessions, packPrice === "" ? NaN : Number(packPrice), packRequest.current ??= crypto.randomUUID()).then(() => { packRequest.current = null; }),
               )
             }
             className="btn-ghost"
@@ -173,9 +180,9 @@ export function PaymentsPanel({
             disabled={pending || !payAmount}
             onClick={() =>
               run(async () => {
-                await registerPaymentAction(
+                await callAction(registerPaymentAction,
                   patientId,
-                  Number(payAmount) || 0,
+                  payAmount === "" ? NaN : Number(payAmount),
                   payStatus,
                   payMethod || null,
                 );
@@ -225,6 +232,7 @@ export function PaymentsPanel({
                     </td>
                     <td className="tabular-nums whitespace-nowrap">
                       {formatCurrency(p.amount_cents, p.currency)}
+                      <PaymentFiscalEditor paymentId={p.id} patientId={patientId} snapshot={p.fiscal_snapshot} />
                       {/* "Sin tarifa configurada" no es lo mismo que "gratis":
                           un 0,00 € a secas parecía una deuda saldada. */}
                       {p.note?.startsWith("Sin tarifa") && (
@@ -248,7 +256,7 @@ export function PaymentsPanel({
                           disabled={pending}
                           onChange={(e) =>
                             run(() =>
-                              setPaymentMethodAction(
+                              callAction(setPaymentMethodAction,
                                 p.id,
                                 patientId,
                                 e.target.value || null,
@@ -273,7 +281,7 @@ export function PaymentsPanel({
                         disabled={pending}
                         onClick={() =>
                           run(() =>
-                            setPaymentStatusAction(
+                            callAction(setPaymentStatusAction,
                               p.id,
                               patientId,
                               p.status === "paid" ? "pending" : "paid",
@@ -293,7 +301,7 @@ export function PaymentsPanel({
                       <button
                         type="button"
                         disabled={pending}
-                        onClick={() => run(() => deletePaymentAction(p.id, patientId))}
+                        onClick={() => run(() => callAction(deletePaymentAction, p.id, patientId))}
                         className="btn-danger btn-sm opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                       >
                         Eliminar

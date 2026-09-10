@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { setPatientStatusAction } from "@/lib/actions/patients";
 import { useAction } from "@/lib/use-action";
@@ -19,7 +20,7 @@ export function StatusButton({
       <button
         type="button"
         disabled={pending}
-        onClick={() => run(() => setPatientStatusAction(patientId, next))}
+        onClick={() => run(() => callAction(setPatientStatusAction, patientId, next))}
         className="btn-ghost"
       >
         {pending ? "…" : status === "active" ? "Archivar" : "Reactivar"}

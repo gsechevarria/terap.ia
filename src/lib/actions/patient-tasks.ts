@@ -1,20 +1,22 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient } from "@/lib/queries/identity";
 
 /** El paciente marca una tarea como hecha, con texto libre opcional. */
-export async function completeTaskAction(taskId: string, responseText?: string) {
+async function completeTaskActionImpl(taskId: string, responseText?: string) {
   const patient = await getCurrentPatient();
-  if (!patient) throw new Error("Cuenta no vinculada.");
+  if (!patient) throw new ActionInputError("Cuenta no vinculada.");
 
   const supabase = await createClient();
-  const { error } = await supabase.from("task_completions").insert({
-    task_id: taskId,
-    patient_id: patient.id,
-    response_text: responseText?.trim() || null,
+  const { error } = await supabase.rpc("complete_patient_task", {
+    p_id: taskId, p_response: responseText?.trim() || null,
   });
   if (error) throw new Error(error.message);
   revalidatePath("/app");
 }
+
+export async function completeTaskAction(...args: Parameters<typeof completeTaskActionImpl>) { return runAction(() => completeTaskActionImpl(...args)); }

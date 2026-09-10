@@ -1,3 +1,4 @@
+import { ymdInTZ } from "@/lib/tz";
 /**
  * Calendario fiscal — fechas de presentación y alertas de vencimiento.
  * Funciones PURAS: reciben la fecha de referencia (se calcula "hoy" fuera del
@@ -16,24 +17,23 @@ export interface Vencimiento {
 }
 
 const DAY = 86400e3;
-const p2 = (n: number) => String(n).padStart(2, "0");
 
 function ymd(year: number, mmdd: string): string {
   return `${year}-${mmdd}`; // mmdd ya viene como "MM-DD"
 }
 function ymdOf(d: Date): string {
-  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+  return ymdInTZ(d);
 }
 /** Medianoche local de un YYYY-MM-DD (comparación por día, sin desfase de huso). */
 function localMidnight(ymdStr: string): number {
-  return new Date(`${ymdStr}T00:00:00`).getTime();
+  return new Date(`${ymdStr}T00:00:00Z`).getTime();
 }
 
 /** Trimestre natural (1–4) y año de una fecha de referencia. */
 export function trimestreActual(ref: Date): { trimestre: Trimestre; anio: number } {
   return {
-    trimestre: (Math.floor(ref.getMonth() / 3) + 1) as Trimestre,
-    anio: ref.getFullYear(),
+    trimestre: (Math.floor((Number(ymdInTZ(ref).slice(5, 7)) - 1) / 3) + 1) as Trimestre,
+    anio: Number(ymdInTZ(ref).slice(0, 4)),
   };
 }
 
@@ -66,7 +66,7 @@ export function vencimientoRenta(
 
 /** Todos los vencimientos relevantes alrededor de la fecha de referencia. */
 function vencimientosAlrededor(ref: Date, params: ParamsFiscales): Vencimiento[] {
-  const y = ref.getFullYear();
+  const y = Number(ymdInTZ(ref).slice(0, 4));
   const out: Vencimiento[] = [];
   for (const ej of [y - 1, y, y + 1]) {
     out.push(...vencimientosModelo130(ej, params), vencimientoRenta(ej, params));
@@ -79,7 +79,7 @@ export interface VencimientoConDias extends Vencimiento {
 }
 
 function conDias(v: Vencimiento, ref: Date): VencimientoConDias {
-  const refMid = new Date(ymdOf(ref) + "T00:00:00").getTime();
+  const refMid = new Date(ymdOf(ref) + "T00:00:00Z").getTime();
   const diasRestantes = Math.round((localMidnight(v.fechaLimiteYMD) - refMid) / DAY);
   return { ...v, diasRestantes };
 }

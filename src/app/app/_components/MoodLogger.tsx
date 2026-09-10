@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { Angry, Frown, Meh, Smile, Laugh, Check } from "lucide-react";
@@ -15,9 +16,10 @@ const FACES: Face[] = [
   { value: 5, Icon: Laugh, label: "Muy bien" },
 ];
 
-export function MoodLogger() {
-  const [value, setValue] = useState<number | null>(null);
-  const [note, setNote] = useState("");
+export function MoodLogger({ today }: { today?: { mood_value: number; note: string | null } | null }) {
+  const [value, setValue] = useState<number | null>(today?.mood_value ?? null);
+  const [note, setNote] = useState(today?.note ?? "");
+  const [saved, setSaved] = useState(!!today);
   const [done, setDone] = useState(false);
   const { run, pending, error } = useAction();
 
@@ -36,10 +38,9 @@ export function MoodLogger() {
     // La entrada solo se limpia si se ha guardado: si falla, el paciente no
     // pierde ni el ánimo marcado ni la nota que hubiera escrito.
     run(
-      () => addMoodEntryAction(value, note),
+      () => callAction(addMoodEntryAction, value, note),
       () => {
-        setValue(null);
-        setNote("");
+        setSaved(true);
         setDone(true);
         if (doneTimer.current) clearTimeout(doneTimer.current);
         doneTimer.current = setTimeout(() => setDone(false), 2500);
@@ -50,6 +51,7 @@ export function MoodLogger() {
   return (
     <section className="card p-4">
       <h2 className="text-base font-semibold">¿Cómo estás hoy?</h2>
+      {saved && <p className="mt-2 text-sm text-ink-2">Ya has registrado tu ánimo de hoy. Puedes actualizarlo aquí.</p>}
       <div className="mt-3 flex justify-between gap-1.5">
         {FACES.map(({ value: v, Icon, label }) => (
           <button
@@ -76,6 +78,7 @@ export function MoodLogger() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={2}
+            maxLength={5000}
             placeholder="¿Quieres añadir algo? (opcional)"
             aria-label="Nota sobre cómo te sientes (opcional)"
             className="field"
@@ -86,7 +89,7 @@ export function MoodLogger() {
             disabled={pending}
             className="btn-primary self-start"
           >
-            {pending ? "Guardando…" : "Registrar"}
+            {pending ? "Guardando…" : saved ? "Actualizar" : "Registrar"}
           </button>
         </div>
       )}

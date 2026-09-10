@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useRef, useState } from "react";
 import { addNoteAction, deleteNoteAction } from "@/lib/actions/notes";
@@ -22,7 +23,7 @@ export function NotesPanel({
     // El texto solo se borra si la action ha ido bien: si falla, la nota sigue
     // en el textarea y el profesional puede reintentar sin reescribirla.
     run(
-      () => addNoteAction(patientId, value),
+      () => callAction(addNoteAction, patientId, value),
       () => {
         setValue("");
         ref.current?.focus();
@@ -31,7 +32,7 @@ export function NotesPanel({
   }
 
   function remove(id: string) {
-    run(() => deleteNoteAction(id, patientId));
+    run(() => callAction(deleteNoteAction, id, patientId));
   }
 
   return (

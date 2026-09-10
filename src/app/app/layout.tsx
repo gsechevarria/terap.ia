@@ -1,3 +1,4 @@
+import { hasSignedConsent } from "@/lib/queries/consent";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -23,6 +24,8 @@ export default async function PatientLayout({ children }: { children: ReactNode 
   const role = getUserRole(user);
   if (role === ROLES.PROFESSIONAL) redirect("/pro");
   if (role !== ROLES.PATIENT) redirect("/login?error=sin-rol");
+
+  if (!(await hasSignedConsent())) redirect("/onboarding/current");
 
   return (
     <NativeGate>

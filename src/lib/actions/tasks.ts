@@ -1,11 +1,12 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnedPatient } from "@/lib/queries/identity";
-import { enqueuePatientNotification } from "@/lib/notifications";
 
-export async function createTaskAction(input: {
+async function createTaskActionImpl(input: {
   patientId: string;
   title: string;
   description?: string;
@@ -13,7 +14,7 @@ export async function createTaskAction(input: {
 }) {
   const { pro } = await requireOwnedPatient(input.patientId);
   const title = input.title.trim();
-  if (!title) throw new Error("El título es obligatorio.");
+  if (!title) throw new ActionInputError("El título es obligatorio.");
 
   const supabase = await createClient();
   const { error } = await supabase.from("tasks").insert({
@@ -25,26 +26,10 @@ export async function createTaskAction(input: {
   });
   if (error) throw new Error(error.message);
 
-  const { data: patient } = await supabase
-    .from("patients")
-    .select("user_id")
-    .eq("id", input.patientId)
-    .maybeSingle();
-  if (patient?.user_id) {
-    await enqueuePatientNotification(supabase, {
-      userId: patient.user_id,
-      professionalId: pro.id,
-      patientId: input.patientId,
-      type: "new_task",
-      title: "Nueva tarea",
-      body: `Tu profesional te ha asignado una tarea: ${title}.`,
-      payload: { kind: "task" },
-    });
-  }
   revalidatePath(`/pro/patients/${input.patientId}`);
 }
 
-export async function updateTaskAction(input: {
+async function updateTaskActionImpl(input: {
   taskId: string;
   patientId: string;
   title: string;
@@ -53,7 +38,7 @@ export async function updateTaskAction(input: {
 }) {
   const { pro } = await requireOwnedPatient(input.patientId);
   const title = input.title.trim();
-  if (!title) throw new Error("El título es obligatorio.");
+  if (!title) throw new ActionInputError("El título es obligatorio.");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("tasks")
@@ -67,11 +52,11 @@ export async function updateTaskAction(input: {
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Tarea no encontrada.");
+  if (!data) throw new ActionInputError("Tarea no encontrada.");
   revalidatePath(`/pro/patients/${input.patientId}`);
 }
 
-export async function deleteTaskAction(taskId: string, patientId: string) {
+async function deleteTaskActionImpl(taskId: string, patientId: string) {
   const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -82,6 +67,12 @@ export async function deleteTaskAction(taskId: string, patientId: string) {
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Tarea no encontrada.");
+  if (!data) throw new ActionInputError("Tarea no encontrada.");
   revalidatePath(`/pro/patients/${patientId}`);
 }
+
+export async function createTaskAction(...args: Parameters<typeof createTaskActionImpl>) { return runAction(() => createTaskActionImpl(...args)); }
+
+export async function updateTaskAction(...args: Parameters<typeof updateTaskActionImpl>) { return runAction(() => updateTaskActionImpl(...args)); }
+
+export async function deleteTaskAction(...args: Parameters<typeof deleteTaskActionImpl>) { return runAction(() => deleteTaskActionImpl(...args)); }

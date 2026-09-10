@@ -1,13 +1,15 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnedPatient } from "@/lib/queries/identity";
 
-export async function addNoteAction(patientId: string, body: string) {
+async function addNoteActionImpl(patientId: string, body: string) {
   const { pro } = await requireOwnedPatient(patientId);
   const text = body.trim();
-  if (!text) throw new Error("La nota está vacía.");
+  if (!text) throw new ActionInputError("La nota está vacía.");
 
   const supabase = await createClient();
   const { error } = await supabase.from("patient_notes").insert({
@@ -19,7 +21,7 @@ export async function addNoteAction(patientId: string, body: string) {
   revalidatePath(`/pro/patients/${patientId}`);
 }
 
-export async function deleteNoteAction(noteId: string, patientId: string) {
+async function deleteNoteActionImpl(noteId: string, patientId: string) {
   const { pro } = await requireOwnedPatient(patientId);
 
   const supabase = await createClient();
@@ -34,6 +36,10 @@ export async function deleteNoteAction(noteId: string, patientId: string) {
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Nota no encontrada.");
+  if (!data) throw new ActionInputError("Nota no encontrada.");
   revalidatePath(`/pro/patients/${patientId}`);
 }
+
+export async function addNoteAction(...args: Parameters<typeof addNoteActionImpl>) { return runAction(() => addNoteActionImpl(...args)); }
+
+export async function deleteNoteAction(...args: Parameters<typeof deleteNoteActionImpl>) { return runAction(() => deleteNoteActionImpl(...args)); }

@@ -42,7 +42,7 @@ export function libroIngresos(
     .filter((i) => enPeriodo(i.fecha, filtro))
     .sort((a, b) => a.fecha.localeCompare(b.fecha))
     .map((i, idx) => {
-      const retencion = i.retencionAplicable ? redondear(i.base * tasaRet) : 0;
+      const retencion = i.retencion ?? (i.retencionAplicable ? redondear(i.base * tasaRet) : 0);
       return [
         idx + 1,
         i.fecha.slice(0, 10),
@@ -127,11 +127,7 @@ export function libroBienesInversion(
   const rows = data.bienes
     .filter((b) => {
       const adq = anioDeFecha(b.fechaAdquisicion);
-      const dentroVida =
-        adq <= filtro.ejercicio &&
-        (b.aniosAmortizacion == null ||
-          filtro.ejercicio <= adq + b.aniosAmortizacion - 1);
-      return dentroVida;
+      return adq <= filtro.ejercicio && amortizacionEjercicio(b, filtro.ejercicio) > 0;
     })
     .sort((a, b) => a.fechaAdquisicion.localeCompare(b.fechaAdquisicion))
     .map((b) => [

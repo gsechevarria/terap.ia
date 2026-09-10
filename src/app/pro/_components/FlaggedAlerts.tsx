@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import Link from "next/link";
 import { TriangleAlert } from "lucide-react";
@@ -57,7 +58,7 @@ export function FlaggedAlerts({
                     disabled={pending}
                     onClick={() =>
                       run(() =>
-                        acknowledgeFlaggedResponseAction(r.id, patientId),
+                        callAction(acknowledgeFlaggedResponseAction, r.id, patientId),
                       )
                     }
                     className="btn-subtle btn-sm text-danger hover:bg-danger/10 hover:text-danger"

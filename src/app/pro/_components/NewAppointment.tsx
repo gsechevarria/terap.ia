@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -72,7 +73,7 @@ export function NewAppointment({
 
     startTransition(async () => {
       try {
-        const res = await createAppointmentAction({
+        const res = await callAction(createAppointmentAction, {
           patientId: pid,
           startsAt: startDate.toISOString(),
           endsAt,

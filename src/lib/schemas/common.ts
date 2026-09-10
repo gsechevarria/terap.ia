@@ -1,3 +1,4 @@
+import { ActionInputError } from "@/lib/action-result";
 import { z } from "zod";
 import { ymdParts } from "@/lib/tz";
 
@@ -52,7 +53,12 @@ const MSG_IMPORTE = "Introduce un importe válido (por ejemplo 1.234,56).";
 
 /** `"1.234,56"` → `1234.56`. Quita los puntos de millar ANTES de la coma decimal. */
 function parseEsNumber(raw: string): number {
-  return Number(raw.replace(/\s/g, "").replace(/\./g, "").replace(",", "."));
+  // Un punto es decimal. Los millares solo se admiten con coma decimal.
+  if (/^\d+(?:[.,]\d{1,2})?$/.test(raw)) return Number(raw.replace(",", "."));
+  if (/^\d{1,3}(?:\.\d{3})+,\d{1,2}$/.test(raw)) {
+    return Number(raw.replace(/\./g, "").replace(",", "."));
+  }
+  return NaN;
 }
 
 export const importeEuros = z
@@ -62,7 +68,7 @@ export const importeEuros = z
   // pedir el dato, que es justo la degradación silenciosa que se quiere evitar.
   .min(1, "Introduce un importe.")
   .transform(parseEsNumber)
-  .refine((n) => Number.isFinite(n), MSG_IMPORTE)
+  .refine((n) => Number.isFinite(n) && Math.round(n * 100) <= 2147483647, MSG_IMPORTE)
   .refine((n) => n >= 0, "El importe no puede ser negativo.");
 
 /** Porcentaje entero 0-100. Distingue el 0 explícito de "campo vacío". */
@@ -104,7 +110,7 @@ export function parseOrThrow<T>(schema: z.ZodType<T>, value: unknown): T {
   const res = schema.safeParse(value);
   if (!res.success) {
     const first = res.error.issues[0];
-    throw new Error(first?.message ?? "Datos no válidos.");
+    throw new ActionInputError(first?.message ?? "Datos no válidos.");
   }
   return res.data;
 }

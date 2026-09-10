@@ -1,12 +1,13 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnedPatient } from "@/lib/queries/identity";
-import { enqueuePatientNotification } from "@/lib/notifications";
 
 /** El profesional activa una escala para su paciente (opt-in). */
-export async function createScaleAssignmentAction(input: {
+async function createScaleAssignmentActionImpl(input: {
   patientId: string;
   scaleId: string;
   type: "one_off" | "recurring";
@@ -26,27 +27,11 @@ export async function createScaleAssignmentAction(input: {
   });
   if (error) throw new Error(error.message);
 
-  const { data: patient } = await supabase
-    .from("patients")
-    .select("user_id")
-    .eq("id", input.patientId)
-    .maybeSingle();
-  if (patient?.user_id) {
-    await enqueuePatientNotification(supabase, {
-      userId: patient.user_id,
-      professionalId: pro.id,
-      patientId: input.patientId,
-      type: "new_scale",
-      title: "Nuevo cuestionario",
-      body: "Tu profesional te ha asignado un cuestionario para responder.",
-      payload: { kind: "scale" },
-    });
-  }
   revalidatePath(`/pro/patients/${input.patientId}`);
 }
 
 /** Activa o desactiva una asignación (sin borrar el histórico de respuestas). */
-export async function setScaleAssignmentActiveAction(
+async function setScaleAssignmentActiveActionImpl(
   assignmentId: string,
   patientId: string,
   active: boolean,
@@ -61,6 +46,10 @@ export async function setScaleAssignmentActiveAction(
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Escala no encontrada.");
+  if (!data) throw new ActionInputError("Escala no encontrada.");
   revalidatePath(`/pro/patients/${patientId}`);
 }
+
+export async function createScaleAssignmentAction(...args: Parameters<typeof createScaleAssignmentActionImpl>) { return runAction(() => createScaleAssignmentActionImpl(...args)); }
+
+export async function setScaleAssignmentActiveAction(...args: Parameters<typeof setScaleAssignmentActiveActionImpl>) { return runAction(() => setScaleAssignmentActiveActionImpl(...args)); }

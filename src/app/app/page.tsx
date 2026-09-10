@@ -1,3 +1,4 @@
+import { getMyMoodToday } from "@/lib/queries/wellbeing";
 import Link from "next/link";
 import { getCurrentPatient } from "@/lib/queries/identity";
 import { getTasksForPatient } from "@/lib/queries/tasks";
@@ -25,11 +26,12 @@ export default async function PatientHome() {
     );
   }
 
-  const [tasks, appts, scales, pay] = await Promise.all([
+  const [tasks, appts, scales, pay, mood] = await Promise.all([
     getTasksForPatient(patient.id),
     getUpcomingAppointments(patient.id),
     getMyActiveAssignments(),
     getMyPaymentSummary(),
+    getMyMoodToday(),
   ]);
   const nextAppt = appts[0] ?? null;
   const firstName = patient.full_name?.split(" ")[0] ?? "";
@@ -42,7 +44,7 @@ export default async function PatientHome() {
         </h1>
       </header>
 
-      <MoodLogger />
+      <MoodLogger today={mood} />
 
       <section className="card p-4">
         <h2 className="section-label">Próxima cita</h2>

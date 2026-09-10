@@ -1,19 +1,23 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
+import { isAllowedPushEndpoint } from "@/lib/push-safety";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 /** Guarda (upsert) la suscripción Web Push del dispositivo actual. */
-export async function savePushSubscriptionAction(sub: {
+async function savePushSubscriptionActionImpl(sub: {
   endpoint: string;
   p256dh: string;
   auth: string;
 }) {
+  if (!isAllowedPushEndpoint(sub.endpoint) || !/^[A-Za-z0-9_-]{87}=?$/.test(sub.p256dh) || !/^[A-Za-z0-9_-]{22}={0,2}$/.test(sub.auth)) throw new ActionInputError("Suscripción push no válida.");
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado.");
+  if (!user) throw new ActionInputError("No autenticado.");
   const { error } = await supabase.from("push_subscriptions").upsert(
     {
       user_id: user.id,
@@ -33,12 +37,12 @@ export async function savePushSubscriptionAction(sub: {
  * comprobar sesión ni propietario, así que quien conociera (o adivinara por
  * fuerza bruta) el endpoint de otra persona podía dejarla sin notificaciones.
  */
-export async function deletePushSubscriptionAction(endpoint: string) {
+async function deletePushSubscriptionActionImpl(endpoint: string) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado.");
+  if (!user) throw new ActionInputError("No autenticado.");
 
   const { error } = await supabase
     .from("push_subscriptions")
@@ -56,16 +60,26 @@ export type NotificationPrefs = {
   email_fallback: boolean;
 };
 
-export async function savePreferencesAction(prefs: NotificationPrefs) {
+async function savePreferencesActionImpl(prefs: NotificationPrefs) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("No autenticado.");
+  if (!user) throw new ActionInputError("No autenticado.");
   const { error } = await supabase
     .from("notification_preferences")
-    .upsert({ user_id: user.id, ...prefs });
+    .upsert({ user_id: user.id,
+      appointment_reminders: prefs.appointment_reminders === true,
+      new_appointment: prefs.new_appointment === true, new_task: prefs.new_task === true,
+      new_scale: prefs.new_scale === true, email_fallback: false,
+    });
   if (error) throw new Error(error.message);
   revalidatePath("/app/settings");
   revalidatePath("/pro/ajustes");
 }
+
+export async function savePushSubscriptionAction(...args: Parameters<typeof savePushSubscriptionActionImpl>) { return runAction(() => savePushSubscriptionActionImpl(...args)); }
+
+export async function deletePushSubscriptionAction(...args: Parameters<typeof deletePushSubscriptionActionImpl>) { return runAction(() => deletePushSubscriptionActionImpl(...args)); }
+
+export async function savePreferencesAction(...args: Parameters<typeof savePreferencesActionImpl>) { return runAction(() => savePreferencesActionImpl(...args)); }

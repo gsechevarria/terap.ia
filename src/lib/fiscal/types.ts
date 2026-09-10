@@ -52,7 +52,7 @@ export const SITUACION_IVA_LABEL: Record<SituacionIva, string> = {
 
 /** Descargo obligatorio en todo output fiscal. */
 export const DESCARGO_FISCAL =
-  "Estimación orientativa. No sustituye a tu asesor fiscal ni constituye asesoramiento fiscal.";
+  "Estimación orientativa. No sustituye a tu asesor fiscal ni constituye asesoramiento fiscal. Los pagos previos son simulados; no representan declaraciones presentadas.";
 
 // --- Configuración del profesional (dominio) --------------------------------
 export interface ConfigFiscal {
@@ -99,10 +99,13 @@ export interface IngresoFiscal {
   cuotaIva: number;
   tipoOperacion: "exenta" | "sujeta";
   retencionAplicable: boolean;
+  /** Retención confirmada por operación; undefined solo en simulaciones. */
+  retencion?: number;
   nombrePagador: string | null;
 }
 
 export interface GastoFiscal {
+  ivaRecuperablePct?: number;
   id: string;
   fecha: string; // YYYY-MM-DD
   categoria: CategoriaGasto;

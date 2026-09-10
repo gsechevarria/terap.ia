@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -45,7 +46,7 @@ export function ScaleForm({
     // cuestionario. Así el error se muestra en sitio y las respuestas siguen
     // marcadas para reintentar.
     run(async () => {
-      const res = await submitScaleResponseAction({
+      const res = await callAction(submitScaleResponseAction, {
         assignmentId,
         scaleId,
         answers: payload,

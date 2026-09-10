@@ -1,3 +1,4 @@
+import { ServiceWorkerRegister } from "@/app/app/_components/ServiceWorkerRegister";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -33,6 +34,7 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-full flex-col md:flex-row">
+      <ServiceWorkerRegister />
       {/* Sidebar (escritorio) */}
       <aside className="hidden shrink-0 border-r border-line bg-panel md:block md:w-56">
         <div className="sticky top-0 flex h-[calc(100dvh-var(--banner-h))] flex-col gap-4 p-3">

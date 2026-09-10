@@ -1,3 +1,4 @@
+import { ActionForm } from "@/components/ui/ActionForm";
 import Link from "next/link";
 import { getConfiguracionFiscal } from "@/lib/queries/contabilidad";
 import { upsertConfiguracionFiscalAction } from "@/lib/actions/contabilidad";
@@ -19,7 +20,7 @@ export default async function ConfiguracionFiscalPage() {
 
       <DescargoFiscal className="mt-4" />
 
-      <form action={upsertConfiguracionFiscalAction} className="mt-5 flex flex-col gap-4">
+      <ActionForm action={upsertConfiguracionFiscalAction} className="mt-5 flex flex-col gap-4">
         <label className="block">
           <span className="field-label">Régimen de IRPF</span>
           <select
@@ -142,7 +143,7 @@ export default async function ConfiguracionFiscalPage() {
             Guardar configuración
           </button>
         </div>
-      </form>
+      </ActionForm>
     </div>
   );
 }
