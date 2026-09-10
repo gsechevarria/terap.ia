@@ -17,7 +17,9 @@ export async function integration(group = 'all') {
  async function makeUser(role) {
   const email='integration-'+randomUUID()+'@example.com';
   const {user}=await ok(admin.auth.admin.createUser({email,password,email_confirm:true,app_metadata:{role},user_metadata:{full_name:'Persona ficticia'}}));
-  const db=makeClient(anon); await ok(db.auth.signInWithPassword({email,password}));
+  // El admin emite una sesión de prueba sin enviar correo ni desactivar CAPTCHA.
+  const link=await ok(admin.auth.admin.generateLink({type:'magiclink',email}));
+  const db=makeClient(anon); await ok(db.auth.verifyOtp({type:'magiclink',token_hash:link.properties.hashed_token}));
   return {id:user.id,email,db};
  }
  const pro=await makeUser('professional'), other=await makeUser('professional'), patient=await makeUser('patient');
