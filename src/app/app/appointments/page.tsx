@@ -21,10 +21,7 @@ export default async function PatientAppointmentsPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
-        ← Inicio
-      </Link>
-      <h1 className="page-title mt-3">Mis citas</h1>
+      <h1 className="page-title">Mis citas</h1>
 
       <Link href="/app/appointments/new" className="btn-primary btn-lg mt-4 w-full">
         <Plus className="size-4" strokeWidth={2.5} aria-hidden />

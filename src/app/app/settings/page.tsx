@@ -8,8 +8,8 @@ export default async function PatientSettingsPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
       <div>
-        <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
-          ← Inicio
+        <Link href="/app/more" className="text-sm text-ink-3 hover:text-ink">
+          ← Más
         </Link>
         <h1 className="page-title mt-3">Ajustes</h1>
       </div>

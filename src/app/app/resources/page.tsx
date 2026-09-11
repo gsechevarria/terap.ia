@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getMyDocuments, getMyResources } from "@/lib/queries/wellbeing";
 import { formatDate } from "@/lib/format";
 
@@ -11,10 +10,7 @@ export default async function PatientResourcesPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-8">
       <div>
-        <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
-          ← Inicio
-        </Link>
-        <h1 className="page-title mt-3">Recursos</h1>
+        <h1 className="page-title">Recursos</h1>
         <div className="mt-4">
           {resources.length === 0 ? (
             <p className="text-sm text-ink-2">
