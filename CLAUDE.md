@@ -880,9 +880,31 @@ ficheros.** Los tipos se contrastaron con `supabase gen types` contra el remoto
 y se devolvieron al formato del generador embebido, que es lo que valida
 `npm run test:types` en CI.
 
-**Pendiente:** repaso visual en navegador (nadie ha abierto aún la aplicación a
-mano), instalación como PWA en móvil real y actualización de
-`docs/GUION_DEMO.md` con el flujo de solicitudes.
+**Renderizado en servidor de `/app` — corregido el mismo día.** `NativeGate`
+arrancaba siempre en `checking` y no montaba a los hijos hasta resolver la
+importación dinámica de Capacitor, así que **la PWA no servía nada de HTML**:
+cada carga completa era una espera en blanco. Ahora Capacitor marca su WebView
+(`appendUserAgent: "terapia-native"`) y `esAppNativa()`
+(`src/lib/native-request.ts`) lo detecta en servidor: la web renderiza ya, el
+contenedor nativo sigue esperando al desbloqueo. La comprobación en cliente se
+mantiene por si un contenedor antiguo no trae la marca.
+
+**Verificado en producción** (`terap.vercel.app`, sesiones reales por cookie):
+**31/32 comprobaciones**. Cargan las siete vistas del panel y las siete de la
+app, con el contenido correcto —contador de solicitudes, barra de pestañas,
+franjas horarias, tareas, 024—.
+
+🔴 **Limitación conocida, ANTERIOR a este trabajo, solo afecta al contenedor
+nativo:** con el bloqueo activo la pantalla no pinta el contenido, pero el árbol
+del servidor **sí viaja dentro del HTML** (como datos de hidratación), así que
+es recuperable con herramientas de desarrollo. Es inherente a pasar hijos
+renderizados en servidor a un componente cliente, y ya ocurría antes. Ahora que
+el servidor sabe si la petición es nativa, se puede cerrar de verdad: no
+renderizar los hijos y refrescar tras el desbloqueo. Requiere dispositivo real
+para probarlo; va con `FLAG_SECURE` y el overlay de iOS.
+
+**Pendiente:** repaso visual en navegador (la verificación es por HTML servido,
+no por pantalla) e instalación como PWA en móvil real.
 
 ---
 

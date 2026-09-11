@@ -1,54 +1,70 @@
-# Guion de demo (7-8 min)
+# Guion de demo (8-9 min)
 
-> Entorno de demostración con **datos ficticios**. Prepara dos ventanas: portátil
-> (panel profesional) y móvil (PWA paciente).
+> Entorno de demostración con **datos ficticios**. Prepara dos ventanas:
+> portátil (panel del profesional) y móvil (aplicación del paciente). Usa
+> ventanas separadas o una en incógnito: comparten sesión.
 
 ## Preparación (una vez)
-1. `SEED_PRO_EMAIL=tu-correo@dominio npm run seed` (usa un correo al que puedas
-   recibir el enlace mágico). Esto crea una consulta con ~6 pacientes y 3 meses de
-   histórico bajo tu correo.
-2. En Supabase → Authentication → URL Configuration: añade la URL pública a
-   *Redirect URLs* (`https://<dominio>/**`).
 
-## Recorrido (≈8 min)
+1. `npm run seed:demo` — deja la consulta lista para enseñarse: dos semanas de
+   citas, tareas y diario recientes y una solicitud esperando respuesta.
+2. Credenciales (ficticias), las dos con contraseña **`Demo-terapia-2026!`**:
+   - Profesional: `dra.romero@demo.terapia`
+   - Paciente: `ana.nadal@demo.terapia`
+3. Entra por `/login` **con correo y contraseña**. Nada de enlace mágico: en
+   directo, esperar un correo delante del cliente es un riesgo que no compensa.
+4. En el móvil, *Añadir a pantalla de inicio* para enseñarla ya instalada.
 
-1. **Acceso (30 s).** Landing → *Acceder* → introduce tu correo como **Profesional**
-   → abre el enlace mágico → panel `/pro`. Enseña la **lista de pacientes** con
-   resumen (tareas, próxima cita, alertas) y el **banner de demo** permanente.
+## Recorrido (≈9 min)
 
-2. **Alta de paciente por invitación (1 min).** *Nuevo paciente* → crea uno →
-   en su ficha, **Generar enlace de invitación** → abre el enlace en el **móvil**
-   → introduce un correo → enlace mágico → **firma el consentimiento** → entra a la
-   PWA del paciente. (Opcional: *Añadir a pantalla de inicio* para mostrarla
-   instalable.)
+1. **Acceso (30 s).** Portada → *Acceder* → entra como profesional. Enseña la
+   **lista de pacientes** con su resumen (tareas, próxima cita, alertas) y el
+   **aviso de demostración** permanente.
 
-3. **Tarea (1 min).** En la ficha (portátil), pestaña **Tareas** → crea "Diario de
-   gratitud" con fecha límite. En el **móvil**, el paciente la ve en su inicio y la
-   **marca como hecha** con una nota. Vuelve al portátil: aparece "hecha".
+2. **La semana de un psicólogo (1 min).** **Agenda**: vista de semana con las
+   citas reales de los próximos días. Abre una, enseña el detalle y el registro
+   de **asistencia**.
 
-4. **Cita + .ics (1 min).** **Agenda** → *Nueva cita* para el paciente (con link de
-   videollamada). En el móvil, *Mis citas* → **Confirmar** y **Añadir al calendario
-   (.ics)** → se abre en Google/Apple Calendar.
+3. **El paciente pide cita (2 min) — el momento fuerte.** En el **móvil**,
+   pestaña *Citas* → **Pedir cita** → elige día y franja, añade una nota →
+   enviar. En el **portátil**, **Solicitudes** ya marca una más: acepta tal
+   cual, o pulsa **Proponer otra hora** y cámbiala. Vuelve al móvil: la cita
+   aparece confirmada. Recalca que **nada entra en la agenda sin que el
+   profesional lo apruebe** y que el paciente no puede tocar el horario.
 
-5. **Escala opt-in + alerta ítem 9 (1,5 min).** Ficha → **Escalas** → activa
-   **PHQ-9**. En el móvil aparece en *Cuestionarios*; el paciente responde. Muestra
-   el paciente **Ana Nadal** (del seed), cuya última respuesta marcó el **ítem 9**:
-   en la ficha y el dashboard aparece la **alerta destacada**; al responderla, el
-   paciente ve **recursos de emergencia** (024/112). Abre **Ver evolución**:
-   gráfica + tabla + **Exportar CSV**.
+4. **Tarea entre sesiones (1 min).** Ficha del paciente → pestaña **Tareas** →
+   crea una con fecha límite. En el móvil aparece en el inicio; el paciente la
+   **marca como hecha** con una nota. Vuelve al portátil: aparece hecha.
 
-6. **Diario emocional (1 min).** En el móvil, *¿Cómo estás hoy?* → registra ánimo.
-   En la ficha, pestaña **Diario**: gráfica de evolución (sin interpretación).
+5. **Escala opt-in y alerta (1,5 min).** Ficha → **Escalas** → activa el PHQ-9;
+   subraya que **por defecto está apagada**: sin activarla el paciente no ve
+   ninguna. Enseña a **Ana Nadal**, cuya respuesta marcó el **ítem de riesgo**:
+   alerta destacada en el panel, y al paciente se le ofrecieron **recursos de
+   emergencia** (024/112). Abre *Ver evolución*: gráfica, tabla y **CSV**.
 
-7. **Pagos (1 min).** Ficha → **Pagos**: precio por sesión, **bono** con consumo,
-   deuda. Marca una asistencia en Agenda y enseña cómo se genera el pago/consumo.
-   **Pagos** (nav) → resumen mensual de ingresos + **Exportar CSV** (gestoría).
-   *Nunca se emiten facturas.*
+6. **Diario emocional (1 min).** En el móvil, pestaña *Diario*: registra el
+   ánimo de hoy. En la ficha, pestaña **Diario**: la evolución de los últimos
+   días. Di en voz alta que **no interpreta ni recomienda nada**: solo registra.
 
-8. **Analítica (1 min).** **Analítica**: ocupación semanal, **tasa de no-shows**,
-   ingresos por mes, activos vs archivados y **evolución agregada anónima** de
-   escalas — la historia de 3 meses del seed.
+7. **Pagos (1 min).** Ficha → **Pagos**: precio por sesión, **bono** con
+   consumo, deuda. Marca una asistencia en la agenda y enseña cómo se genera el
+   pago o se consume el bono. **Pagos** (menú) → resumen mensual y **CSV para la
+   gestoría**. *Nunca se emiten facturas.*
+
+8. **Analítica y contabilidad (1 min).** **Analítica**: ocupación, **tasa de
+   ausencias**, ingresos por mes, evolución agregada y anónima de escalas.
+   **Contabilidad**: estimación orientativa del modelo 130 y libros exportables.
 
 ## Cierre
-Recalca: multi-tenant con RLS (cada profesional solo ve lo suyo), escalas opt-in,
-sin facturación, sin interpretación clínica, solo datos ficticios.
+
+Cada profesional solo ve lo suyo (aislamiento por base de datos, no por
+pantalla), escalas opt-in, sin facturación, sin interpretación clínica, y solo
+datos ficticios.
+
+## Si algo se tuerce
+
+- **No aparece la solicitud**: recarga el panel; el contador vive en el menú.
+- **La app no deja pedir cita**: hay un tope de 3 solicitudes vivas y se exige
+  una hora de antelación.
+- **Sesión cruzada**: si al abrir el móvil entras como profesional, cierra
+  sesión o usa una ventana en incógnito.
