@@ -195,5 +195,72 @@ export async function sqlRegressions(db) {
   });
   await q('update professionals set deleted_at=null where id=$1',[pro1]);
  });
+ // ---- Solicitudes de cita (el paciente pide, el profesional aprueba) -------
+ let req1;
+ await test('Paciente pide cita y el profesional recibe el aviso',async()=>{
+  await user(patUid1,async()=>{
+   req1=(await q("select patient_request_appointment('new',now()+interval '10 days',null,50,'Mejor por la tarde') id"))[0].id;
+   assert.equal((await q('select status from appointment_requests where id=$1',[req1]))[0].status,'pending');
+  });
+  // El aviso es del profesional: la RLS impide verlo desde la sesión del paciente.
+  const avisos=await q('select user_id from notifications where dedupe_key=$1',['apptreq:'+req1]);
+  assert.equal(avisos.length,1);
+  assert.equal(avisos[0].user_id,uid1);
+ });
+ await test('Paciente no fabrica solicitudes por API',()=>user(patUid1,()=>assert.rejects(q("insert into appointment_requests(professional_id,patient_id,kind,preferred_start,status) values($1,$2,'new',now()+interval '11 days','accepted')",[pro1,pat1]))));
+ await test('Paciente no resuelve su propia solicitud',()=>user(patUid1,()=>assert.rejects(q("select resolve_appointment_request($1,'accept')",[req1]))));
+ await test('Otro profesional ni la ve ni la resuelve',()=>user(uid2,async()=>{
+  assert.equal((await q('select id from appointment_requests where id=$1',[req1])).length,0);
+  await assert.rejects(q("select resolve_appointment_request($1,'accept')",[req1]));
+ }));
+ await test('Aceptar crea la cita y cierra la solicitud',()=>user(uid1,async()=>{
+  const appt=(await q("select resolve_appointment_request($1,'accept') id",[req1]))[0].id;
+  const r=(await q('select status,appointment_id from appointment_requests where id=$1',[req1]))[0];
+  assert.equal(r.status,'accepted');
+  assert.equal(r.appointment_id,appt);
+  assert.equal((await q('select count(*)::int n from appointments where id=$1 and patient_id=$2',[appt,pat1]))[0].n,1);
+ }));
+ await test('Una solicitud resuelta no se resuelve dos veces',()=>user(uid1,()=>assert.rejects(q("select resolve_appointment_request($1,'accept')",[req1]))));
+ let req2;
+ await test('El solape impide aceptar y la solicitud sigue pendiente',async()=>{
+  await user(patUid1,async()=>{req2=(await q("select patient_request_appointment('new',now()+interval '10 days') id"))[0].id;});
+  await user(uid1,async()=>{
+   await assert.rejects(q("select resolve_appointment_request($1,'accept')",[req2]));
+   assert.equal((await q('select status from appointment_requests where id=$1',[req2]))[0].status,'pending');
+  });
+ });
+ await test('Rechazar cierra la solicitud sin crear cita',()=>user(uid1,async()=>{
+  const antes=(await q('select count(*)::int n from appointments where patient_id=$1',[pat1]))[0].n;
+  await q("select resolve_appointment_request($1,'decline',null,null,'Ese día no puedo')",[req2]);
+  assert.equal((await q('select status from appointment_requests where id=$1',[req2]))[0].status,'declined');
+  assert.equal((await q('select count(*)::int n from appointments where patient_id=$1',[pat1]))[0].n,antes);
+ }));
+ await test('Pedir cambio mueve la cita al aceptar',async()=>{
+  const appt=randomUUID();
+  await q("insert into appointments(id,professional_id,patient_id,starts_at,ends_at) values($1,$2,$3,now()+interval '30 days',now()+interval '30 days'+interval '1 hour')",[appt,pro1,pat1]);
+  let req;
+  await user(patUid1,async()=>{req=(await q("select patient_request_appointment('reschedule',now()+interval '31 days',null,50,null,$1) id",[appt]))[0].id;});
+  await user(uid1,async()=>{await q("select resolve_appointment_request($1,'accept')",[req]);});
+  const movida=(await q('select starts_at from appointments where id=$1',[appt]))[0].starts_at;
+  assert.ok(new Date(movida).getTime()>Date.now()+30.5*86400000);
+ });
+ await test('Pedir anulación cancela la cita al aceptar',async()=>{
+  const appt=randomUUID();
+  await q("insert into appointments(id,professional_id,patient_id,starts_at,ends_at) values($1,$2,$3,now()+interval '40 days',now()+interval '40 days'+interval '1 hour')",[appt,pro1,pat1]);
+  let req;
+  await user(patUid1,async()=>{req=(await q("select patient_request_appointment('cancel',null,null,50,null,$1) id",[appt]))[0].id;});
+  await user(uid1,async()=>{await q("select resolve_appointment_request($1,'accept')",[req]);});
+  assert.equal((await q('select status from appointments where id=$1',[appt]))[0].status,'cancelled');
+ });
+ await test('No se pide hora en el pasado',()=>user(patUid1,()=>assert.rejects(q("select patient_request_appointment('new',now()-interval '1 day')"))));
+ await test('No se pide cambio sobre la cita de otro',()=>user(patUid2,()=>assert.rejects(q("select patient_request_appointment('cancel',null,null,50,null,$1)",[appt1]))));
+ await test('Tope de tres solicitudes vivas y retirada',()=>user(patUid1,async()=>{
+  for(let i=0;i<3;i++) await q('select patient_request_appointment($1,now()+make_interval(days=>$2))',['new',50+i]);
+  await assert.rejects(q("select patient_request_appointment('new',now()+interval '90 days')"));
+  const viva=(await q("select id from appointment_requests where patient_id=$1 and status='pending' order by created_at limit 1",[pat1]))[0].id;
+  await q('select patient_withdraw_request($1)',[viva]);
+  assert.equal((await q('select status from appointment_requests where id=$1',[viva]))[0].status,'withdrawn');
+  await q("select patient_request_appointment('new',now()+interval '90 days')");
+ }));
  return passed;
 }

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Users,
   CalendarDays,
+  Inbox,
   CreditCard,
   Calculator,
   ChartColumnIncreasing,
@@ -15,6 +16,7 @@ import {
 const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "/pro", label: "Pacientes", Icon: Users },
   { href: "/pro/agenda", label: "Agenda", Icon: CalendarDays },
+  { href: "/pro/solicitudes", label: "Solicitudes", Icon: Inbox },
   { href: "/pro/pagos", label: "Pagos", Icon: CreditCard },
   { href: "/pro/contabilidad", label: "Contabilidad", Icon: Calculator },
   { href: "/pro/analitica", label: "Analítica", Icon: ChartColumnIncreasing },
@@ -27,8 +29,21 @@ function isActive(pathname: string, href: string): boolean {
     : pathname.startsWith(href);
 }
 
+/** Contador de solicitudes por decidir. Se oculta en cuanto no queda ninguna. */
+function Badge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+      aria-label={`${count} pendiente${count === 1 ? "" : "s"}`}
+    >
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
 /** Navegación lateral del panel (sidebar), estado activo por ruta. */
-export function ProNav() {
+export function ProNav({ pendingRequests = 0 }: { pendingRequests?: number }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-0.5">
@@ -47,6 +62,7 @@ export function ProNav() {
           >
             <Icon className="size-4 shrink-0" strokeWidth={2} aria-hidden />
             {label}
+            {href === "/pro/solicitudes" && <Badge count={pendingRequests} />}
           </Link>
         );
       })}
@@ -55,7 +71,9 @@ export function ProNav() {
 }
 
 /** Navegación compacta horizontal para móvil (scroll-x). */
-export function ProNavMobile() {
+export function ProNavMobile({
+  pendingRequests = 0,
+}: { pendingRequests?: number }) {
   const pathname = usePathname();
   return (
     <nav className="flex items-center gap-0.5 overflow-x-auto">
@@ -74,6 +92,7 @@ export function ProNavMobile() {
           >
             <Icon className="size-4 shrink-0" strokeWidth={2} aria-hidden />
             {label}
+            {href === "/pro/solicitudes" && <Badge count={pendingRequests} />}
           </Link>
         );
       })}

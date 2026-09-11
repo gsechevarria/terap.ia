@@ -1,5 +1,4 @@
 import { todayYMD } from "@/lib/tz";
-import Link from "next/link";
 import { getMyMoodEntries } from "@/lib/queries/wellbeing";
 import { MoodLogger } from "@/app/app/_components/MoodLogger";
 import { ScoreChart } from "@/app/pro/_components/ScoreChart";
@@ -13,9 +12,6 @@ export default async function PatientDiaryPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
-      <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
-        ← Inicio
-      </Link>
 
       <MoodLogger today={entries.find(e => e.entry_date === todayYMD())} />
 
