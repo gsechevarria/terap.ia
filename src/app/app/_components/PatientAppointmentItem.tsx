@@ -1,12 +1,18 @@
 "use client";
+import Link from "next/link";
+import { CalendarClock } from "lucide-react";
 import { callAction } from "@/lib/action-result";
 
-import { respondAppointmentAction } from "@/lib/actions/appointments";
+import {
+  respondAppointmentAction,
+  withdrawRequestAction,
+} from "@/lib/actions/appointments";
 import { formatDateTime } from "@/lib/format";
 import { useAction } from "@/lib/use-action";
 import { safeExternalUrl } from "@/lib/url";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import type { Appointment } from "@/lib/types";
+import type { AppointmentRequest } from "@/lib/queries/appointment-requests";
 
 const STATUS: Record<string, { label: string; tone: StatusTone }> = {
   scheduled: { label: "por confirmar", tone: "info" },
@@ -18,15 +24,22 @@ const STATUS: Record<string, { label: string; tone: StatusTone }> = {
 export function PatientAppointmentItem({
   appt,
   canRespond,
+  request = null,
 }: {
   appt: Appointment;
   canRespond: boolean;
+  /** Solicitud viva sobre esta cita, si el paciente ya pidió moverla. */
+  request?: AppointmentRequest | null;
 }) {
   const { run, pending, error } = useAction();
   const cancelled = appt.status === "cancelled";
 
   function respond(action: "confirm" | "cancel") {
     run(() => callAction(respondAppointmentAction, appt.id, action));
+  }
+
+  function withdraw() {
+    if (request) run(() => callAction(withdrawRequestAction, request.id));
   }
 
   return (
@@ -58,8 +71,29 @@ export function PatientAppointmentItem({
           Añadir al calendario (.ics)
         </a>
       </div>
+      {request && !cancelled && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-warn-soft px-3 py-2 text-sm">
+          <CalendarClock className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+          <span>
+            Has pedido cambiarla
+            {request.preferred_start
+              ? ` al ${formatDateTime(request.preferred_start)}`
+              : ""}
+            . Pendiente de respuesta.
+          </span>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={withdraw}
+            className="ml-auto underline underline-offset-2 hover:no-underline"
+          >
+            Retirar
+          </button>
+        </div>
+      )}
+
       {canRespond && !cancelled && (
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           {appt.status !== "confirmed" && (
             <button
               type="button"
@@ -69,6 +103,14 @@ export function PatientAppointmentItem({
             >
               Confirmar
             </button>
+          )}
+          {!request && (
+            <Link
+              href={`/app/appointments/new?cambiar=${appt.id}`}
+              className="btn-subtle"
+            >
+              Pedir otro día
+            </Link>
           )}
           <button
             type="button"

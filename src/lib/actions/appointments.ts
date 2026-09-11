@@ -11,7 +11,7 @@ import {
   requireProfessional,
 } from "@/lib/queries/identity";
 
-import { revalidateAgenda, revalidatePayments } from "@/lib/revalidate";
+import { revalidateAgenda, revalidatePayments, revalidateRequests } from "@/lib/revalidate";
 import { formatDateTime } from "@/lib/format";
 import { safeExternalUrl } from "@/lib/url";
 import { TZ } from "@/lib/tz";
@@ -365,7 +365,79 @@ async function respondAppointmentActionImpl(
   revalidatePath("/app/appointments");
 }
 
+// ---- Solicitudes de cita ---------------------------------------------------
+// El paciente pide; el profesional decide. Toda la validación real (propiedad,
+// antelación, solapes, tope de pendientes) vive en las funciones de BD: son
+// `security definer` y son el único camino de escritura, así que saltarse la
+// interfaz no sirve de nada.
+
+export type RequestKind = "new" | "reschedule" | "cancel";
+
+async function requestAppointmentActionImpl(input: {
+  kind: RequestKind;
+  /** ISO (UTC), convertido en el cliente desde la hora local. */
+  preferredStart?: string | null;
+  altStart?: string | null;
+  durationMin?: number;
+  note?: string;
+  appointmentId?: string;
+}): Promise<string> {
+  const patient = await getCurrentPatient();
+  if (!patient) throw new ActionInputError("Cuenta no vinculada.");
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("patient_request_appointment", {
+    p_kind: input.kind,
+    p_preferred_start: input.preferredStart ?? null,
+    p_alt_start: input.altStart ?? null,
+    p_duration_min: input.durationMin ?? 50,
+    p_note: input.note?.trim() || null,
+    p_appointment_id: input.appointmentId ?? null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidateRequests();
+  return data as string;
+}
+
+async function withdrawRequestActionImpl(id: string) {
+  const patient = await getCurrentPatient();
+  if (!patient) throw new ActionInputError("Cuenta no vinculada.");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("patient_withdraw_request", { p_id: id });
+  if (error) throw new Error(error.message);
+  revalidateRequests();
+}
+
+async function resolveRequestActionImpl(input: {
+  id: string;
+  action: "accept" | "decline";
+  /** Solo si el profesional corrige el horario propuesto. */
+  startsAt?: string | null;
+  endsAt?: string | null;
+  note?: string;
+}) {
+  await requireProfessional();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("resolve_appointment_request", {
+    p_id: input.id,
+    p_action: input.action,
+    p_start: input.startsAt ?? null,
+    p_end: input.endsAt ?? null,
+    p_note: input.note?.trim() || null,
+  });
+  if (error) throw new Error(error.message);
+  revalidateRequests();
+  revalidateAgenda();
+}
+
 export async function createAppointmentAction(...args: Parameters<typeof createAppointmentActionImpl>) { return runAction(() => createAppointmentActionImpl(...args)); }
+
+export async function requestAppointmentAction(...args: Parameters<typeof requestAppointmentActionImpl>) { return runAction(() => requestAppointmentActionImpl(...args)); }
+
+export async function withdrawRequestAction(...args: Parameters<typeof withdrawRequestActionImpl>) { return runAction(() => withdrawRequestActionImpl(...args)); }
+
+export async function resolveRequestAction(...args: Parameters<typeof resolveRequestActionImpl>) { return runAction(() => resolveRequestActionImpl(...args)); }
 
 export async function updateAppointmentAction(...args: Parameters<typeof updateAppointmentActionImpl>) { return runAction(() => updateAppointmentActionImpl(...args)); }
 

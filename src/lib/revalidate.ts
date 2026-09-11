@@ -38,5 +38,17 @@ export function revalidateAgenda(patientId?: string): void {
   revalidatePath("/pro");
   revalidatePath("/pro/agenda");
   revalidatePath("/pro/agenda/citas");
+  revalidatePath("/pro/solicitudes");
   if (patientId) revalidatePath(`/pro/patients/${patientId}`);
+}
+
+/**
+ * Una solicitud de cita. Toca las dos orillas: la bandeja del profesional y las
+ * pantallas del paciente donde se ve lo que pidió.
+ */
+export function revalidateRequests(): void {
+  revalidatePath("/pro", "layout"); // el contador del menú vive en el layout
+  revalidatePath("/pro/solicitudes");
+  revalidatePath("/app");
+  revalidatePath("/app/appointments");
 }

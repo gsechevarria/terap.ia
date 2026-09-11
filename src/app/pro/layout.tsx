@@ -7,6 +7,7 @@ import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { SignOutForm } from "@/components/SignOutForm";
 import { Brandmark } from "@/components/ui/Brandmark";
 import { ProNav, ProNavMobile } from "@/app/pro/_components/ProNav";
+import { countPendingRequests } from "@/lib/queries/appointment-requests";
 
 function Brand() {
   return (
@@ -32,6 +33,10 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
   if (role === ROLES.PATIENT) redirect("/app");
   if (role !== ROLES.PROFESSIONAL) redirect("/login?error=sin-rol");
 
+  // Lo que el paciente ha pedido y espera respuesta: visible desde cualquier
+  // pantalla, porque una solicitud sin contestar es una cita que no se agenda.
+  const pendingRequests = await countPendingRequests();
+
   return (
     <div className="flex min-h-full flex-col md:flex-row">
       <ServiceWorkerRegister />
@@ -42,7 +47,7 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
             <Brand />
           </div>
           <div className="flex-1 overflow-y-auto">
-            <ProNav />
+            <ProNav pendingRequests={pendingRequests} />
           </div>
           <div className="border-t border-line px-1.5 pt-3">
             <p className="mb-1.5 truncate text-xs text-ink-3" title={user.email}>
@@ -60,7 +65,7 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
           <SignOutForm />
         </div>
         <div className="px-2 pb-2">
-          <ProNavMobile />
+          <ProNavMobile pendingRequests={pendingRequests} />
         </div>
       </header>
 

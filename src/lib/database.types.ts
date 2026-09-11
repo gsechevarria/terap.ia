@@ -29,6 +29,54 @@ Update: {
 };
 Relationships: [{ foreignKeyName: "agenda_blocks_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
+"appointment_requests": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"appointment_id": string | null;
+"kind": Database["public"]["Enums"]["appointment_request_kind"];
+"preferred_start": string | null;
+"alt_start": string | null;
+"duration_min": number;
+"note": string | null;
+"status": Database["public"]["Enums"]["appointment_request_status"];
+"resolution_note": string | null;
+"resolved_at": string | null;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"appointment_id"?: string | null;
+"kind": Database["public"]["Enums"]["appointment_request_kind"];
+"preferred_start"?: string | null;
+"alt_start"?: string | null;
+"duration_min"?: number;
+"note"?: string | null;
+"status"?: Database["public"]["Enums"]["appointment_request_status"];
+"resolution_note"?: string | null;
+"resolved_at"?: string | null;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"appointment_id"?: string | null;
+"kind"?: Database["public"]["Enums"]["appointment_request_kind"];
+"preferred_start"?: string | null;
+"alt_start"?: string | null;
+"duration_min"?: number;
+"note"?: string | null;
+"status"?: Database["public"]["Enums"]["appointment_request_status"];
+"resolution_note"?: string | null;
+"resolved_at"?: string | null;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "appointment_requests_appointment_id_fkey"; columns: ["appointment_id"]; isOneToOne: false; referencedRelation: "appointments"; referencedColumns: ["id"] },{ foreignKeyName: "appointment_requests_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "appointment_requests_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
 "appointments": {
 Row: {
 "id": string;
@@ -1131,19 +1179,22 @@ Functions: {
 "issue_invitation": { Args: {"p_patient_id": string | null;"p_token_hash": string | null}; Returns: string };
 "mark_notification_read": { Args: {"p_id": string | null}; Returns: undefined };
 "patient_accept_consent": { Args: Record<PropertyKey, never>; Returns: string };
+"patient_request_appointment": { Args: {"p_kind": string | null;"p_preferred_start"?: string | null;"p_alt_start"?: string | null;"p_duration_min"?: number | null;"p_note"?: string | null;"p_appointment_id"?: string | null}; Returns: string };
 "patient_respond_appointment": { Args: {"p_appointment_id": string | null;"p_action": string | null}; Returns: undefined };
+"patient_withdraw_request": { Args: {"p_id": string | null}; Returns: undefined };
 "professional_owns_patient": { Args: {"p_patient_id": string | null}; Returns: boolean };
 "queue_appointment_reminders": { Args: Record<PropertyKey, never>; Returns: number };
+"resolve_appointment_request": { Args: {"p_id": string | null;"p_action": string | null;"p_start"?: string | null;"p_end"?: string | null;"p_note"?: string | null}; Returns: string };
 "save_expense": { Args: {"p_id": string | null;"p_data": Json | null;"p_replace_receipt"?: boolean | null}; Returns: string };
 "set_payment_fiscal": { Args: {"p_id": string | null;"p_tipo": string | null;"p_iva": number | null;"p_retencion_cents": number | null}; Returns: undefined };
 "settle_attended_appointment": { Args: {"p_appointment_id": string | null}; Returns: undefined };
 "unsettle_appointment": { Args: {"p_appointment_id": string | null}; Returns: string };
 "valid_push_endpoint": { Args: {"v": string | null}; Returns: boolean };
-}; Enums: {"appointment_status": "scheduled" | "confirmed" | "cancelled" | "completed";"assignment_type": "one_off" | "recurring";"attendance_status": "pending" | "attended" | "no_show" | "late_cancel";"notification_channel": "push" | "email";"notification_status": "queued" | "sent" | "failed" | "read";"patient_status": "active" | "archived";"payment_status": "pending" | "paid";"recurrence_freq": "none" | "daily" | "weekly" | "biweekly" | "monthly";"resource_kind": "pdf" | "audio" | "link"}; CompositeTypes: Record<never,never>; }; };
+}; Enums: {"appointment_request_kind": "new" | "reschedule" | "cancel";"appointment_request_status": "pending" | "accepted" | "declined" | "withdrawn";"appointment_status": "scheduled" | "confirmed" | "cancelled" | "completed";"assignment_type": "one_off" | "recurring";"attendance_status": "pending" | "attended" | "no_show" | "late_cancel";"notification_channel": "push" | "email";"notification_status": "queued" | "sent" | "failed" | "read";"patient_status": "active" | "archived";"payment_status": "pending" | "paid";"recurrence_freq": "none" | "daily" | "weekly" | "biweekly" | "monthly";"resource_kind": "pdf" | "audio" | "link"}; CompositeTypes: Record<never,never>; }; };
 type Schema = Database["public"];
 export type Tables<T extends keyof (Schema["Tables"] & Schema["Views"])> = (Schema["Tables"] & Schema["Views"])[T]["Row"];
 export type TablesInsert<T extends keyof Schema["Tables"]> = Schema["Tables"][T]["Insert"];
 export type TablesUpdate<T extends keyof Schema["Tables"]> = Schema["Tables"][T]["Update"];
 export type Enums<T extends keyof Schema["Enums"]> = Schema["Enums"][T];
 export type CompositeTypes = Record<never,never>;
-export const Constants = {"public":{"Enums":{"appointment_status":["scheduled","confirmed","cancelled","completed"],"assignment_type":["one_off","recurring"],"attendance_status":["pending","attended","no_show","late_cancel"],"notification_channel":["push","email"],"notification_status":["queued","sent","failed","read"],"patient_status":["active","archived"],"payment_status":["pending","paid"],"recurrence_freq":["none","daily","weekly","biweekly","monthly"],"resource_kind":["pdf","audio","link"]}}} as const;
+export const Constants = {"public":{"Enums":{"appointment_request_kind":["new","reschedule","cancel"],"appointment_request_status":["pending","accepted","declined","withdrawn"],"appointment_status":["scheduled","confirmed","cancelled","completed"],"assignment_type":["one_off","recurring"],"attendance_status":["pending","attended","no_show","late_cancel"],"notification_channel":["push","email"],"notification_status":["queued","sent","failed","read"],"patient_status":["active","archived"],"payment_status":["pending","paid"],"recurrence_freq":["none","daily","weekly","biweekly","monthly"],"resource_kind":["pdf","audio","link"]}}} as const;
