@@ -9,6 +9,15 @@ export async function sqlRegressions(db) {
   await db.exec('set role authenticated');
   try{return await fn();}finally{await db.exec('reset role');await q("select set_config('request.jwt.claim.sub','',false)");}
  };
+ await test('Admin API aprovisiona el profesional al asignar app_metadata después del alta',async()=>{
+  const id=randomUUID();
+  await q("insert into auth.users(id,email) values($1,'admin-provision@example.invalid')",[id]);
+  assert.equal((await q('select count(*)::int n from professionals where user_id=$1',[id]))[0].n,0);
+  await q(`update auth.users set raw_app_meta_data=raw_app_meta_data||'{"role":"professional"}'::jsonb where id=$1`,[id]);
+  await q(`update auth.users set raw_app_meta_data=raw_app_meta_data||'{"provider":"email"}'::jsonb where id=$1`,[id]);
+  assert.equal((await q('select count(*)::int n from professionals where user_id=$1',[id]))[0].n,1);
+  assert.equal((await q('select count(*)::int n from consent_templates where professional_id=(select id from professionals where user_id=$1)',[id]))[0].n,1);
+ });
  const uid1=randomUUID(),uid2=randomUUID(),patUid1=randomUUID(),patUid2=randomUUID();
  for(const [id,role] of [[uid1,'professional'],[uid2,'professional'],[patUid1,'patient'],[patUid2,'patient']]) {
   await q(`insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data) values($1,$2,now(),$3)`,[id,id+'@example.invalid',JSON.stringify({role})]);
