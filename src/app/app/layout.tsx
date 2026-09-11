@@ -9,6 +9,7 @@ import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { ServiceWorkerRegister } from "@/app/app/_components/ServiceWorkerRegister";
 import { NativeGate } from "@/app/app/_components/NativeGate";
 import { AppTabBar } from "@/app/app/_components/AppTabBar";
+import { esAppNativa } from "@/lib/native-request";
 
 /**
  * Layout de la app del paciente (base de la futura PWA).
@@ -27,8 +28,10 @@ export default async function PatientLayout({ children }: { children: ReactNode 
 
   if (!(await hasSignedConsent())) redirect("/onboarding/current");
 
+  const nativo = await esAppNativa();
+
   return (
-    <NativeGate>
+    <NativeGate nativo={nativo}>
     <div className="flex min-h-full flex-col">
       <header className="sticky top-0 z-10 border-b border-line bg-canvas/95 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2">

@@ -24,6 +24,15 @@ import { saveNativePushTokenAction } from "@/lib/actions/native";
  *
  * Ahora hay tres estados y los hijos NO se montan hasta `open`.
  *
+ * LO QUE SE CORRIGE (sep 2026): con el estado inicial fijo en `checking`, la
+ * PWA tampoco renderizaba nada en servidor — cada carga completa mostraba
+ * "Comprobando…" hasta que bajaba JavaScript y se resolvía la importación
+ * dinámica de Capacitor. En un móvil con datos eso es una espera en blanco, y
+ * en la web no compraba ninguna seguridad: ahí nunca hay bloqueo biométrico.
+ * Ahora el servidor decide por el identificador del WebView (`nativo`) y solo
+ * espera cuando de verdad hay algo que desbloquear. La comprobación en cliente
+ * se mantiene por si un contenedor antiguo no trae la marca.
+ *
  * ⚠️ PENDIENTE EN LA CAPA NATIVA (no se puede resolver desde React):
  *  - Android: `FLAG_SECURE` en la Activity para que el sistema no guarde la
  *    captura de la app en el conmutador de tareas ni permita capturas.
@@ -33,8 +42,15 @@ import { saveNativePushTokenAction } from "@/lib/actions/native";
  */
 type Estado = "checking" | "locked" | "open";
 
-export function NativeGate({ children }: { children: ReactNode }) {
-  const [estado, setEstado] = useState<Estado>("checking");
+export function NativeGate({
+  children,
+  nativo,
+}: {
+  children: ReactNode;
+  /** El servidor ha reconocido el contenedor nativo por su identificador. */
+  nativo: boolean;
+}) {
+  const [estado, setEstado] = useState<Estado>(nativo ? "checking" : "open");
 
   const intentarDesbloqueo = useCallback(async () => {
     const ok = await requireBiometricUnlock();

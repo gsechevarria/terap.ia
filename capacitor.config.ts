@@ -10,6 +10,12 @@ const config: CapacitorConfig = {
   appId: "com.terapia.app",
   appName: "terap.ia",
   webDir: "www",
+  // Marca el WebView para que el servidor distinga la app nativa de la web.
+  // Sin esto, el servidor no puede saberlo (el contenedor carga el MISMO sitio
+  // desplegado) y la única salida era no renderizar nada hasta que JavaScript
+  // resolviera la plataforma: en la PWA eso convertía cada carga en una espera
+  // en blanco. Ver `NativeGate` y `esAppNativa` en `src/lib/native-request.ts`.
+  appendUserAgent: "terapia-native",
   server: {
     ...(process.env.CAP_SERVER_URL
       ? { url: process.env.CAP_SERVER_URL, cleartext: false }

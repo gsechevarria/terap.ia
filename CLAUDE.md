@@ -832,6 +832,58 @@ justificación`) viajan marcados y el XLSX lleva una fila de aviso dentro.
 - **`xlsx@0.18.5`**: excepción de `npm audit` documentada en
   `docs/DEPENDENCIAS.md` (solo se usa para escribir, nunca para parsear).
 
+### PWA del paciente lista para demo (11-sep-2026) ✅ (en producción)
+
+Objetivo: poder **enseñar la aplicación del paciente**. Rama
+`feat/pwa-demo-20260911`, fusionada a `main`.
+
+**Reserva de cita por el paciente.** Migración `20260911140001`: tabla
+`appointment_requests` (kind `new`/`reschedule`/`cancel`) y tres funciones
+`security definer` — `patient_request_appointment`, `patient_withdraw_request`,
+`resolve_appointment_request`. La tabla **solo tiene políticas de SELECT**: no
+hay insert ni update por API, así que el único camino de escritura son las
+funciones. Aceptar crea o mueve la cita y cierra la solicitud en la misma
+transacción, con `for update` sobre la solicitud y comprobación de solapes
+contra citas y bloqueos. Tope de 3 solicitudes vivas por paciente, antelación
+mínima de 1 h, y una sola pendiente por cita (índice único parcial).
+Los mensajes de error nuevos van añadidos a `SQL_MESSAGES` en
+`action-server.ts`; sin eso el paciente solo vería el error genérico.
+
+Interfaz: `/pro/solicitudes` (con contador en `ProNav`, calculado en el layout)
+y `/app/appointments/new` (día + franjas horarias, pensado para el pulgar).
+La cancelación directa del paciente **se mantiene** por
+`patient_respond_appointment`: no presentarse es su derecho, no una petición.
+
+**Armazón de aplicación.** `AppTabBar` fija abajo con área segura de iOS
+(Inicio · Citas · Diario · Recursos · Más), cabecera reducida a marca + 024,
+nueva `/app/more` (pagos, notificaciones, contraseña, cerrar sesión), inicio
+reordenado por la próxima cita y **`loading.tsx`** para toda el área de paciente
+(el panel profesional ya tenía esqueletos; la app no tenía ninguno).
+
+**Escenario de demostración** (`npm run seed:demo`, `scripts/seed-demo.mjs`).
+`seed.mjs` dejaba la consulta **inservible para enseñarla**: ningún paciente con
+cuenta, cero consentimientos firmados y la última cita el 19 de agosto. El nuevo
+script da contraseña conocida a la profesional, hace el alta de una paciente por
+el **camino real** (invitación → token → consentimiento) y refresca la línea
+temporal. Idempotente. Credenciales ficticias: `dra.romero@demo.terapia` /
+`ana.nadal@demo.terapia`.
+
+**Verificación:** lint, tipos, compilación, 124 pruebas de lógica y **51
+regresiones SQL** (13 nuevas). Además, **8 comprobaciones end-to-end contra la
+base de datos real** con sesiones de usuario y RLS activa (pedir, ver, aceptar,
+no falsificar, no resolver dos veces), con limpieza posterior.
+
+**Notas de operación:** la migración se aplicó por la Management API (el CLI
+necesita la contraseña de BD, que no está en este entorno) y se registró a mano
+en `supabase_migrations.schema_migrations`. **40 migraciones registradas = 40
+ficheros.** Los tipos se contrastaron con `supabase gen types` contra el remoto
+y se devolvieron al formato del generador embebido, que es lo que valida
+`npm run test:types` en CI.
+
+**Pendiente:** repaso visual en navegador (nadie ha abierto aún la aplicación a
+mano), instalación como PWA en móvil real y actualización de
+`docs/GUION_DEMO.md` con el flujo de solicitudes.
+
 ---
 
 ## Resumen del proyecto (plan v2)
