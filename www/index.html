@@ -2,22 +2,71 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>terap.ia</title>
+    <!--
+      Esta página solo se ve en la app NATIVA cuando no hay red: Capacitor carga
+      la PWA desplegada desde `server.url` y cae aquí si no puede alcanzarla.
+      Antes era un placeholder de 537 bytes, así que sin conexión la app abría
+      en blanco. El teléfono de emergencia va aquí a propósito: es lo único que
+      tiene que funcionar aunque no haya nada más.
+    -->
     <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
       body {
         margin: 0;
-        min-height: 100vh;
+        min-height: 100dvh;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-family: system-ui, sans-serif;
-        background: #f7f7f5;
-        color: #4f9d8b;
+        padding: 1.5rem;
+        background: #fbfbfa;
+        color: #1f1f23;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.5;
+      }
+      main { max-width: 22rem; text-align: center; }
+      h1 { font-size: 1.125rem; font-weight: 600; margin: 0 0 0.5rem; }
+      p { font-size: 0.875rem; color: #52525b; margin: 0 0 1.25rem; }
+      button {
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+        border: 0;
+        border-radius: 6px;
+        padding: 0.6rem 1.2rem;
+        background: #0f7b6c;
+        color: #fff;
+      }
+      .emergencia {
+        display: block;
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #e4e4e7;
+        font-size: 0.8125rem;
+        color: #b4453d;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        body { background: #18181b; color: #e7e7ea; }
+        p { color: #a1a1aa; }
+        .emergencia { border-color: #2c2c30; color: #d47a72; }
       }
     </style>
   </head>
   <body>
-    <p>Cargando terap.ia…</p>
+    <main>
+      <h1>Sin conexión</h1>
+      <p>
+        No hemos podido conectar con terap.ia. Comprueba tu conexión a internet
+        y vuelve a intentarlo.
+      </p>
+      <button type="button" onclick="location.reload()">Reintentar</button>
+      <a class="emergencia" href="tel:024">
+        ¿Necesitas ayuda ahora? Llama al 024
+      </a>
+    </main>
   </body>
 </html>

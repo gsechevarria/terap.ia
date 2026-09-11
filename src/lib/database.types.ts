@@ -1,1515 +1,1149 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
-export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
-  public: {
-    Tables: {
-      agenda_blocks: {
-        Row: {
-          created_at: string
-          ends_at: string
-          id: string
-          professional_id: string
-          reason: string | null
-          starts_at: string
-        }
-        Insert: {
-          created_at?: string
-          ends_at: string
-          id?: string
-          professional_id: string
-          reason?: string | null
-          starts_at: string
-        }
-        Update: {
-          created_at?: string
-          ends_at?: string
-          id?: string
-          professional_id?: string
-          reason?: string | null
-          starts_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agenda_blocks_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      appointments: {
-        Row: {
-          attendance: Database["public"]["Enums"]["attendance_status"]
-          created_at: string
-          ends_at: string
-          id: string
-          notes: string | null
-          parent_appointment_id: string | null
-          patient_id: string
-          professional_id: string
-          recurrence_freq: Database["public"]["Enums"]["recurrence_freq"]
-          recurrence_until: string | null
-          starts_at: string
-          status: Database["public"]["Enums"]["appointment_status"]
-          updated_at: string
-          video_link: string | null
-        }
-        Insert: {
-          attendance?: Database["public"]["Enums"]["attendance_status"]
-          created_at?: string
-          ends_at: string
-          id?: string
-          notes?: string | null
-          parent_appointment_id?: string | null
-          patient_id: string
-          professional_id: string
-          recurrence_freq?: Database["public"]["Enums"]["recurrence_freq"]
-          recurrence_until?: string | null
-          starts_at: string
-          status?: Database["public"]["Enums"]["appointment_status"]
-          updated_at?: string
-          video_link?: string | null
-        }
-        Update: {
-          attendance?: Database["public"]["Enums"]["attendance_status"]
-          created_at?: string
-          ends_at?: string
-          id?: string
-          notes?: string | null
-          parent_appointment_id?: string | null
-          patient_id?: string
-          professional_id?: string
-          recurrence_freq?: Database["public"]["Enums"]["recurrence_freq"]
-          recurrence_until?: string | null
-          starts_at?: string
-          status?: Database["public"]["Enums"]["appointment_status"]
-          updated_at?: string
-          video_link?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "appointments_parent_appointment_id_fkey"
-            columns: ["parent_appointment_id"]
-            isOneToOne: false
-            referencedRelation: "appointments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "appointments_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "appointments_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      bienes_inversion: {
-        Row: {
-          anios_amortizacion: number | null
-          created_at: string
-          descripcion: string
-          fecha_adquisicion: string
-          gasto_id: string | null
-          id: string
-          porcentaje_amortizacion: number
-          professional_id: string
-          valor_adquisicion_cents: number
-        }
-        Insert: {
-          anios_amortizacion?: number | null
-          created_at?: string
-          descripcion: string
-          fecha_adquisicion: string
-          gasto_id?: string | null
-          id?: string
-          porcentaje_amortizacion: number
-          professional_id: string
-          valor_adquisicion_cents: number
-        }
-        Update: {
-          anios_amortizacion?: number | null
-          created_at?: string
-          descripcion?: string
-          fecha_adquisicion?: string
-          gasto_id?: string | null
-          id?: string
-          porcentaje_amortizacion?: number
-          professional_id?: string
-          valor_adquisicion_cents?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bienes_inversion_gasto_id_fkey"
-            columns: ["gasto_id"]
-            isOneToOne: false
-            referencedRelation: "gastos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bienes_inversion_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      configuracion_fiscal: {
-        Row: {
-          aplica_retencion_default: boolean
-          created_at: string
-          epigrafe_iae: string | null
-          fecha_alta_actividad: string | null
-          id: string
-          professional_id: string
-          regimen: string
-          situacion_iva: string
-          updated_at: string
-        }
-        Insert: {
-          aplica_retencion_default?: boolean
-          created_at?: string
-          epigrafe_iae?: string | null
-          fecha_alta_actividad?: string | null
-          id?: string
-          professional_id: string
-          regimen?: string
-          situacion_iva?: string
-          updated_at?: string
-        }
-        Update: {
-          aplica_retencion_default?: boolean
-          created_at?: string
-          epigrafe_iae?: string | null
-          fecha_alta_actividad?: string | null
-          id?: string
-          professional_id?: string
-          regimen?: string
-          situacion_iva?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "configuracion_fiscal_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: true
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      consent_templates: {
-        Row: {
-          active: boolean
-          body: string
-          created_at: string
-          id: string
-          professional_id: string
-          title: string
-          updated_at: string
-          version: number
-        }
-        Insert: {
-          active?: boolean
-          body: string
-          created_at?: string
-          id?: string
-          professional_id: string
-          title: string
-          updated_at?: string
-          version?: number
-        }
-        Update: {
-          active?: boolean
-          body?: string
-          created_at?: string
-          id?: string
-          professional_id?: string
-          title?: string
-          updated_at?: string
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "consent_templates_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      consents: {
-        Row: {
-          accepted: boolean
-          content_hash: string | null
-          created_at: string
-          id: string
-          patient_id: string
-          professional_id: string
-          signed_at: string | null
-          template_id: string | null
-          template_version: number | null
-        }
-        Insert: {
-          accepted?: boolean
-          content_hash?: string | null
-          created_at?: string
-          id?: string
-          patient_id: string
-          professional_id: string
-          signed_at?: string | null
-          template_id?: string | null
-          template_version?: number | null
-        }
-        Update: {
-          accepted?: boolean
-          content_hash?: string | null
-          created_at?: string
-          id?: string
-          patient_id?: string
-          professional_id?: string
-          signed_at?: string | null
-          template_id?: string | null
-          template_version?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "consents_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "consents_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "consents_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "consent_templates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      device_push_tokens: {
-        Row: {
-          created_at: string
-          id: string
-          platform: string
-          token: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          platform: string
-          token: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          platform?: string
-          token?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      documents: {
-        Row: {
-          created_at: string
-          id: string
-          patient_id: string
-          professional_id: string
-          shared_with_patient: boolean
-          storage_path: string
-          title: string | null
-          uploaded_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          patient_id: string
-          professional_id: string
-          shared_with_patient?: boolean
-          storage_path: string
-          title?: string | null
-          uploaded_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          patient_id?: string
-          professional_id?: string
-          shared_with_patient?: boolean
-          storage_path?: string
-          title?: string | null
-          uploaded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "documents_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      emergency_links: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          label: string
-          phone: string | null
-          professional_id: string | null
-          sort_order: number
-          updated_at: string
-          url: string | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          label: string
-          phone?: string | null
-          professional_id?: string | null
-          sort_order?: number
-          updated_at?: string
-          url?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          label?: string
-          phone?: string | null
-          professional_id?: string | null
-          sort_order?: number
-          updated_at?: string
-          url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "emergency_links_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      gastos: {
-        Row: {
-          adjunto_path: string | null
-          base_cents: number
-          categoria_deducible: string
-          concepto: string | null
-          created_at: string
-          cuota_iva_cents: number
-          es_bien_inversion: boolean
-          fecha: string
-          id: string
-          porcentaje_afectacion: number
-          professional_id: string
-          proveedor_nif: string | null
-          proveedor_nombre: string | null
-          tipo_iva: number
-          total_cents: number
-          updated_at: string
-        }
-        Insert: {
-          adjunto_path?: string | null
-          base_cents: number
-          categoria_deducible: string
-          concepto?: string | null
-          created_at?: string
-          cuota_iva_cents?: number
-          es_bien_inversion?: boolean
-          fecha: string
-          id?: string
-          porcentaje_afectacion?: number
-          professional_id: string
-          proveedor_nif?: string | null
-          proveedor_nombre?: string | null
-          tipo_iva?: number
-          total_cents: number
-          updated_at?: string
-        }
-        Update: {
-          adjunto_path?: string | null
-          base_cents?: number
-          categoria_deducible?: string
-          concepto?: string | null
-          created_at?: string
-          cuota_iva_cents?: number
-          es_bien_inversion?: boolean
-          fecha?: string
-          id?: string
-          porcentaje_afectacion?: number
-          professional_id?: string
-          proveedor_nif?: string | null
-          proveedor_nombre?: string | null
-          tipo_iva?: number
-          total_cents?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gastos_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      invitations: {
-        Row: {
-          accepted_at: string | null
-          created_at: string
-          email: string | null
-          expires_at: string
-          id: string
-          patient_id: string
-          professional_id: string
-          token_hash: string
-        }
-        Insert: {
-          accepted_at?: string | null
-          created_at?: string
-          email?: string | null
-          expires_at?: string
-          id?: string
-          patient_id: string
-          professional_id: string
-          token_hash: string
-        }
-        Update: {
-          accepted_at?: string | null
-          created_at?: string
-          email?: string | null
-          expires_at?: string
-          id?: string
-          patient_id?: string
-          professional_id?: string
-          token_hash?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invitations_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invitations_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      mood_entries: {
-        Row: {
-          created_at: string
-          entry_date: string
-          id: string
-          mood_value: number
-          note: string | null
-          patient_id: string
-        }
-        Insert: {
-          created_at?: string
-          entry_date?: string
-          id?: string
-          mood_value: number
-          note?: string | null
-          patient_id: string
-        }
-        Update: {
-          created_at?: string
-          entry_date?: string
-          id?: string
-          mood_value?: number
-          note?: string | null
-          patient_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "mood_entries_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notification_preferences: {
-        Row: {
-          appointment_reminders: boolean
-          email_fallback: boolean
-          new_appointment: boolean
-          new_scale: boolean
-          new_task: boolean
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          appointment_reminders?: boolean
-          email_fallback?: boolean
-          new_appointment?: boolean
-          new_scale?: boolean
-          new_task?: boolean
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          appointment_reminders?: boolean
-          email_fallback?: boolean
-          new_appointment?: boolean
-          new_scale?: boolean
-          new_task?: boolean
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      notifications: {
-        Row: {
-          body: string | null
-          channel: Database["public"]["Enums"]["notification_channel"]
-          created_at: string
-          id: string
-          patient_id: string | null
-          payload: Json | null
-          professional_id: string | null
-          read_at: string | null
-          scheduled_for: string | null
-          sent_at: string | null
-          status: Database["public"]["Enums"]["notification_status"]
-          title: string | null
-          type: string | null
-          user_id: string
-        }
-        Insert: {
-          body?: string | null
-          channel?: Database["public"]["Enums"]["notification_channel"]
-          created_at?: string
-          id?: string
-          patient_id?: string | null
-          payload?: Json | null
-          professional_id?: string | null
-          read_at?: string | null
-          scheduled_for?: string | null
-          sent_at?: string | null
-          status?: Database["public"]["Enums"]["notification_status"]
-          title?: string | null
-          type?: string | null
-          user_id: string
-        }
-        Update: {
-          body?: string | null
-          channel?: Database["public"]["Enums"]["notification_channel"]
-          created_at?: string
-          id?: string
-          patient_id?: string | null
-          payload?: Json | null
-          professional_id?: string | null
-          read_at?: string | null
-          scheduled_for?: string | null
-          sent_at?: string | null
-          status?: Database["public"]["Enums"]["notification_status"]
-          title?: string | null
-          type?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      patient_notes: {
-        Row: {
-          body: string
-          created_at: string
-          id: string
-          patient_id: string
-          professional_id: string
-        }
-        Insert: {
-          body: string
-          created_at?: string
-          id?: string
-          patient_id: string
-          professional_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          patient_id?: string
-          professional_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "patient_notes_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "patient_notes_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      patients: {
-        Row: {
-          address: string | null
-          birth_date: string | null
-          created_at: string
-          email: string | null
-          emergency_contact: string | null
-          full_name: string | null
-          id: string
-          phone: string | null
-          profession: string | null
-          professional_id: string
-          status: Database["public"]["Enums"]["patient_status"]
-          tags: string[]
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          address?: string | null
-          birth_date?: string | null
-          created_at?: string
-          email?: string | null
-          emergency_contact?: string | null
-          full_name?: string | null
-          id?: string
-          phone?: string | null
-          profession?: string | null
-          professional_id: string
-          status?: Database["public"]["Enums"]["patient_status"]
-          tags?: string[]
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          address?: string | null
-          birth_date?: string | null
-          created_at?: string
-          email?: string | null
-          emergency_contact?: string | null
-          full_name?: string | null
-          id?: string
-          phone?: string | null
-          profession?: string | null
-          professional_id?: string
-          status?: Database["public"]["Enums"]["patient_status"]
-          tags?: string[]
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "patients_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      payment_settings: {
-        Row: {
-          created_at: string
-          currency: string
-          id: string
-          patient_id: string | null
-          price_cents: number
-          professional_id: string
-          session_type: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          currency?: string
-          id?: string
-          patient_id?: string | null
-          price_cents: number
-          professional_id: string
-          session_type?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          currency?: string
-          id?: string
-          patient_id?: string | null
-          price_cents?: number
-          professional_id?: string
-          session_type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payment_settings_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_settings_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      payments: {
-        Row: {
-          amount_cents: number
-          appointment_id: string | null
-          created_at: string
-          currency: string
-          id: string
-          method: string | null
-          note: string | null
-          paid_at: string | null
-          patient_id: string
-          professional_id: string
-          session_pack_id: string | null
-          status: Database["public"]["Enums"]["payment_status"]
-          updated_at: string
-        }
-        Insert: {
-          amount_cents: number
-          appointment_id?: string | null
-          created_at?: string
-          currency?: string
-          id?: string
-          method?: string | null
-          note?: string | null
-          paid_at?: string | null
-          patient_id: string
-          professional_id: string
-          session_pack_id?: string | null
-          status?: Database["public"]["Enums"]["payment_status"]
-          updated_at?: string
-        }
-        Update: {
-          amount_cents?: number
-          appointment_id?: string | null
-          created_at?: string
-          currency?: string
-          id?: string
-          method?: string | null
-          note?: string | null
-          paid_at?: string | null
-          patient_id?: string
-          professional_id?: string
-          session_pack_id?: string | null
-          status?: Database["public"]["Enums"]["payment_status"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payments_appointment_id_fkey"
-            columns: ["appointment_id"]
-            isOneToOne: false
-            referencedRelation: "appointments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_session_pack_id_fkey"
-            columns: ["session_pack_id"]
-            isOneToOne: false
-            referencedRelation: "session_packs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      professionals: {
-        Row: {
-          created_at: string
-          email: string | null
-          full_name: string | null
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      push_subscriptions: {
-        Row: {
-          auth: string
-          created_at: string
-          endpoint: string
-          id: string
-          p256dh: string
-          user_id: string
-        }
-        Insert: {
-          auth: string
-          created_at?: string
-          endpoint: string
-          id?: string
-          p256dh: string
-          user_id: string
-        }
-        Update: {
-          auth?: string
-          created_at?: string
-          endpoint?: string
-          id?: string
-          p256dh?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      resources: {
-        Row: {
-          created_at: string
-          id: string
-          kind: Database["public"]["Enums"]["resource_kind"]
-          patient_id: string | null
-          professional_id: string
-          storage_path: string | null
-          title: string
-          updated_at: string
-          url: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kind?: Database["public"]["Enums"]["resource_kind"]
-          patient_id?: string | null
-          professional_id: string
-          storage_path?: string | null
-          title: string
-          updated_at?: string
-          url?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kind?: Database["public"]["Enums"]["resource_kind"]
-          patient_id?: string | null
-          professional_id?: string
-          storage_path?: string | null
-          title?: string
-          updated_at?: string
-          url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "resources_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "resources_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scale_assignments: {
-        Row: {
-          active: boolean
-          assignment_type: Database["public"]["Enums"]["assignment_type"]
-          created_at: string
-          ends_on: string | null
-          id: string
-          patient_id: string
-          professional_id: string
-          recurrence_interval_days: number | null
-          scale_id: string
-          starts_on: string
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          assignment_type?: Database["public"]["Enums"]["assignment_type"]
-          created_at?: string
-          ends_on?: string | null
-          id?: string
-          patient_id: string
-          professional_id: string
-          recurrence_interval_days?: number | null
-          scale_id: string
-          starts_on?: string
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          assignment_type?: Database["public"]["Enums"]["assignment_type"]
-          created_at?: string
-          ends_on?: string | null
-          id?: string
-          patient_id?: string
-          professional_id?: string
-          recurrence_interval_days?: number | null
-          scale_id?: string
-          starts_on?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scale_assignments_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scale_assignments_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scale_assignments_scale_id_fkey"
-            columns: ["scale_id"]
-            isOneToOne: false
-            referencedRelation: "scales"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scale_responses: {
-        Row: {
-          answers: Json
-          assignment_id: string
-          created_at: string
-          flagged: boolean
-          id: string
-          patient_id: string
-          scale_id: string
-          score: number | null
-          severity: string | null
-          submitted_at: string
-        }
-        Insert: {
-          answers: Json
-          assignment_id: string
-          created_at?: string
-          flagged?: boolean
-          id?: string
-          patient_id: string
-          scale_id: string
-          score?: number | null
-          severity?: string | null
-          submitted_at?: string
-        }
-        Update: {
-          answers?: Json
-          assignment_id?: string
-          created_at?: string
-          flagged?: boolean
-          id?: string
-          patient_id?: string
-          scale_id?: string
-          score?: number | null
-          severity?: string | null
-          submitted_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "scale_responses_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "scale_assignments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scale_responses_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scale_responses_scale_id_fkey"
-            columns: ["scale_id"]
-            isOneToOne: false
-            referencedRelation: "scales"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      scales: {
-        Row: {
-          code: string
-          created_at: string
-          definition: Json
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          version: number
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          definition: Json
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          version?: number
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          definition?: Json
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          version?: number
-        }
-        Relationships: []
-      }
-      session_packs: {
-        Row: {
-          active: boolean
-          created_at: string
-          currency: string
-          id: string
-          patient_id: string
-          price_cents: number | null
-          professional_id: string
-          purchased_at: string
-          total_sessions: number
-          updated_at: string
-          used_sessions: number
-        }
-        Insert: {
-          active?: boolean
-          created_at?: string
-          currency?: string
-          id?: string
-          patient_id: string
-          price_cents?: number | null
-          professional_id: string
-          purchased_at?: string
-          total_sessions: number
-          updated_at?: string
-          used_sessions?: number
-        }
-        Update: {
-          active?: boolean
-          created_at?: string
-          currency?: string
-          id?: string
-          patient_id?: string
-          price_cents?: number | null
-          professional_id?: string
-          purchased_at?: string
-          total_sessions?: number
-          updated_at?: string
-          used_sessions?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "session_packs_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "session_packs_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      task_completions: {
-        Row: {
-          completed_at: string
-          created_at: string
-          id: string
-          patient_id: string
-          response_text: string | null
-          task_id: string
-        }
-        Insert: {
-          completed_at?: string
-          created_at?: string
-          id?: string
-          patient_id: string
-          response_text?: string | null
-          task_id: string
-        }
-        Update: {
-          completed_at?: string
-          created_at?: string
-          id?: string
-          patient_id?: string
-          response_text?: string | null
-          task_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_completions_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_completions_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tasks: {
-        Row: {
-          created_at: string
-          description: string | null
-          due_date: string | null
-          id: string
-          patient_id: string
-          professional_id: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          patient_id: string
-          professional_id: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          patient_id?: string
-          professional_id?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tasks_patient_id_fkey"
-            columns: ["patient_id"]
-            isOneToOne: false
-            referencedRelation: "patients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tasks_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Views: {
-      v_ingresos_fiscales: {
-        Row: {
-          base_cents: number | null
-          cuota_iva_cents: number | null
-          fecha: string | null
-          id: string | null
-          nombre_pagador: string | null
-          professional_id: string | null
-          retencion_aplicable: boolean | null
-          tipo_operacion: string | null
-          total_cents: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payments_professional_id_fkey"
-            columns: ["professional_id"]
-            isOneToOne: false
-            referencedRelation: "professionals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Functions: {
-      accept_invitation: { Args: { p_token: string }; Returns: string }
-      current_patient_id: { Args: never; Returns: string }
-      current_patient_professional_id: { Args: never; Returns: string }
-      current_professional_id: { Args: never; Returns: string }
-      ensure_consent_template: {
-        Args: { p_professional_id: string }
-        Returns: undefined
-      }
-      invitation_preview: {
-        Args: { p_token: string }
-        Returns: {
-          expires_at: string
-          professional_name: string
-          valid: boolean
-        }[]
-      }
-      patient_accept_consent: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      patient_respond_appointment: {
-        Args: { p_appointment_id: string; p_action: string }
-        Returns: undefined
-      }
-      professional_owns_patient: {
-        Args: { p_patient_id: string }
-        Returns: boolean
-      }
-    }
-    Enums: {
-      appointment_status: "scheduled" | "confirmed" | "cancelled" | "completed"
-      assignment_type: "one_off" | "recurring"
-      attendance_status: "pending" | "attended" | "no_show" | "late_cancel"
-      notification_channel: "push" | "email"
-      notification_status: "queued" | "sent" | "failed" | "read"
-      patient_status: "active" | "archived"
-      payment_status: "pending" | "paid"
-      recurrence_freq: "none" | "daily" | "weekly" | "biweekly" | "monthly"
-      resource_kind: "pdf" | "audio" | "link"
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
-
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  public: {
-    Enums: {
-      appointment_status: ["scheduled", "confirmed", "cancelled", "completed"],
-      assignment_type: ["one_off", "recurring"],
-      attendance_status: ["pending", "attended", "no_show", "late_cancel"],
-      notification_channel: ["push", "email"],
-      notification_status: ["queued", "sent", "failed", "read"],
-      patient_status: ["active", "archived"],
-      payment_status: ["pending", "paid"],
-      recurrence_freq: ["none", "daily", "weekly", "biweekly", "monthly"],
-      resource_kind: ["pdf", "audio", "link"],
-    },
-  },
-} as const
+// Generado con npm run gen:types:embedded. Validar además contra Supabase aislado.
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Database = { __InternalSupabase: { PostgrestVersion: "14.5" }; public: {
+Tables: {
+"agenda_blocks": {
+Row: {
+"id": string;
+"professional_id": string;
+"starts_at": string;
+"ends_at": string;
+"reason": string | null;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"starts_at": string;
+"ends_at": string;
+"reason"?: string | null;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"starts_at"?: string;
+"ends_at"?: string;
+"reason"?: string | null;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "agenda_blocks_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"appointments": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"starts_at": string;
+"ends_at": string;
+"status": Database["public"]["Enums"]["appointment_status"];
+"attendance": Database["public"]["Enums"]["attendance_status"];
+"video_link": string | null;
+"recurrence_freq": Database["public"]["Enums"]["recurrence_freq"];
+"recurrence_until": string | null;
+"parent_appointment_id": string | null;
+"notes": string | null;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"starts_at": string;
+"ends_at": string;
+"status"?: Database["public"]["Enums"]["appointment_status"];
+"attendance"?: Database["public"]["Enums"]["attendance_status"];
+"video_link"?: string | null;
+"recurrence_freq"?: Database["public"]["Enums"]["recurrence_freq"];
+"recurrence_until"?: string | null;
+"parent_appointment_id"?: string | null;
+"notes"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"starts_at"?: string;
+"ends_at"?: string;
+"status"?: Database["public"]["Enums"]["appointment_status"];
+"attendance"?: Database["public"]["Enums"]["attendance_status"];
+"video_link"?: string | null;
+"recurrence_freq"?: Database["public"]["Enums"]["recurrence_freq"];
+"recurrence_until"?: string | null;
+"parent_appointment_id"?: string | null;
+"notes"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "appointments_parent_appointment_id_fkey"; columns: ["parent_appointment_id"]; isOneToOne: false; referencedRelation: "appointments"; referencedColumns: ["id"] },{ foreignKeyName: "appointments_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "appointments_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"bienes_inversion": {
+Row: {
+"id": string;
+"professional_id": string;
+"gasto_id": string | null;
+"descripcion": string;
+"fecha_adquisicion": string;
+"valor_adquisicion_cents": number;
+"porcentaje_amortizacion": number;
+"anios_amortizacion": number | null;
+"created_at": string;
+"fiscal_review_required": boolean;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"gasto_id"?: string | null;
+"descripcion": string;
+"fecha_adquisicion": string;
+"valor_adquisicion_cents": number;
+"porcentaje_amortizacion": number;
+"anios_amortizacion"?: number | null;
+"created_at"?: string;
+"fiscal_review_required"?: boolean;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"gasto_id"?: string | null;
+"descripcion"?: string;
+"fecha_adquisicion"?: string;
+"valor_adquisicion_cents"?: number;
+"porcentaje_amortizacion"?: number;
+"anios_amortizacion"?: number | null;
+"created_at"?: string;
+"fiscal_review_required"?: boolean;
+};
+Relationships: [{ foreignKeyName: "bienes_gasto_owner_fk"; columns: ["gasto_id","professional_id"]; isOneToOne: false; referencedRelation: "gastos"; referencedColumns: ["id","professional_id"] },{ foreignKeyName: "bienes_inversion_gasto_id_fkey"; columns: ["gasto_id"]; isOneToOne: false; referencedRelation: "gastos"; referencedColumns: ["id"] },{ foreignKeyName: "bienes_inversion_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"configuracion_fiscal": {
+Row: {
+"id": string;
+"professional_id": string;
+"regimen": string;
+"situacion_iva": string;
+"epigrafe_iae": string | null;
+"fecha_alta_actividad": string | null;
+"aplica_retencion_default": boolean;
+"created_at": string;
+"updated_at": string;
+"tipo_iva_repercutido": number;
+"prorrata_iva_pct": number | null;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"regimen"?: string;
+"situacion_iva"?: string;
+"epigrafe_iae"?: string | null;
+"fecha_alta_actividad"?: string | null;
+"aplica_retencion_default"?: boolean;
+"created_at"?: string;
+"updated_at"?: string;
+"tipo_iva_repercutido"?: number;
+"prorrata_iva_pct"?: number | null;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"regimen"?: string;
+"situacion_iva"?: string;
+"epigrafe_iae"?: string | null;
+"fecha_alta_actividad"?: string | null;
+"aplica_retencion_default"?: boolean;
+"created_at"?: string;
+"updated_at"?: string;
+"tipo_iva_repercutido"?: number;
+"prorrata_iva_pct"?: number | null;
+};
+Relationships: [{ foreignKeyName: "configuracion_fiscal_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"consent_templates": {
+Row: {
+"id": string;
+"professional_id": string;
+"title": string;
+"body": string;
+"version": number;
+"active": boolean;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"title": string;
+"body": string;
+"version"?: number;
+"active"?: boolean;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"title"?: string;
+"body"?: string;
+"version"?: number;
+"active"?: boolean;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "consent_templates_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"consents": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"template_id": string | null;
+"template_version": number | null;
+"accepted": boolean;
+"content_hash": string | null;
+"signed_at": string | null;
+"created_at": string;
+"content_body": string | null;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"template_id"?: string | null;
+"template_version"?: number | null;
+"accepted"?: boolean;
+"content_hash"?: string | null;
+"signed_at"?: string | null;
+"created_at"?: string;
+"content_body"?: string | null;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"template_id"?: string | null;
+"template_version"?: number | null;
+"accepted"?: boolean;
+"content_hash"?: string | null;
+"signed_at"?: string | null;
+"created_at"?: string;
+"content_body"?: string | null;
+};
+Relationships: [{ foreignKeyName: "consents_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "consents_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "consents_template_id_fkey"; columns: ["template_id"]; isOneToOne: false; referencedRelation: "consent_templates"; referencedColumns: ["id"] }];
+};
+"device_push_tokens": {
+Row: {
+"id": string;
+"user_id": string;
+"platform": string;
+"token": string;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"user_id": string;
+"platform": string;
+"token": string;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"user_id"?: string;
+"platform"?: string;
+"token"?: string;
+"created_at"?: string;
+};
+Relationships: [];
+};
+"documents": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"title": string | null;
+"storage_path": string;
+"uploaded_by": string | null;
+"created_at": string;
+"shared_with_patient": boolean;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"title"?: string | null;
+"storage_path": string;
+"uploaded_by"?: string | null;
+"created_at"?: string;
+"shared_with_patient"?: boolean;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"title"?: string | null;
+"storage_path"?: string;
+"uploaded_by"?: string | null;
+"created_at"?: string;
+"shared_with_patient"?: boolean;
+};
+Relationships: [{ foreignKeyName: "documents_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "documents_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"emergency_links": {
+Row: {
+"id": string;
+"professional_id": string | null;
+"label": string;
+"phone": string | null;
+"url": string | null;
+"description": string | null;
+"sort_order": number;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id"?: string | null;
+"label": string;
+"phone"?: string | null;
+"url"?: string | null;
+"description"?: string | null;
+"sort_order"?: number;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string | null;
+"label"?: string;
+"phone"?: string | null;
+"url"?: string | null;
+"description"?: string | null;
+"sort_order"?: number;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "emergency_links_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"gastos": {
+Row: {
+"id": string;
+"professional_id": string;
+"fecha": string;
+"proveedor_nombre": string | null;
+"proveedor_nif": string | null;
+"categoria_deducible": string;
+"concepto": string | null;
+"base_cents": number;
+"tipo_iva": number;
+"cuota_iva_cents": number;
+"total_cents": number;
+"porcentaje_afectacion": number;
+"es_bien_inversion": boolean;
+"adjunto_path": string | null;
+"created_at": string;
+"updated_at": string;
+"iva_recuperable_pct": number | null;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"fecha": string;
+"proveedor_nombre"?: string | null;
+"proveedor_nif"?: string | null;
+"categoria_deducible": string;
+"concepto"?: string | null;
+"base_cents": number;
+"tipo_iva"?: number;
+"cuota_iva_cents"?: number;
+"total_cents": number;
+"porcentaje_afectacion"?: number;
+"es_bien_inversion"?: boolean;
+"adjunto_path"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+"iva_recuperable_pct"?: number | null;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"fecha"?: string;
+"proveedor_nombre"?: string | null;
+"proveedor_nif"?: string | null;
+"categoria_deducible"?: string;
+"concepto"?: string | null;
+"base_cents"?: number;
+"tipo_iva"?: number;
+"cuota_iva_cents"?: number;
+"total_cents"?: number;
+"porcentaje_afectacion"?: number;
+"es_bien_inversion"?: boolean;
+"adjunto_path"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+"iva_recuperable_pct"?: number | null;
+};
+Relationships: [{ foreignKeyName: "gastos_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"invitations": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"email": string | null;
+"expires_at": string;
+"accepted_at": string | null;
+"created_at": string;
+"token_hash": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"email"?: string | null;
+"expires_at"?: string;
+"accepted_at"?: string | null;
+"created_at"?: string;
+"token_hash": string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"email"?: string | null;
+"expires_at"?: string;
+"accepted_at"?: string | null;
+"created_at"?: string;
+"token_hash"?: string;
+};
+Relationships: [{ foreignKeyName: "invitations_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "invitations_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"mood_entries": {
+Row: {
+"id": string;
+"patient_id": string;
+"mood_value": number;
+"note": string | null;
+"entry_date": string;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"patient_id": string;
+"mood_value": number;
+"note"?: string | null;
+"entry_date"?: string;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"patient_id"?: string;
+"mood_value"?: number;
+"note"?: string | null;
+"entry_date"?: string;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "mood_entries_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] }];
+};
+"notification_deliveries": {
+Row: {
+"notification_id": string;
+"subscription_id": string;
+"sent_at": string;
+};
+Insert: {
+"notification_id": string;
+"subscription_id": string;
+"sent_at"?: string;
+};
+Update: {
+"notification_id"?: string;
+"subscription_id"?: string;
+"sent_at"?: string;
+};
+Relationships: [{ foreignKeyName: "notification_deliveries_notification_id_fkey"; columns: ["notification_id"]; isOneToOne: false; referencedRelation: "notifications"; referencedColumns: ["id"] },{ foreignKeyName: "notification_deliveries_subscription_id_fkey"; columns: ["subscription_id"]; isOneToOne: false; referencedRelation: "push_subscriptions"; referencedColumns: ["id"] }];
+};
+"notification_preferences": {
+Row: {
+"user_id": string;
+"appointment_reminders": boolean;
+"new_appointment": boolean;
+"new_task": boolean;
+"new_scale": boolean;
+"email_fallback": boolean;
+"updated_at": string;
+};
+Insert: {
+"user_id": string;
+"appointment_reminders"?: boolean;
+"new_appointment"?: boolean;
+"new_task"?: boolean;
+"new_scale"?: boolean;
+"email_fallback"?: boolean;
+"updated_at"?: string;
+};
+Update: {
+"user_id"?: string;
+"appointment_reminders"?: boolean;
+"new_appointment"?: boolean;
+"new_task"?: boolean;
+"new_scale"?: boolean;
+"email_fallback"?: boolean;
+"updated_at"?: string;
+};
+Relationships: [];
+};
+"notifications": {
+Row: {
+"id": string;
+"user_id": string;
+"professional_id": string | null;
+"patient_id": string | null;
+"channel": Database["public"]["Enums"]["notification_channel"];
+"type": string | null;
+"title": string | null;
+"body": string | null;
+"payload": Json | null;
+"status": Database["public"]["Enums"]["notification_status"];
+"scheduled_for": string | null;
+"sent_at": string | null;
+"read_at": string | null;
+"created_at": string;
+"retry_count": number;
+"next_attempt_at": string | null;
+"lock_token": string | null;
+"locked_until": string | null;
+"dedupe_key": string | null;
+};
+Insert: {
+"id"?: string;
+"user_id": string;
+"professional_id"?: string | null;
+"patient_id"?: string | null;
+"channel"?: Database["public"]["Enums"]["notification_channel"];
+"type"?: string | null;
+"title"?: string | null;
+"body"?: string | null;
+"payload"?: Json | null;
+"status"?: Database["public"]["Enums"]["notification_status"];
+"scheduled_for"?: string | null;
+"sent_at"?: string | null;
+"read_at"?: string | null;
+"created_at"?: string;
+"retry_count"?: number;
+"next_attempt_at"?: string | null;
+"lock_token"?: string | null;
+"locked_until"?: string | null;
+"dedupe_key"?: string | null;
+};
+Update: {
+"id"?: string;
+"user_id"?: string;
+"professional_id"?: string | null;
+"patient_id"?: string | null;
+"channel"?: Database["public"]["Enums"]["notification_channel"];
+"type"?: string | null;
+"title"?: string | null;
+"body"?: string | null;
+"payload"?: Json | null;
+"status"?: Database["public"]["Enums"]["notification_status"];
+"scheduled_for"?: string | null;
+"sent_at"?: string | null;
+"read_at"?: string | null;
+"created_at"?: string;
+"retry_count"?: number;
+"next_attempt_at"?: string | null;
+"lock_token"?: string | null;
+"locked_until"?: string | null;
+"dedupe_key"?: string | null;
+};
+Relationships: [{ foreignKeyName: "notifications_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "notifications_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"patient_notes": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"body": string;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"body": string;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"body"?: string;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "patient_notes_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "patient_notes_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"patients": {
+Row: {
+"id": string;
+"professional_id": string;
+"user_id": string | null;
+"full_name": string | null;
+"email": string | null;
+"status": Database["public"]["Enums"]["patient_status"];
+"tags": (string)[];
+"created_at": string;
+"updated_at": string;
+"phone": string | null;
+"birth_date": string | null;
+"address": string | null;
+"profession": string | null;
+"emergency_contact": string | null;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"user_id"?: string | null;
+"full_name"?: string | null;
+"email"?: string | null;
+"status"?: Database["public"]["Enums"]["patient_status"];
+"tags"?: (string)[];
+"created_at"?: string;
+"updated_at"?: string;
+"phone"?: string | null;
+"birth_date"?: string | null;
+"address"?: string | null;
+"profession"?: string | null;
+"emergency_contact"?: string | null;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"user_id"?: string | null;
+"full_name"?: string | null;
+"email"?: string | null;
+"status"?: Database["public"]["Enums"]["patient_status"];
+"tags"?: (string)[];
+"created_at"?: string;
+"updated_at"?: string;
+"phone"?: string | null;
+"birth_date"?: string | null;
+"address"?: string | null;
+"profession"?: string | null;
+"emergency_contact"?: string | null;
+};
+Relationships: [{ foreignKeyName: "patients_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"payment_settings": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string | null;
+"session_type": string;
+"price_cents": number;
+"currency": string;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id"?: string | null;
+"session_type"?: string;
+"price_cents": number;
+"currency"?: string;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string | null;
+"session_type"?: string;
+"price_cents"?: number;
+"currency"?: string;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "payment_settings_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "payment_settings_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"payments": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"appointment_id": string | null;
+"session_pack_id": string | null;
+"amount_cents": number;
+"currency": string;
+"status": Database["public"]["Enums"]["payment_status"];
+"method": string | null;
+"paid_at": string | null;
+"note": string | null;
+"created_at": string;
+"updated_at": string;
+"fecha_efectiva": string | null;
+"fiscal_snapshot": Json | null;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"appointment_id"?: string | null;
+"session_pack_id"?: string | null;
+"amount_cents": number;
+"currency"?: string;
+"status"?: Database["public"]["Enums"]["payment_status"];
+"method"?: string | null;
+"paid_at"?: string | null;
+"note"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+"fecha_efectiva"?: never;
+"fiscal_snapshot"?: Json | null;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"appointment_id"?: string | null;
+"session_pack_id"?: string | null;
+"amount_cents"?: number;
+"currency"?: string;
+"status"?: Database["public"]["Enums"]["payment_status"];
+"method"?: string | null;
+"paid_at"?: string | null;
+"note"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+"fecha_efectiva"?: never;
+"fiscal_snapshot"?: Json | null;
+};
+Relationships: [{ foreignKeyName: "payments_appointment_owner_fk"; columns: ["appointment_id","professional_id","patient_id"]; isOneToOne: false; referencedRelation: "appointments"; referencedColumns: ["id","professional_id","patient_id"] },{ foreignKeyName: "payments_pack_owner_fk"; columns: ["session_pack_id","professional_id","patient_id"]; isOneToOne: false; referencedRelation: "session_packs"; referencedColumns: ["id","professional_id","patient_id"] },{ foreignKeyName: "payments_patient_owner_fk"; columns: ["patient_id","professional_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id","professional_id"] },{ foreignKeyName: "payments_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"pending_uploads": {
+Row: {
+"path": string;
+"bucket": string;
+"professional_id": string;
+"patient_id": string | null;
+"size_bytes": number;
+"mime": string;
+"created_at": string;
+};
+Insert: {
+"path": string;
+"bucket": string;
+"professional_id": string;
+"patient_id"?: string | null;
+"size_bytes": number;
+"mime": string;
+"created_at"?: string;
+};
+Update: {
+"path"?: string;
+"bucket"?: string;
+"professional_id"?: string;
+"patient_id"?: string | null;
+"size_bytes"?: number;
+"mime"?: string;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "pending_uploads_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "pending_uploads_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"professionals": {
+Row: {
+"id": string;
+"user_id": string;
+"full_name": string | null;
+"email": string | null;
+"created_at": string;
+"updated_at": string;
+"deleted_at": string | null;
+};
+Insert: {
+"id"?: string;
+"user_id": string;
+"full_name"?: string | null;
+"email"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+"deleted_at"?: string | null;
+};
+Update: {
+"id"?: string;
+"user_id"?: string;
+"full_name"?: string | null;
+"email"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+"deleted_at"?: string | null;
+};
+Relationships: [];
+};
+"push_subscriptions": {
+Row: {
+"id": string;
+"user_id": string;
+"endpoint": string;
+"p256dh": string;
+"auth": string;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"user_id": string;
+"endpoint": string;
+"p256dh": string;
+"auth": string;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"user_id"?: string;
+"endpoint"?: string;
+"p256dh"?: string;
+"auth"?: string;
+"created_at"?: string;
+};
+Relationships: [];
+};
+"resources": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string | null;
+"title": string;
+"kind": Database["public"]["Enums"]["resource_kind"];
+"url": string | null;
+"storage_path": string | null;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id"?: string | null;
+"title": string;
+"kind"?: Database["public"]["Enums"]["resource_kind"];
+"url"?: string | null;
+"storage_path"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string | null;
+"title"?: string;
+"kind"?: Database["public"]["Enums"]["resource_kind"];
+"url"?: string | null;
+"storage_path"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "resources_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "resources_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"scale_assignments": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"scale_id": string;
+"assignment_type": Database["public"]["Enums"]["assignment_type"];
+"recurrence_interval_days": number | null;
+"starts_on": string;
+"ends_on": string | null;
+"active": boolean;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"scale_id": string;
+"assignment_type"?: Database["public"]["Enums"]["assignment_type"];
+"recurrence_interval_days"?: number | null;
+"starts_on"?: string;
+"ends_on"?: string | null;
+"active"?: boolean;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"scale_id"?: string;
+"assignment_type"?: Database["public"]["Enums"]["assignment_type"];
+"recurrence_interval_days"?: number | null;
+"starts_on"?: string;
+"ends_on"?: string | null;
+"active"?: boolean;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "scale_assignments_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "scale_assignments_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "scale_assignments_scale_id_fkey"; columns: ["scale_id"]; isOneToOne: false; referencedRelation: "scales"; referencedColumns: ["id"] }];
+};
+"scale_responses": {
+Row: {
+"id": string;
+"assignment_id": string;
+"patient_id": string;
+"scale_id": string;
+"answers": Json;
+"score": number | null;
+"severity": string | null;
+"flagged": boolean;
+"submitted_at": string;
+"created_at": string;
+"acknowledged_at": string | null;
+"acknowledged_by": string | null;
+};
+Insert: {
+"id"?: string;
+"assignment_id": string;
+"patient_id": string;
+"scale_id": string;
+"answers": Json;
+"score"?: number | null;
+"severity"?: string | null;
+"flagged"?: boolean;
+"submitted_at"?: string;
+"created_at"?: string;
+"acknowledged_at"?: string | null;
+"acknowledged_by"?: string | null;
+};
+Update: {
+"id"?: string;
+"assignment_id"?: string;
+"patient_id"?: string;
+"scale_id"?: string;
+"answers"?: Json;
+"score"?: number | null;
+"severity"?: string | null;
+"flagged"?: boolean;
+"submitted_at"?: string;
+"created_at"?: string;
+"acknowledged_at"?: string | null;
+"acknowledged_by"?: string | null;
+};
+Relationships: [{ foreignKeyName: "scale_responses_acknowledged_by_fkey"; columns: ["acknowledged_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "scale_responses_assignment_id_fkey"; columns: ["assignment_id"]; isOneToOne: false; referencedRelation: "scale_assignments"; referencedColumns: ["id"] },{ foreignKeyName: "scale_responses_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "scale_responses_scale_id_fkey"; columns: ["scale_id"]; isOneToOne: false; referencedRelation: "scales"; referencedColumns: ["id"] }];
+};
+"scales": {
+Row: {
+"id": string;
+"code": string;
+"version": number;
+"name": string;
+"description": string | null;
+"definition": Json;
+"is_active": boolean;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"code": string;
+"version"?: number;
+"name": string;
+"description"?: string | null;
+"definition": Json;
+"is_active"?: boolean;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"code"?: string;
+"version"?: number;
+"name"?: string;
+"description"?: string | null;
+"definition"?: Json;
+"is_active"?: boolean;
+"created_at"?: string;
+};
+Relationships: [];
+};
+"session_packs": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"total_sessions": number;
+"used_sessions": number;
+"price_cents": number | null;
+"currency": string;
+"active": boolean;
+"purchased_at": string;
+"created_at": string;
+"updated_at": string;
+"request_id": string | null;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"total_sessions": number;
+"used_sessions"?: number;
+"price_cents"?: number | null;
+"currency"?: string;
+"active"?: boolean;
+"purchased_at"?: string;
+"created_at"?: string;
+"updated_at"?: string;
+"request_id"?: string | null;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"total_sessions"?: number;
+"used_sessions"?: number;
+"price_cents"?: number | null;
+"currency"?: string;
+"active"?: boolean;
+"purchased_at"?: string;
+"created_at"?: string;
+"updated_at"?: string;
+"request_id"?: string | null;
+};
+Relationships: [{ foreignKeyName: "session_packs_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "session_packs_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"storage_cleanup_jobs": {
+Row: {
+"id": string;
+"bucket": string;
+"path": string;
+"created_at": string;
+"available_at": string;
+};
+Insert: {
+"id"?: string;
+"bucket": string;
+"path": string;
+"created_at"?: string;
+"available_at"?: string;
+};
+Update: {
+"id"?: string;
+"bucket"?: string;
+"path"?: string;
+"created_at"?: string;
+"available_at"?: string;
+};
+Relationships: [];
+};
+"task_completions": {
+Row: {
+"id": string;
+"task_id": string;
+"patient_id": string;
+"response_text": string | null;
+"completed_at": string;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"task_id": string;
+"patient_id": string;
+"response_text"?: string | null;
+"completed_at"?: string;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"task_id"?: string;
+"patient_id"?: string;
+"response_text"?: string | null;
+"completed_at"?: string;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "task_completions_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "task_completions_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] }];
+};
+"tasks": {
+Row: {
+"id": string;
+"professional_id": string;
+"patient_id": string;
+"title": string;
+"description": string | null;
+"due_date": string | null;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"patient_id": string;
+"title": string;
+"description"?: string | null;
+"due_date"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"patient_id"?: string;
+"title"?: string;
+"description"?: string | null;
+"due_date"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "tasks_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "tasks_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+};
+Views: {
+"v_ingresos_fiscales": {
+Row: {
+"id": string | null;
+"professional_id": string | null;
+"fecha": string | null;
+"total_cents": number | null;
+"tipo_operacion": string | null;
+"base_cents": number | null;
+"cuota_iva_cents": number | null;
+"retencion_aplicable": boolean | null;
+"retencion_cents": number | null;
+"nombre_pagador": string | null;
+"fiscal_review_required": boolean | null;
+};
+Relationships: [];
+};
+};
+Functions: {
+"accept_invitation": { Args: {"p_token": string | null}; Returns: string };
+"change_appointment": { Args: {"p_id": string | null;"p_attendance"?: string | null;"p_action"?: string | null}; Returns: string };
+"claim_notifications": { Args: {"p_token": string | null;"p_limit"?: number | null}; Returns: (Database["public"]["Tables"]["notifications"]["Row"])[] };
+"complete_onboarding": { Args: {"p_token": string | null;"p_template_id": string | null;"p_content_hash": string | null}; Returns: string };
+"complete_patient_task": { Args: {"p_id": string | null;"p_response"?: string | null}; Returns: string };
+"create_session_pack": { Args: {"p_patient_id": string | null;"p_total_sessions": number | null;"p_price_cents": number | null;"p_request_id": string | null}; Returns: string };
+"current_patient_id": { Args: Record<PropertyKey, never>; Returns: string };
+"current_patient_professional_id": { Args: Record<PropertyKey, never>; Returns: string };
+"current_professional_id": { Args: Record<PropertyKey, never>; Returns: string };
+"delete_expense": { Args: {"p_id": string | null}; Returns: string };
+"ensure_consent_template": { Args: {"p_professional_id": string | null}; Returns: undefined };
+"get_onboarding_consent": { Args: {"p_token"?: string | null}; Returns: Json };
+"has_current_consent": { Args: Record<PropertyKey, never>; Returns: boolean };
+"invitation_preview": { Args: {"p_token": string | null}; Returns: ({"valid": boolean;"professional_name": string;"expires_at": string})[] };
+"issue_invitation": { Args: {"p_patient_id": string | null;"p_token_hash": string | null}; Returns: string };
+"mark_notification_read": { Args: {"p_id": string | null}; Returns: undefined };
+"patient_accept_consent": { Args: Record<PropertyKey, never>; Returns: string };
+"patient_respond_appointment": { Args: {"p_appointment_id": string | null;"p_action": string | null}; Returns: undefined };
+"professional_owns_patient": { Args: {"p_patient_id": string | null}; Returns: boolean };
+"queue_appointment_reminders": { Args: Record<PropertyKey, never>; Returns: number };
+"save_expense": { Args: {"p_id": string | null;"p_data": Json | null;"p_replace_receipt"?: boolean | null}; Returns: string };
+"set_payment_fiscal": { Args: {"p_id": string | null;"p_tipo": string | null;"p_iva": number | null;"p_retencion_cents": number | null}; Returns: undefined };
+"settle_attended_appointment": { Args: {"p_appointment_id": string | null}; Returns: undefined };
+"unsettle_appointment": { Args: {"p_appointment_id": string | null}; Returns: string };
+"valid_push_endpoint": { Args: {"v": string | null}; Returns: boolean };
+}; Enums: {"appointment_status": "scheduled" | "confirmed" | "cancelled" | "completed";"assignment_type": "one_off" | "recurring";"attendance_status": "pending" | "attended" | "no_show" | "late_cancel";"notification_channel": "push" | "email";"notification_status": "queued" | "sent" | "failed" | "read";"patient_status": "active" | "archived";"payment_status": "pending" | "paid";"recurrence_freq": "none" | "daily" | "weekly" | "biweekly" | "monthly";"resource_kind": "pdf" | "audio" | "link"}; CompositeTypes: Record<never,never>; }; };
+type Schema = Database["public"];
+export type Tables<T extends keyof (Schema["Tables"] & Schema["Views"])> = (Schema["Tables"] & Schema["Views"])[T]["Row"];
+export type TablesInsert<T extends keyof Schema["Tables"]> = Schema["Tables"][T]["Insert"];
+export type TablesUpdate<T extends keyof Schema["Tables"]> = Schema["Tables"][T]["Update"];
+export type Enums<T extends keyof Schema["Enums"]> = Schema["Enums"][T];
+export type CompositeTypes = Record<never,never>;
+export const Constants = {"public":{"Enums":{"appointment_status":["scheduled","confirmed","cancelled","completed"],"assignment_type":["one_off","recurring"],"attendance_status":["pending","attended","no_show","late_cancel"],"notification_channel":["push","email"],"notification_status":["queued","sent","failed","read"],"patient_status":["active","archived"],"payment_status":["pending","paid"],"recurrence_freq":["none","daily","weekly","biweekly","monthly"],"resource_kind":["pdf","audio","link"]}}} as const;

@@ -1,7 +1,7 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { CalendarDays } from "lucide-react";
 import {
   createTaskAction,
@@ -9,6 +9,7 @@ import {
   deleteTaskAction,
 } from "@/lib/actions/tasks";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { useAction } from "@/lib/use-action";
 import { Status } from "@/components/ui/Status";
 import type { TaskWithCompletion } from "@/lib/queries/tasks";
 
@@ -16,61 +17,50 @@ type Draft = { title: string; description: string; dueDate: string };
 
 const EMPTY: Draft = { title: "", description: "", dueDate: "" };
 
-/** Fecha local en formato YYYY-MM-DD (comparable con `due_date` de la BD). */
-function localDayISO(offsetDays = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
+/**
+ * `today` y `soon` llegan resueltos desde el server component (`todayYMD()` en
+ * la zona del profesional). Antes se calculaban tras montar con un `setState`
+ * dentro de un efecto: además de provocar un parpadeo, el React Compiler lo
+ * prohíbe por las cascadas de render que genera.
+ */
 export function TasksPanel({
   patientId,
   tasks,
+  today,
+  soon,
 }: {
   patientId: string;
   tasks: TaskWithCompletion[];
+  /** Hoy en la zona del profesional, 'YYYY-MM-DD'. */
+  today: string;
+  /** Hoy + 2 días: umbral de "vence pronto". */
+  soon: string;
 }) {
   const [creating, setCreating] = useState<Draft>(EMPTY);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Draft>(EMPTY);
-  const [pending, startTransition] = useTransition();
-  const router = useRouter();
-
-  // "Hoy"/"pronto" se resuelven tras montar para no romper la hidratación
-  // (servidor y cliente pueden estar en husos/días distintos).
-  const [now, setNow] = useState<{ today: string; soon: string } | null>(null);
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      if (!active) return;
-      setNow({ today: localDayISO(), soon: localDayISO(2) });
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { run, pending, error } = useAction();
 
   /** Color de la etiqueta de fecha según urgencia (solo tareas pendientes). */
   function dueTone(t: TaskWithCompletion): string {
-    if (!t.due_date || t.completed || !now) return "";
-    if (t.due_date < now.today) return "bg-danger-soft text-danger";
-    if (t.due_date <= now.soon) return "bg-warn-soft text-warn";
+    if (!t.due_date || t.completed) return "";
+    if (t.due_date < today) return "bg-danger-soft text-danger";
+    if (t.due_date <= soon) return "bg-warn-soft text-warn";
     return "";
   }
 
   function create() {
     if (!creating.title.trim()) return;
-    startTransition(async () => {
-      await createTaskAction({
-        patientId,
-        title: creating.title,
-        description: creating.description,
-        dueDate: creating.dueDate || null,
-      });
-      setCreating(EMPTY);
-      router.refresh();
-    });
+    run(
+      () =>
+        callAction(createTaskAction, {
+          patientId,
+          title: creating.title,
+          description: creating.description,
+          dueDate: creating.dueDate || null,
+        }),
+      () => setCreating(EMPTY),
+    );
   }
 
   function startEdit(t: TaskWithCompletion) {
@@ -84,24 +74,21 @@ export function TasksPanel({
 
   function saveEdit() {
     if (!editDraft.title.trim() || !editingId) return;
-    startTransition(async () => {
-      await updateTaskAction({
-        taskId: editingId,
-        patientId,
-        title: editDraft.title,
-        description: editDraft.description,
-        dueDate: editDraft.dueDate || null,
-      });
-      setEditingId(null);
-      router.refresh();
-    });
+    run(
+      () =>
+        callAction(updateTaskAction, {
+          taskId: editingId,
+          patientId,
+          title: editDraft.title,
+          description: editDraft.description,
+          dueDate: editDraft.dueDate || null,
+        }),
+      () => setEditingId(null),
+    );
   }
 
   function remove(id: string) {
-    startTransition(async () => {
-      await deleteTaskAction(id, patientId);
-      router.refresh();
-    });
+    run(() => callAction(deleteTaskAction, id, patientId));
   }
 
   return (
@@ -110,21 +97,29 @@ export function TasksPanel({
       <div className="card bg-panel p-4">
         <h3 className="section-label">Nueva tarea</h3>
         <div className="mt-3 flex flex-col gap-2">
-          <input
-            value={creating.title}
-            onChange={(e) => setCreating({ ...creating, title: e.target.value })}
-            placeholder="Título"
-            className="field"
-          />
-          <textarea
-            value={creating.description}
-            onChange={(e) =>
-              setCreating({ ...creating, description: e.target.value })
-            }
-            placeholder="Descripción (opcional)"
-            rows={2}
-            className="field"
-          />
+          <label className="block">
+            <span className="field-label">Título</span>
+            <input
+              value={creating.title}
+              onChange={(e) =>
+                setCreating({ ...creating, title: e.target.value })
+              }
+              placeholder="Título"
+              className="field"
+            />
+          </label>
+          <label className="block">
+            <span className="field-label">Descripción (opcional)</span>
+            <textarea
+              value={creating.description}
+              onChange={(e) =>
+                setCreating({ ...creating, description: e.target.value })
+              }
+              placeholder="Descripción (opcional)"
+              rows={2}
+              className="field"
+            />
+          </label>
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-xs font-medium text-ink-2">
               Fecha límite
@@ -149,6 +144,8 @@ export function TasksPanel({
         </div>
       </div>
 
+      {error && <p className="text-sm text-danger">{error}</p>}
+
       {/* Lista */}
       {tasks.length === 0 ? (
         <p className="text-sm text-ink-2">No hay tareas asignadas.</p>
@@ -163,6 +160,7 @@ export function TasksPanel({
                     onChange={(e) =>
                       setEditDraft({ ...editDraft, title: e.target.value })
                     }
+                    aria-label="Título de la tarea"
                     className="field"
                   />
                   <textarea
@@ -171,6 +169,7 @@ export function TasksPanel({
                       setEditDraft({ ...editDraft, description: e.target.value })
                     }
                     rows={2}
+                    aria-label="Descripción de la tarea"
                     className="field"
                   />
                   <div className="flex flex-wrap items-center gap-2">
@@ -180,6 +179,7 @@ export function TasksPanel({
                       onChange={(e) =>
                         setEditDraft({ ...editDraft, dueDate: e.target.value })
                       }
+                      aria-label="Fecha límite"
                       className="field w-auto px-2 py-1"
                     />
                     <button
@@ -226,7 +226,7 @@ export function TasksPanel({
                           <CalendarDays className="size-3.5" />
                           <span className="text-ink-3">Límite</span>
                           {formatDate(t.due_date)}
-                          {!t.completed && now && t.due_date < now.today && (
+                          {!t.completed && t.due_date < today && (
                             <span className="font-semibold">· vencida</span>
                           )}
                         </span>
@@ -246,7 +246,7 @@ export function TasksPanel({
                       </p>
                     )}
                   </div>
-                  <div className="flex shrink-0 gap-1 opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100">
+                  <div className="flex shrink-0 gap-1 opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                     <button
                       type="button"
                       onClick={() => startEdit(t)}

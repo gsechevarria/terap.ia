@@ -1,3 +1,6 @@
+import { ActionInputError } from "@/lib/action-result";
+import { getUserRole } from "@/lib/auth/roles";
+import { checked } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import type { Patient, Professional } from "@/lib/types";
 
@@ -13,13 +16,14 @@ export async function getCurrentProfessional(): Promise<Pick<
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user || getUserRole(user) !== "professional") return null;
 
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("professionals")
     .select("id, user_id, full_name, email")
     .eq("user_id", user.id)
-    .maybeSingle();
+    .is("deleted_at", null)
+    .maybeSingle());
 
   return data ?? null;
 }
@@ -38,11 +42,63 @@ export async function getCurrentPatient(): Promise<Pick<
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("patients")
     .select("id, professional_id, full_name, user_id")
     .eq("user_id", user.id)
-    .maybeSingle();
+    .maybeSingle());
 
   return data ?? null;
+}
+
+export type OwnedPatient = {
+  id: string;
+  email: string | null;
+  user_id: string | null;
+  full_name: string | null;
+};
+
+/**
+ * Profesional autenticado, o error.
+ *
+ * Usarlo en toda server action del área `/pro`: las server actions son
+ * endpoints HTTP públicos, invocables sin pasar por ninguna página.
+ */
+export async function requireProfessional(): Promise<
+  NonNullable<Awaited<ReturnType<typeof getCurrentProfessional>>>
+> {
+  const pro = await getCurrentProfessional();
+  if (!pro) throw new ActionInputError("No autenticado.");
+  return pro;
+}
+
+/**
+ * Comprueba que `patientId` pertenece al profesional autenticado y devuelve
+ * ambos. Lanza si no.
+ *
+ * El filtro por `professional_id` es explícito y no se apoya solo en la RLS: un
+ * UUID de paciente no es un secreto (viaja como prop a componentes cliente, va
+ * en la URL `/pro/patients/<uuid>` y es el primer segmento de las rutas de
+ * Storage), así que cualquier action que acepte uno y no valide propiedad es
+ * una referencia directa a objeto insegura.
+ */
+export async function requireOwnedPatient(
+  patientId: string,
+): Promise<{
+  pro: NonNullable<Awaited<ReturnType<typeof getCurrentProfessional>>>;
+  patient: OwnedPatient;
+}> {
+  const pro = await requireProfessional();
+  if (!patientId) throw new ActionInputError("Falta el paciente.");
+
+  const supabase = await createClient();
+  const { data } = await checked(supabase
+    .from("patients")
+    .select("id, email, user_id, full_name")
+    .eq("id", patientId)
+    .eq("professional_id", pro.id)
+    .maybeSingle());
+
+  if (!data) throw new ActionInputError("Paciente no encontrado.");
+  return { pro, patient: data };
 }

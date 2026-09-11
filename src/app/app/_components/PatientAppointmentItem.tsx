@@ -1,9 +1,10 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { respondAppointmentAction } from "@/lib/actions/appointments";
 import { formatDateTime } from "@/lib/format";
+import { useAction } from "@/lib/use-action";
+import { safeExternalUrl } from "@/lib/url";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import type { Appointment } from "@/lib/types";
 
@@ -21,15 +22,11 @@ export function PatientAppointmentItem({
   appt: Appointment;
   canRespond: boolean;
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const { run, pending, error } = useAction();
   const cancelled = appt.status === "cancelled";
 
   function respond(action: "confirm" | "cancel") {
-    startTransition(async () => {
-      await respondAppointmentAction(appt.id, action);
-      router.refresh();
-    });
+    run(() => callAction(respondAppointmentAction, appt.id, action));
   }
 
   return (
@@ -43,9 +40,10 @@ export function PatientAppointmentItem({
         </Status>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-        {appt.video_link && (
+        {/* Defensa en profundidad: el esquema se valida también al guardar. */}
+        {safeExternalUrl(appt.video_link) && (
           <a
-            href={appt.video_link}
+            href={safeExternalUrl(appt.video_link)!}
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-accent hover:underline"
@@ -82,6 +80,7 @@ export function PatientAppointmentItem({
           </button>
         </div>
       )}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
     </li>
   );
 }

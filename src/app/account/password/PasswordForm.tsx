@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { authErrorMessage } from "@/lib/errors";
 import { getUserRole, homePathForRole } from "@/lib/auth/roles";
 
 export function PasswordForm() {
@@ -12,8 +13,8 @@ export function PasswordForm() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres.");
+    if (password.length < 12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^a-zA-Z0-9]/.test(password)) {
+      setError("La contraseña debe tener al menos 12 caracteres, con mayúscula, minúscula, número y símbolo.");
       return;
     }
     if (password !== confirm) {
@@ -23,20 +24,19 @@ export function PasswordForm() {
     setError("");
     setSaving(true);
 
+    try {
     const supabase = createClient();
     const { data, error: err } = await supabase.auth.updateUser({ password });
 
     if (err) {
       setSaving(false);
-      setError(
-        err.message.includes("different from the old")
-          ? "La nueva contraseña debe ser distinta de la actual."
-          : err.message,
-      );
+      setError(authErrorMessage(err));
       return;
     }
     const role = getUserRole(data.user);
     window.location.assign(role ? homePathForRole(role) : "/");
+    } catch (e) { setError(authErrorMessage(e)); }
+    finally { setSaving(false); }
   }
 
   return (
@@ -46,11 +46,11 @@ export function PasswordForm() {
         <input
           type="password"
           required
-          minLength={8}
+          minLength={12}
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Mínimo 8 caracteres"
+          placeholder="Mínimo 12 caracteres"
           className="field py-2 text-base"
         />
       </label>
@@ -59,7 +59,7 @@ export function PasswordForm() {
         <input
           type="password"
           required
-          minLength={8}
+          minLength={12}
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}

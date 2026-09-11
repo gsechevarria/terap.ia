@@ -1,3 +1,4 @@
+import { allRows } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import type { Task, TaskCompletion } from "@/lib/types";
 
@@ -11,19 +12,19 @@ export async function getTasksForPatient(
   patientId: string,
 ): Promise<TaskWithCompletion[]> {
   const supabase = await createClient();
-  const { data: tasks } = await supabase
+  const { data: tasks } = await allRows(supabase
     .from("tasks")
     .select("*")
     .eq("patient_id", patientId)
     .order("due_date", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false }));
   if (!tasks || tasks.length === 0) return [];
 
-  const { data: completions } = await supabase
+  const { data: completions } = await allRows(supabase
     .from("task_completions")
     .select("task_id, completed_at, response_text")
     .eq("patient_id", patientId)
-    .order("completed_at", { ascending: false });
+    .order("completed_at", { ascending: false }));
 
   const byTask = new Map<
     string,

@@ -1,11 +1,15 @@
+import { csvCell as safeCsvCell } from "@/lib/csv";
 import { type NextRequest } from "next/server";
 import * as XLSX from "xlsx";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { getFiscalArrays } from "@/lib/queries/contabilidad";
+import { getCurrentProfessional } from "@/lib/queries/identity";
 import {
   construirLibros,
   calcularResumenAnual,
   getParams,
+  hayParamsExactos,
+  EJERCICIO_MAS_RECIENTE,
   CATEGORIA_LABEL,
   DESCARGO_FISCAL,
   type CategoriaGasto,
@@ -26,7 +30,7 @@ function periodoLabel(f: FiltroPeriodo): string {
 function resumenFilas(r: ResumenAnual, f: FiltroPeriodo): [string, string][] {
   const filas: [string, string][] = [
     ["Ejercicio", String(r.ejercicio)],
-    ["Periodo", periodoLabel(f)],
+    ["Resumen", `Anual ${f.ejercicio}; libros: ${periodoLabel(f)}`],
     ["Ingresos del año", eur(r.ingresosTotales)],
     ["Gastos corrientes deducibles", eur(r.gastosCorrientes)],
     ["Amortizaciones", eur(r.amortizacionesTotales)],
@@ -36,10 +40,49 @@ function resumenFilas(r: ResumenAnual, f: FiltroPeriodo): [string, string][] {
     ["Retenciones soportadas", eur(r.retencionesSoportadas)],
     ["Pagos fraccionados (suma 4T)", eur(r.pagosFraccionados)],
   ];
+  if (f.trimestre) {
+    const q = r.trimestres[f.trimestre - 1]!;
+    filas.push([`Acumulado hasta ${f.trimestre}T: ingresos`, eur(q.ingresosAcumulados)], ["Gastos deducibles acumulados", eur(q.gastosDeduciblesAcumulados)]);
+  }
   for (const t of r.trimestres) {
     filas.push([`Modelo 130 · ${t.trimestre}T (pago estimado)`, eur(t.pagoTrimestre)]);
   }
   return filas;
+}
+
+/**
+ * Aviso, DENTRO del fichero, cuando el cálculo depende de parámetros que no se
+ * han confirmado contra la AEAT.
+ *
+ * El descargo genérico ya iba en la hoja, pero no distinguía: un XLSX de un
+ * ejercicio pasado salía calculado con los parámetros de 2026 sin que nada en
+ * el fichero lo dijera. Quien lo abra semanas después, fuera de la aplicación,
+ * no tiene otra forma de saberlo.
+ */
+function avisoParametros(
+  r: ResumenAnual,
+  ejercicioSolicitado: number,
+): string[][] {
+  const avisos: string[][] = [];
+
+  if (!hayParamsExactos(ejercicioSolicitado)) {
+    avisos.push([
+      "⚠ AVISO",
+      `No hay parámetros fiscales propios del ejercicio ${ejercicioSolicitado}: las cifras se han calculado con los de ${EJERCICIO_MAS_RECIENTE}.`,
+    ]);
+  }
+
+  const noVerificados = [
+    ...new Set(r.trimestres.flatMap((t) => t.parametrosNoVerificados)),
+  ];
+  if (noVerificados.length > 0) {
+    avisos.push([
+      "⚠ AVISO",
+      `Estimación NO verificada: pendiente de confirmar contra la AEAT ${noVerificados.join(", ")}.`,
+    ]);
+  }
+
+  return avisos.length > 0 ? [...avisos, []] : [];
 }
 
 // --- XLSX -------------------------------------------------------------------
@@ -54,6 +97,7 @@ function buildXlsx(libros: Libro[], resumen: ResumenAnual, f: FiltroPeriodo): Bu
     ["Contabilidad — resumen fiscal (orientativo)"],
     [DESCARGO_FISCAL],
     [],
+    ...avisoParametros(resumen, f.ejercicio),
     ...resumenFilas(resumen, f),
     [],
     ["Desglose de gastos por categoría"],
@@ -81,11 +125,7 @@ function buildXlsx(libros: Libro[], resumen: ResumenAnual, f: FiltroPeriodo): Bu
 }
 
 // --- CSV (separador ; · decimales con coma · BOM) ---------------------------
-function csvCell(v: string | number): string {
-  const s =
-    typeof v === "number" ? String(v).replace(".", ",") : v.replace(/"/g, '""');
-  return /[";\n]/.test(s) ? `"${s}"` : s;
-}
+const csvCell = (value: string | number) => safeCsvCell(value, ";", true);
 function csvLibro(libro: Libro): string {
   const lines = [
     libro.nombre,
@@ -97,6 +137,7 @@ function csvLibro(libro: Libro): string {
 function buildCsv(libros: Libro[], resumen: ResumenAnual, f: FiltroPeriodo): string {
   const bloques = [
     ["Resumen fiscal (orientativo)", DESCARGO_FISCAL].join("\r\n"),
+    ...avisoParametros(resumen, f.ejercicio).map(row => row.map(csvCell).join(";")),
     resumenFilas(resumen, f)
       .map(([k, v]) => `${csvCell(k)};${csvCell(v)}`)
       .join("\r\n"),
@@ -118,6 +159,19 @@ async function buildPdf(resumen: ResumenAnual, f: FiltroPeriodo): Promise<Uint8A
 
   const line = (text: string, opts: { size?: number; b?: boolean; color?: typeof ink } = {}) => {
     const size = opts.size ?? 11;
+    const selectedFont = opts.b ? bold : font;
+    if (selectedFont.widthOfTextAtSize(text, size) > 483) {
+      const words = text.split(/\s+/); let current = "";
+      for (const word of words) {
+        if (current && selectedFont.widthOfTextAtSize(current + " " + word, size) > 483) { line(current, opts); current = word; }
+        else current += (current ? " " : "") + word;
+      }
+      if (current) { // Datos de este resumen son etiquetas controladas, sin palabras arbitrariamente largas.
+        if (current === text) return;
+        line(current, opts);
+      }
+      return;
+    }
     if (y < 60) {
       page = doc.addPage([595, 842]);
       y = 786;
@@ -136,17 +190,28 @@ async function buildPdf(resumen: ResumenAnual, f: FiltroPeriodo): Promise<Uint8A
       page = doc.addPage([595, 842]);
       y = 786;
     }
+    if (bold.widthOfTextAtSize(v, 11) > 199 || font.widthOfTextAtSize(k, 11) > 274) { line(k, { color: soft }); line(v, { b: true }); return; }
     page.drawText(k, { x: M, y, size: 11, font, color: soft });
     page.drawText(v, { x: 340, y, size: 11, font: bold, color: ink });
     y -= 18;
   };
 
   line("Contabilidad — resumen fiscal", { size: 18, b: true });
-  line(`Periodo: ${periodoLabel(f)}`, { size: 11, color: soft });
+  line(`Resumen anual ${f.ejercicio}; libros seleccionados: ${periodoLabel(f)}`, { size: 11, color: soft });
   y -= 4;
   line(DESCARGO_FISCAL, { size: 8.5, color: soft });
   y -= 8;
 
+  for (const row of avisoParametros(resumen, f.ejercicio)) {
+    const text = row.join(" ").replace(/⚠/g, "AVISO");
+    // Helvetica no codifica todos los símbolos; ajustar líneas al ancho de A4.
+    const words = text.split(/\s+/); let current = "";
+    for (const word of words) {
+      if (font.widthOfTextAtSize(current + " " + word, 8.5) > 480) { line(current, { size: 8.5 }); current = word; }
+      else current += (current ? " " : "") + word;
+    }
+    if (current) line(current, { size: 8.5 });
+  }
   for (const [k, v] of resumenFilas(resumen, f)) kv(k, v);
 
   y -= 10;
@@ -159,14 +224,24 @@ async function buildPdf(resumen: ResumenAnual, f: FiltroPeriodo): Promise<Uint8A
 }
 
 // --- Handler ----------------------------------------------------------------
+/** Los libros registro llevan ingresos y proveedores: fuera de toda caché. */
+const NO_STORE = { "Cache-Control": "private, no-store, max-age=0" } as const;
+
 export async function GET(req: NextRequest) {
+  // Los route handlers NO ejecutan layouts: aunque esta ruta viva bajo /pro, no
+  // hereda la guardia de ProLayout. La comprobación de sesión va aquí.
+  const pro = await getCurrentProfessional();
+  if (!pro) {
+    return new Response("No autorizado", { status: 401, headers: NO_STORE });
+  }
+
   const sp = req.nextUrl.searchParams;
   const formato = sp.get("formato") ?? "xlsx";
   const ejercicio = Number.parseInt(sp.get("ejercicio") ?? "", 10);
   const periodoRaw = sp.get("periodo") ?? "anual";
 
   if (!Number.isInteger(ejercicio) || ejercicio < 2000 || ejercicio > 2100) {
-    return new Response("Ejercicio no válido", { status: 400 });
+    return new Response("Ejercicio no válido", { status: 400, headers: NO_STORE });
   }
   const trimestre =
     periodoRaw === "1" || periodoRaw === "2" || periodoRaw === "3" || periodoRaw === "4"
@@ -187,6 +262,7 @@ export async function GET(req: NextRequest) {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${baseName}.csv"`,
+        ...NO_STORE,
       },
     });
   }
@@ -196,6 +272,7 @@ export async function GET(req: NextRequest) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${baseName}.pdf"`,
+        ...NO_STORE,
       },
     });
   }
@@ -206,6 +283,7 @@ export async function GET(req: NextRequest) {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${baseName}.xlsx"`,
+      ...NO_STORE,
     },
   });
 }

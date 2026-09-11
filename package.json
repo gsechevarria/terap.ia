@@ -6,28 +6,35 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test:rls": "node --env-file=.env.local scripts/test-rls.mjs",
-    "test:pro": "node --env-file=.env.local scripts/test-pro-flow.mjs",
-    "test:onboarding": "node --env-file=.env.local scripts/test-onboarding.mjs",
-    "test:scales": "node --env-file=.env.local scripts/test-scales.mjs",
-    "test:agenda": "node --env-file=.env.local scripts/test-agenda.mjs",
-    "test:payments": "node --env-file=.env.local scripts/test-payments.mjs",
-    "test:wellbeing": "node --env-file=.env.local scripts/test-wellbeing.mjs",
-    "test:notifications": "node --env-file=.env.local scripts/test-notifications.mjs",
-    "test:analytics": "node --env-file=.env.local scripts/test-analytics.mjs",
-    "test:contabilidad": "node --env-file=.env.local scripts/test-contabilidad.mjs",
-    "seed": "node --env-file=.env.local scripts/seed.mjs",
+    "seed": "node --env-file=.env.test scripts/seed.mjs",
     "db:push": "supabase db push",
-    "gen:types": "supabase gen types typescript --project-id levufuoigdlexscpvlgk --schema public > src/lib/database.types.ts",
+    "gen:types": "supabase gen types typescript --local --schema public > src/lib/database.types.ts",
     "gen:icons": "node scripts/gen-icons.mjs",
     "cap:sync": "cap sync",
     "cap:add:android": "cap add android",
     "cap:add:ios": "cap add ios",
     "cap:open:android": "cap open android",
     "cap:open:ios": "cap open ios",
-    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#4f9d8b' --splashBackgroundColor '#f7f7f5'"
+    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#4f9d8b' --splashBackgroundColor '#f7f7f5'",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "test:integration:rls": "node --env-file=.env.test scripts/test-rls.mjs",
+    "test:integration:pro": "node --env-file=.env.test scripts/test-pro-flow.mjs",
+    "test:integration:onboarding": "node --env-file=.env.test scripts/test-onboarding.mjs",
+    "test:integration:scales": "node --env-file=.env.test scripts/test-scales.mjs",
+    "test:integration:agenda": "node --env-file=.env.test scripts/test-agenda.mjs",
+    "test:integration:payments": "node --env-file=.env.test scripts/test-payments.mjs",
+    "test:integration:wellbeing": "node --env-file=.env.test scripts/test-wellbeing.mjs",
+    "test:integration:notifications": "node --env-file=.env.test scripts/test-notifications.mjs",
+    "test:integration:analytics": "node --env-file=.env.test scripts/test-analytics.mjs",
+    "test:integration:contabilidad": "node --env-file=.env.test scripts/test-contabilidad.mjs",
+    "test:integration": "node --env-file=.env.test scripts/test-integration.mjs",
+    "test:sql": "node scripts/test-sql.mjs",
+    "gen:types:embedded": "node scripts/test-sql.mjs --generate-types",
+    "test:types": "node scripts/test-sql.mjs --check-types"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
@@ -36,28 +43,45 @@
     "@capacitor/core": "^8.4.2",
     "@capacitor/ios": "^8.4.2",
     "@capacitor/push-notifications": "^8.1.2",
+    "@sentry/nextjs": "^10.69.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.7",
     "lucide-react": "^1.25.0",
-    "next": "16.2.10",
+    "next": "16.3.4",
     "pdf-lib": "^1.17.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "web-push": "^3.6.7",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.4.2",
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9",
-    "eslint-config-next": "16.2.10",
+    "eslint-config-next": "16.3.4",
     "supabase": "^2.109.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=24.15 <25"
+  },
+  "overrides": {
+    "@capacitor/assets": {
+      "sharp": "^0.35.4",
+      "tar": "^7.5.21"
+    },
+    "xcode": {
+      "uuid": "^11.1.1"
+    }
   }
 }

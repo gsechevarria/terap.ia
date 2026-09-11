@@ -38,7 +38,7 @@ export default async function GastosPage() {
       <h2 className="section-label mt-8 mb-2">
         Gastos registrados ({gastos.length})
       </h2>
-      <GastosTable gastos={gastos} situacionIva={situacionIva} />
+      <GastosTable gastos={gastos} situacionIva={situacionIva} prorrata={cfg?.prorrata_iva_pct ?? null} />
 
       {bienes.length > 0 && (
         <>

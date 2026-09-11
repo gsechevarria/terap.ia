@@ -1,3 +1,4 @@
+import { allRows } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 
 export type EmergencyLink = {
@@ -14,9 +15,9 @@ export type EmergencyLink = {
  */
 export async function getEmergencyLinks(): Promise<EmergencyLink[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("emergency_links")
     .select("id, label, phone, url, description")
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true }));
   return data ?? [];
 }

@@ -1,3 +1,4 @@
+import { todayYMD } from "@/lib/tz";
 import Link from "next/link";
 import { getMyMoodEntries } from "@/lib/queries/wellbeing";
 import { MoodLogger } from "@/app/app/_components/MoodLogger";
@@ -16,7 +17,7 @@ export default async function PatientDiaryPage() {
         ← Inicio
       </Link>
 
-      <MoodLogger />
+      <MoodLogger today={entries.find(e => e.entry_date === todayYMD())} />
 
       {entries.length > 0 && (
         <section className="card p-4">

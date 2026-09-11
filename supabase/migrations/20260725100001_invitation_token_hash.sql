@@ -13,14 +13,45 @@
 
 create extension if not exists pgcrypto with schema extensions;
 
+-- `create extension if not exists ... with schema` NO mueve la extensión si ya
+-- estaba instalada en otro esquema: se limita a no hacer nada. Si pgcrypto
+-- viviera en `public`, `extensions.digest(...)` no existiría y las funciones de
+-- abajo fallarían en runtime, no aquí. Mejor abortar la migración ahora.
+do $$
+begin
+  if not exists (
+    select 1 from pg_extension e
+    join pg_namespace n on n.oid = e.extnamespace
+    where e.extname = 'pgcrypto' and n.nspname = 'extensions'
+  ) then
+    raise exception 'pgcrypto no está en el esquema extensions';
+  end if;
+end $$;
+
 -- 1) Nueva columna + backfill desde el token actual --------------------------
 alter table public.invitations
   add column if not exists token_hash text;
 
-update public.invitations
-   set token_hash = encode(extensions.digest(token, 'sha256'), 'hex')
- where token_hash is null
-   and token is not null;
+-- El backfill solo tiene sentido la primera vez: el paso 3 elimina `token`, así
+-- que en una reejecución esta sentencia fallaría con "column token does not
+-- exist" y abortaría la cola entera de `supabase db push`. Va con EXECUTE para
+-- que ni siquiera se parsee cuando la columna ya no está.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'invitations'
+      and column_name = 'token'
+  ) then
+    execute $backfill$
+      update public.invitations
+         set token_hash = encode(extensions.digest(token, 'sha256'), 'hex')
+       where token_hash is null
+         and token is not null
+    $backfill$;
+  end if;
+end $$;
 
 create unique index if not exists invitations_token_hash_unique
   on public.invitations (token_hash);
@@ -80,5 +111,15 @@ grant execute on function public.invitation_preview(text) to anon, authenticated
 -- 3) Fuera el token en claro -------------------------------------------------
 -- El nuevo alta genera el token en la app, guarda solo el hash y devuelve el
 -- claro una única vez para construir el enlace (ver createInvitationAction).
-alter table public.invitations alter column token drop default;
-alter table public.invitations drop column token;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'invitations'
+      and column_name = 'token'
+  ) then
+    execute 'alter table public.invitations alter column token drop default';
+    execute 'alter table public.invitations drop column token';
+  end if;
+end $$;

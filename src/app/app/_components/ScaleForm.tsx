@@ -1,8 +1,10 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { submitScaleResponseAction } from "@/lib/actions/scale-responses";
+import { useAction } from "@/lib/use-action";
 import type { ScaleAnswers, ScaleDefinition } from "@/lib/scales";
 import type { EmergencyLink } from "@/lib/queries/emergency";
 
@@ -20,9 +22,10 @@ export function ScaleForm({
   emergencyLinks: EmergencyLink[];
 }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [error, setError] = useState("");
   const [result, setResult] = useState<null | { flagged: boolean }>(null);
-  const [pending, startTransition] = useTransition();
+  // Sin `refresh`: al enviar se cambia a la pantalla de confirmación, no se
+  // recarga la ruta.
+  const { run, pending, error, setError } = useAction({ refresh: false });
 
   const allAnswered = definition.items.every((it) => answers[it.id] != null);
 
@@ -31,18 +34,25 @@ export function ScaleForm({
       setError("Responde todas las preguntas.");
       return;
     }
-    setError("");
     const payload: ScaleAnswers = {};
-    for (const it of definition.items) payload[String(it.id)] = answers[it.id];
+    for (const it of definition.items) {
+      const v = answers[it.id];
+      if (v == null) return; // `allAnswered` ya lo garantiza; el tipo no.
+      payload[String(it.id)] = v;
+    }
 
-    startTransition(async () => {
-      const res = await submitScaleResponseAction({
+    // El envío va envuelto: si la action lanza (red caída, sesión expirada),
+    // el paciente vería la pantalla de error y perdería las 9 respuestas del
+    // cuestionario. Así el error se muestra en sitio y las respuestas siguen
+    // marcadas para reintentar.
+    run(async () => {
+      const res = await callAction(submitScaleResponseAction, {
         assignmentId,
         scaleId,
         answers: payload,
       });
       if (res.ok) setResult({ flagged: res.flagged });
-      else setError(res.error);
+      else throw new Error(res.error);
     });
   }
 
@@ -111,16 +121,26 @@ export function ScaleForm({
       <div className="mt-6 flex flex-col gap-6">
         {definition.items.map((it) => (
           <fieldset key={it.id} className="flex flex-col gap-2">
-            <legend className="text-sm font-medium">
+            <legend id={`item-${it.id}-label`} className="text-sm font-medium">
               {it.id}. {it.text}
             </legend>
-            <div className="flex flex-col gap-1.5">
+            <div
+              role="radiogroup"
+              aria-labelledby={`item-${it.id}-label`}
+              className="flex flex-col gap-1.5"
+            >
               {definition.options.map((opt) => {
                 const checked = answers[it.id] === opt.value;
                 return (
+                  /* El input real está oculto (`sr-only`), así que el
+                     `:focus-visible` global se aplicaba a algo invisible: quien
+                     responde con teclado no veía dónde estaba el foco.
+                     Se usa `has-[:focus-visible]` y no `peer-*` porque el input
+                     es HIJO del label, no su hermano: `peer` compila a `~` y no
+                     llegaría a aplicarse nunca. */
                   <label
                     key={opt.value}
-                    className={`cursor-pointer rounded border px-3 py-2 text-sm transition-colors duration-100 ${
+                    className={`cursor-pointer rounded border px-3 py-2 text-sm transition-colors duration-100 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent ${
                       checked
                         ? "border-accent bg-accent-soft font-medium text-accent"
                         : "border-line text-ink-2 hover:bg-wash"
@@ -145,7 +165,7 @@ export function ScaleForm({
       </div>
 
       {error && (
-        <p className="mt-4 rounded bg-danger-soft p-3 text-sm text-danger">
+        <p role="alert" className="mt-4 rounded bg-danger-soft p-3 text-sm text-danger">
           {error}
         </p>
       )}

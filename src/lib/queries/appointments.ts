@@ -1,5 +1,7 @@
+import { checked, allRows } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
+import { fromWallClock, todayYMD, ymdParts } from "@/lib/tz";
 import type { Appointment } from "@/lib/types";
 
 export type AgendaAppointment = Appointment & { patientName: string | null };
@@ -10,10 +12,14 @@ export type AgendaBlock = {
   reason: string | null;
 };
 
+/**
+ * Medianoche de hoy EN MADRID. Con `setHours(0,0,0,0)` se obtenía la medianoche
+ * del proceso (UTC en Vercel), que en verano son las 02:00 en España: las citas
+ * de la primera franja del día quedaban fuera de la agenda.
+ */
 function startOfToday(): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+  const [y, m, d] = ymdParts(todayYMD());
+  return fromWallClock(y, m, d, 0, 0).toISOString();
 }
 
 /** Agenda del profesional: citas (con nombre de paciente) + bloqueos, desde hoy. */
@@ -25,18 +31,18 @@ export async function getProfessionalAgenda(): Promise<{
   const from = startOfToday();
 
   const [apptRes, blockRes] = await Promise.all([
-    supabase
+    allRows(supabase
       .from("appointments")
       .select(
         "id, professional_id, patient_id, starts_at, ends_at, status, attendance, video_link, recurrence_freq, recurrence_until, parent_appointment_id, notes, created_at, updated_at, patients(full_name)",
       )
       .gte("starts_at", from)
-      .order("starts_at", { ascending: true }),
-    supabase
+      .order("starts_at", { ascending: true })),
+    allRows(supabase
       .from("agenda_blocks")
       .select("id, starts_at, ends_at, reason")
       .gte("starts_at", from)
-      .order("starts_at", { ascending: true }),
+      .order("starts_at", { ascending: true })),
   ]);
 
   const appointments: AgendaAppointment[] = (apptRes.data ?? []).map((a) => {
@@ -60,20 +66,20 @@ export async function getProfessionalAgendaRange(
   const supabase = await createClient();
 
   const [apptRes, blockRes] = await Promise.all([
-    supabase
+    allRows(supabase
       .from("appointments")
       .select(
         "id, professional_id, patient_id, starts_at, ends_at, status, attendance, video_link, recurrence_freq, recurrence_until, parent_appointment_id, notes, created_at, updated_at, patients(full_name)",
       )
       .lt("starts_at", toISO)
       .gt("ends_at", fromISO)
-      .order("starts_at", { ascending: true }),
-    supabase
+      .order("starts_at", { ascending: true })),
+    allRows(supabase
       .from("agenda_blocks")
       .select("id, starts_at, ends_at, reason")
       .lt("starts_at", toISO)
       .gt("ends_at", fromISO)
-      .order("starts_at", { ascending: true }),
+      .order("starts_at", { ascending: true })),
   ]);
 
   const appointments: AgendaAppointment[] = (apptRes.data ?? []).map((a) => {
@@ -127,11 +133,11 @@ export async function listProfessionalAppointments(filter: {
   if (filter.status) q = q.eq("status", filter.status);
   if (filter.patientId) q = q.eq("patient_id", filter.patientId);
 
-  const pageSize = filter.pageSize ?? 25;
+  const pageSize = Math.min(100, Math.max(1, filter.pageSize ?? 25));
   const page = Math.max(1, filter.page ?? 1);
   q = q.range((page - 1) * pageSize, page * pageSize - 1);
 
-  const { data, count } = await q;
+  const { data, count } = await checked(q.order("id"));
   const rows = (data ?? []).map((a) => {
     const { patients, ...rest } = a as typeof a & {
       patients: { full_name: string | null } | null;
@@ -148,25 +154,41 @@ export async function getPatientsForSelect(): Promise<
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
   if (!pro) return [];
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("patients")
     .select("id, full_name")
     .eq("professional_id", pro.id)
     .eq("status", "active")
-    .order("full_name", { ascending: true });
+    .order("full_name", { ascending: true }));
   return data ?? [];
 }
 
-/** Cita individual + nombre de paciente (para .ics / edición). */
+/**
+ * Cita individual + nombre de paciente (para .ics / edición).
+ *
+ * El filtro por propietario es explícito y no se delega solo en la RLS: esta
+ * query alimenta el `.ics`, que expone `appt.notes` (campo clínico), y una sola
+ * regresión en una política la convertiría en una fuga con solo tener el UUID.
+ */
 export async function getAppointment(
   id: string,
 ): Promise<AgendaAppointment | null> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const [pro, patient] = await Promise.all([
+    getCurrentProfessional(),
+    getCurrentPatient(),
+  ]);
+  if (!pro && !patient) return null;
+
+  let query = supabase
     .from("appointments")
     .select("*, patients(full_name)")
-    .eq("id", id)
-    .maybeSingle();
+    .eq("id", id);
+  query = pro
+    ? query.eq("professional_id", pro.id)
+    : query.eq("patient_id", patient!.id);
+
+  const { data } = await query.maybeSingle();
   if (!data) return null;
   const { patients, ...rest } = data as typeof data & {
     patients: { full_name: string | null } | null;
@@ -179,11 +201,11 @@ export async function getMyAppointments(): Promise<Appointment[]> {
   const supabase = await createClient();
   const patient = await getCurrentPatient();
   if (!patient) return [];
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("appointments")
     .select("*")
     .eq("patient_id", patient.id)
-    .order("starts_at", { ascending: true });
+    .order("starts_at", { ascending: true }));
   return data ?? [];
 }
 

@@ -15,7 +15,7 @@
  * Devuelve el desglose bruto para que el gestor pueda recalcular.
  */
 import type { Modelo130Result, Regimen, Trimestre } from "./types";
-import type { ParamsFiscales } from "./parametros";
+import { parametrosNoVerificados, type ParamsFiscales } from "./parametros";
 import { redondear } from "./helpers";
 
 export interface Modelo130Input {
@@ -43,12 +43,19 @@ export function calcularModelo130(input: Modelo130Input): Modelo130Result {
     ingresosAcumulados - gastosDeduciblesAcumulados,
   );
 
+  // El tope de difícil justificación es ANUAL. Aplicarlo íntegro en cada
+  // trimestre acumulado hacía que, con un rendimiento alto ya en el 1T, se
+  // declararan de menos los tres primeros trimestres y todo reapareciera como
+  // regularización en el 4T. Se prorratea por trimestres transcurridos.
+  const topePeriodo =
+    (params.gastosDificilJustificacionTope.valor * trimestre) / 4;
+
   const gastosDificilJustificacion =
     regimen === "estimacion_directa_simplificada" && rendimientoNeto > 0
       ? redondear(
           Math.min(
-            rendimientoNeto * params.gastosDificilJustificacionPct,
-            params.gastosDificilJustificacionTope,
+            rendimientoNeto * params.gastosDificilJustificacionPct.valor,
+            topePeriodo,
           ),
         )
       : 0;
@@ -66,6 +73,15 @@ export function calcularModelo130(input: Modelo130Input): Modelo130Result {
     ),
   );
 
+  // Si el cálculo depende de un parámetro sin confirmar contra la AEAT, el
+  // resultado viaja marcado para que la UI y el export lo adviertan. Solo
+  // importa cuando el régimen simplificado hace intervenir esos parámetros.
+  const usaDificilJustificacion =
+    regimen === "estimacion_directa_simplificada" && rendimientoNeto > 0;
+  const noVerificados = usaDificilJustificacion
+    ? parametrosNoVerificados(params)
+    : [];
+
   return {
     trimestre,
     ingresosAcumulados: redondear(ingresosAcumulados),
@@ -78,5 +94,7 @@ export function calcularModelo130(input: Modelo130Input): Modelo130Result {
     retencionesAcumuladas: redondear(retencionesSoportadasAcumuladas),
     pagosFraccionadosPrevios: redondear(pagosFraccionadosPreviosDelAnio),
     pagoTrimestre,
+    parametrosNoVerificados: noVerificados,
+    estimacionNoVerificada: noVerificados.length > 0,
   };
 }

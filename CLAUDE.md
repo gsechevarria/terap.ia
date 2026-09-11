@@ -53,11 +53,33 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 - **Autorización definitiva:** cada layout server (`/pro/layout.tsx`,
   `/app/layout.tsx`) revalida `supabase.auth.getUser()` y el rol. Defensa en
   profundidad (recomendación de Next.js y Supabase).
-- **Rol:** resuelto SIEMPRE por `src/lib/auth/roles.ts` (`getUserRole`).
-  - Sesión 0 (bootstrap): el rol vive en el metadata del usuario y se fija en el
-    primer acceso (`signInWithOtp({ options: { data: { role } } })`).
-  - **Sesión 1:** el rol migrará a la tabla `profiles` con RLS. Al hacerlo, solo
-    debe cambiar `getUserRole` — el resto del código no.
+- **Rol:** resuelto SIEMPRE por `src/lib/auth/roles.ts` (`getUserRole`), que lee
+  **solo `app_metadata`** (ago 2026, migración `20260807120001`).
+  - `app_metadata` únicamente lo escribe el servidor: el trigger
+    `handle_new_user` (SECURITY DEFINER) o alguien con `service_role`.
+  - **Nunca volver a leer `user_metadata`:** es de escritura libre para el
+    propio usuario (`supabase.auth.updateUser({ data: { role } })`), así que
+    cualquier paciente podía ascenderse a profesional.
+
+### Alta de un profesional (ya NO es autoservicio)
+
+Desde ago 2026 `/login` no crea cuentas (`shouldCreateUser` solo se activa en el
+alta por invitación) y la política `professionals_insert_self` está eliminada.
+Para dar de alta a un psicólogo, con la `service_role`:
+
+```js
+await admin.auth.admin.createUser({
+  email,
+  email_confirm: true,
+  user_metadata: { full_name: "Nombre Apellido" },
+  app_metadata: { role: "professional" },   // ← esto es lo que da el rol
+});
+```
+
+El trigger `handle_new_user` crea la fila en `professionals` y su plantilla de
+consentimiento por defecto. Sin `app_metadata.role`, el usuario se crea como
+`patient` (el rol sin privilegios). El wizard de registro para psicólogos
+sustituirá este paso manual.
 
 ## Estructura
 
@@ -615,7 +637,7 @@ archivados) y más campos en la ficha (teléfono, correo, dirección, profesión
 - El seed omite profesionales que ya tienen pacientes: para ver datos de contacto
   en los pacientes demo ya existentes habría que resembrar en limpio.
 
-### Cierre de RLS antes de habilitar auth de pacientes (jul 2026) 🟡 (código listo; migración pendiente de aplicar y de re-probar)
+### Cierre de RLS antes de habilitar auth de pacientes (jul 2026) ✅ (aplicado y verificado en el remoto; `test:rls` 40/40)
 
 Endurecimiento de RLS pensado para cuando los pacientes tengan cuenta real
 (hoy solo datos ficticios). Adaptación del plan del usuario ("cierre de RLS v2")
@@ -683,14 +705,132 @@ notifications 9, analytics 6, scales 12, contabilidad 14). `build`/`typecheck`/
 
 **⚠️ Pendiente:**
 - **Registro de migraciones:** como se aplicaron por el SQL editor (no
-  `supabase db push`), `supabase_migrations` no las tiene marcadas. Un futuro
-  `db push` intentaría re-ejecutarlas y fallaría (varias sentencias no son
-  idempotentes). Ejecutar con token:
+  `supabase db push`), `supabase_migrations` no las tiene marcadas. Ejecutar con
+  token:
   `supabase migration repair --status applied 20260725090001 20260725100001`.
+  Pasos exactos en `docs/DEPLOY.md` → "Reparación del historial de migraciones".
+  Ambos ficheros **ya son idempotentes** (agosto 2026): las cuatro políticas
+  `mood_entries_*` llevan `drop policy if exists` delante, y en
+  `20260725100001` el backfill del token y el `drop column token` van dentro de
+  guardas que comprueban que la columna existe. Antes, un `db push` habría
+  abortado la cola entera.
 - **Storage:** `shared_with_patient` protege la FILA `documents`, no el binario;
   revisar políticas de `storage.objects` cuando exista vista de documentos en `/app`.
 - **Barrido de rendimiento** (opcional): envolver los helpers en `(select …)` en
   las ~50 políticas existentes de más volumen.
+
+### Auditoría técnica (ago 2026) ✅ (código en verde; migraciones aplicadas y tipos regenerados)
+
+Corrección completa de la auditoría en cuatro fases, rama `fix/auditoria-2026-08`.
+
+**Fase 1 — lo que estaba roto en producción.** Toda la aritmética y el formateo
+de fechas pasa por `src/lib/tz.ts` (`Europe/Madrid`): el runtime de Vercel es UTC
+y las horas se mostraban con 2 h de desfase entre servidor y cliente. Las series
+recurrentes se anclan en la cita original (respetan el cambio de horario y el
+31 de mes). `revalidatePath` apuntaba a rutas inexistentes bajo `/contabilidad`
+(no-op silencioso). Contraste AA en `--ink-3`, zoom desbloqueado, `error.tsx` y
+`loading.tsx`, `try/catch` en las server actions del cliente.
+
+**Fase 2 — control de acceso.** El rol pasa a `app_metadata`; se cierra el
+autorregistro de profesionales; `createInvitationAction` y `accept_invitation`
+validan propiedad y destinatario; Storage respeta `shared_with_patient`;
+cabeceras de seguridad en `next.config.ts`; 401 explícito en los route handlers;
+`?next=` validado; cron con `timingSafeEqual` y sin query string.
+
+**Fase 3 — dinero y datos clínicos.** Los bonos se registran como ingreso al
+venderlos; la liquidación de citas es atómica con operación inversa; las escalas
+se validan en servidor y en trigger, y el ítem de riesgo avisa al profesional;
+IVA sujeto/mixto, amortización prorrateada, tope del 130 prorrateado, trimestre
+en hora española; zod en las actions de dinero y datos clínicos.
+
+**Fase 4 — que no se rompa otra vez.** 76 tests de vitest sobre lógica pura
+(motor fiscal, fechas, layout de agenda, escalas), integración movida a Supabase
+local, Sentry con depuración de PII por lista blanca, `/api/health`, CI con build
+y audit, `noUncheckedIndexedAccess`, paginación real del histórico de pagos y
+batching del cron.
+
+#### Migraciones — ✅ las seis aplicadas (9-ago-2026)
+
+Seis migraciones nuevas, **todas aplicadas al remoto**, verificado con
+`npm run gen:types`: el esquema generado trae todas sus columnas y funciones.
+`src/lib/database.types.ts` ya no lleva nada escrito a mano.
+
+Guía de verificación en `docs/MIGRACIONES-PENDIENTES.md`; el
+detalle de qué hace cada una, en `docs/MIGRACIONES-PENDIENTES.md`.
+
+El **historial del CLI está reparado**: las migraciones del repositorio constan
+en `supabase_migrations.schema_migrations`, así que `db push` y `migration list`
+vuelven a decir la verdad. Vuelve a desajustarse cada vez que se aplica algo
+desde el editor SQL del panel; el arreglo está en
+`supabase/scripts/reparar-historial.sql`.
+
+🔴 **Queda una migración por aplicar:** `20260809100001_unsettle_informativo`,
+salida de las pruebas manuales (ver abajo).
+
+**Sigue pendiente:** las **comprobaciones funcionales**. Que el esquema tenga la
+columna no demuestra que la RLS haga lo que debe. Están listadas por migración
+en `docs/MIGRACIONES-PENDIENTES.md`: doble clic en "acudió", canje de invitación con el
+correo equivocado, `list()` de Storage desde una sesión de paciente.
+
+#### Hallazgos de las pruebas manuales (9-ago-2026)
+
+- ✅ **Doble "acudió" → un solo pago.** El índice único sobre
+  `payments(appointment_id)` y la RPC transaccional funcionan.
+- 🔧 **"No acudió" no borraba el pago en un caso.** `unsettle_appointment` se
+  niega —a propósito— a borrar un pago ya marcado como cobrado, pero lo hacía en
+  silencio. Corregido en `20260809100001`: la RPC devuelve qué ha hecho y el
+  modal lo enseña. De paso, deshacer un "acudió" ya devuelve el `status` de la
+  cita de `completed` a `confirmed`.
+- ℹ️ **La invitación con un correo distinto NO se rechaza en el login**, y es
+  correcto: rechazarla ahí revelaría a quién va dirigida. `accept_invitation`
+  la rechaza después, al volver del enlace del correo, en `/onboarding`.
+  **Efecto colateral conocido:** ese intento crea una cuenta de auth huérfana
+  (rol `patient`, sin fila en `patients`). No da acceso a nada, pero acumula
+  basura en Auth. Sin resolver.
+
+#### ⚠️ Cambios fiscales que necesitan validación
+
+Todos cambian cifras que ya se han mostrado. Los cinco están implementados y
+marcados aquí para que se validen con un asesor antes de darlos por buenos:
+
+1. **IVA repercutido.** Con actividad `sujeta`/`mixta`, un cobro de 121 € ya no
+   se registra como base 121 € / IVA 0 €. El rendimiento neto y los pagos
+   fraccionados **bajan**. Con `exenta` (el caso normal) no cambia nada.
+2. **Ingresos por base, no por total.** `resumenAnual` acumulaba `i.total`
+   mientras calculaba la retención sobre `i.base`. El IRPF grava la base.
+3. **Prorrata de IVA en régimen mixto.** Campo nuevo en Configuración. Sin él,
+   el cálculo se **detiene** en vez de suponer el caso más favorable.
+4. **Amortización prorrateada por días** desde la compra, e imputada solo desde
+   su trimestre. Un bien comprado en noviembre ya no se amortiza el año entero.
+5. **Tope de difícil justificación prorrateado por trimestre** (2000 × t/4).
+
+Además, los parámetros sin confirmar contra la AEAT (`% y tope de difícil
+justificación`) viajan marcados y el XLSX lleva una fila de aviso dentro.
+
+#### Queda abierto
+
+- **`FORCE ROW LEVEL SECURITY`**: ninguna tabla lo tiene, así que `service_role`
+  y `postgres` lo leen todo. Activarlo exige antes dar políticas explícitas al
+  propietario, porque `accept_invitation`, `patient_accept_consent` y
+  `patient_respond_appointment` dependen de ese bypass. Trabajo aparte, con
+  pruebas propias.
+- **Editar una serie de citas completa.** Hoy la edición afecta solo a la
+  ocurrencia, y la interfaz lo dice explícitamente. Falta el
+  "esta / esta y siguientes / toda la serie".
+- **Deep links nativos** (`assetlinks.json` / `apple-app-site-association`) para
+  que `/invite/<token>` abra la app y no el navegador.
+- **`FLAG_SECURE` en Android y overlay en `applicationWillResignActive` en iOS**:
+  `NativeGate` ya no monta los hijos hasta desbloquear, pero la captura del
+  conmutador de apps la hace el sistema y solo se evita desde la capa nativa.
+- **Offline real.** Hay página de "sin conexión" y precache del shell; no hay
+  funcionamiento sin red (y cachear datos clínicos en el dispositivo es una
+  decisión de producto, no técnica).
+- **`email_fallback`** se lee en el cron pero no se envía ningún correo: la
+  opción sigue en la interfaz sin hacer nada. O se implementa o se quita.
+- **Agregados del histórico de pagos en SQL.** Hoy se calculan en JS sobre un
+  máximo de 5.000 filas; con más habría que pasarlos a una RPC.
+- **`xlsx@0.18.5`**: excepción de `npm audit` documentada en
+  `docs/DEPENDENCIAS.md` (solo se usa para escribir, nunca para parsear).
 
 ---
 
@@ -791,3 +931,16 @@ build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
   (client), por lo que usar `new Date()` para "hoy" no rompe la hidratación. Usado
   en el alta de paciente y en la pestaña Información de la ficha.
 @AGENTS.md
+
+
+### Correcciones integrales — copia aislada, 10-sep-2026
+
+Rama `fix/correcciones-integrales-20260909-185808`. Once migraciones nuevas,
+transacciones económicas, consentimiento versionado, guardas de escritura,
+subidas firmadas, cron recuperable, históricos fiscales, errores estructurados,
+CSP por nonce y dependencias corregidas. Informe y verificación actualizados en
+[docs/CORRECCIONES-2026-09.md](docs/CORRECCIONES-2026-09.md).
+
+No se ha desplegado ni migrado el remoto. La integración HTTP está preparada;
+el motor de Docker local no está disponible. La validación de navegador sigue
+pendiente del arranque permitido del servidor. Publicación Git pendiente por falta de remoto.

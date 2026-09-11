@@ -10,9 +10,10 @@
 //   SEED_PRO_EMAIL=tu-correo@dominio npm run seed
 // =============================================================================
 
+import { assertLocalDatabase } from "./lib/local-only.mjs";
 import { createClient } from "@supabase/supabase-js";
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const URL = assertLocalDatabase();
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!URL || !SERVICE) {
   console.error("Faltan NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY.");
@@ -22,7 +23,8 @@ const db = createClient(URL, SERVICE, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const DEMO_PW = "terapia-demo-" + "2026";
+const DEMO_PW = process.env.SEED_PASSWORD;
+if (!DEMO_PW || DEMO_PW.length < 12) throw new Error("Define SEED_PASSWORD (mínimo 12 caracteres) en .env.test.");
 const PRO1_EMAIL = process.env.SEED_PRO_EMAIL || "dra.romero@demo.terapia";
 const PRO2_EMAIL = process.env.SEED_PRO2_EMAIL || "dr.ferrer@demo.terapia";
 
@@ -49,7 +51,8 @@ async function ensureProfessional(email, name) {
     email,
     password: DEMO_PW,
     email_confirm: true,
-    user_metadata: { role: "professional", full_name: name },
+    user_metadata: { full_name: name },
+    app_metadata: { role: "professional" },
   });
   if (created.data?.user) {
     userId = created.data.user.id;
@@ -58,9 +61,10 @@ async function ensureProfessional(email, name) {
     if (!existing) throw new Error(`No se pudo crear ni encontrar ${email}`);
     userId = existing.id;
     // Asegurar rol profesional en el metadata.
-    if (existing.user_metadata?.role !== "professional") {
+    if (existing.app_metadata?.role !== "professional") {
       await db.auth.admin.updateUserById(userId, {
-        user_metadata: { ...existing.user_metadata, role: "professional", full_name: name },
+        app_metadata: { ...existing.app_metadata, role: "professional" },
+        user_metadata: { ...existing.user_metadata, full_name: name },
       });
     }
   }

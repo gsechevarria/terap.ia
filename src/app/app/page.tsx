@@ -1,3 +1,4 @@
+import { getMyMoodToday } from "@/lib/queries/wellbeing";
 import Link from "next/link";
 import { getCurrentPatient } from "@/lib/queries/identity";
 import { getTasksForPatient } from "@/lib/queries/tasks";
@@ -5,6 +6,8 @@ import { getUpcomingAppointments } from "@/lib/queries/patient-detail";
 import { getMyActiveAssignments } from "@/lib/queries/scales";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { formatCurrency, formatDateTime } from "@/lib/format";
+import { todayYMD } from "@/lib/tz";
+import { safeExternalUrl } from "@/lib/url";
 import { PatientTasks } from "@/app/app/_components/PatientTasks";
 import { MoodLogger } from "@/app/app/_components/MoodLogger";
 
@@ -23,11 +26,12 @@ export default async function PatientHome() {
     );
   }
 
-  const [tasks, appts, scales, pay] = await Promise.all([
+  const [tasks, appts, scales, pay, mood] = await Promise.all([
     getTasksForPatient(patient.id),
     getUpcomingAppointments(patient.id),
     getMyActiveAssignments(),
     getMyPaymentSummary(),
+    getMyMoodToday(),
   ]);
   const nextAppt = appts[0] ?? null;
   const firstName = patient.full_name?.split(" ")[0] ?? "";
@@ -40,7 +44,7 @@ export default async function PatientHome() {
         </h1>
       </header>
 
-      <MoodLogger />
+      <MoodLogger today={mood} />
 
       <section className="card p-4">
         <h2 className="section-label">Próxima cita</h2>
@@ -49,9 +53,9 @@ export default async function PatientHome() {
             <span className="text-sm font-medium">
               {formatDateTime(nextAppt.starts_at)}
             </span>
-            {nextAppt.video_link && (
+            {safeExternalUrl(nextAppt.video_link) && (
               <Link
-                href={nextAppt.video_link}
+                href={safeExternalUrl(nextAppt.video_link)!}
                 className="text-sm font-medium text-accent hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -112,7 +116,7 @@ export default async function PatientHome() {
         </section>
       )}
 
-      <PatientTasks tasks={tasks} />
+      <PatientTasks tasks={tasks} today={todayYMD()} />
 
       <div className="grid grid-cols-2 gap-3">
         <Link href="/app/diary" className="card row-hover p-4 text-center text-sm font-medium">

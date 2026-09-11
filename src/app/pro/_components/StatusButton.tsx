@@ -1,8 +1,8 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { setPatientStatusAction } from "@/lib/actions/patients";
+import { useAction } from "@/lib/use-action";
 import type { PatientStatus } from "@/lib/types";
 
 export function StatusButton({
@@ -12,23 +12,20 @@ export function StatusButton({
   patientId: string;
   status: PatientStatus;
 }) {
-  const [pending, startTransition] = useTransition();
-  const router = useRouter();
+  const { run, pending, error } = useAction();
   const next: PatientStatus = status === "active" ? "archived" : "active";
 
   return (
-    <button
-      type="button"
-      disabled={pending}
-      onClick={() =>
-        startTransition(async () => {
-          await setPatientStatusAction(patientId, next);
-          router.refresh();
-        })
-      }
-      className="btn-ghost"
-    >
-      {pending ? "…" : status === "active" ? "Archivar" : "Reactivar"}
-    </button>
+    <div className="flex flex-col items-end gap-1">
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => run(() => callAction(setPatientStatusAction, patientId, next))}
+        className="btn-ghost"
+      >
+        {pending ? "…" : status === "active" ? "Archivar" : "Reactivar"}
+      </button>
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
   );
 }

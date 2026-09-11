@@ -1,3 +1,4 @@
+import { checked } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import type { NotificationPrefs } from "@/lib/actions/notifications";
 
@@ -16,12 +17,12 @@ export async function getMyPreferences(): Promise<NotificationPrefs> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return DEFAULT_PREFS;
-  const { data } = await supabase
+  const { data } = await checked(supabase
     .from("notification_preferences")
     .select(
       "appointment_reminders, new_appointment, new_task, new_scale, email_fallback",
     )
     .eq("user_id", user.id)
-    .maybeSingle();
+    .maybeSingle());
   return data ?? DEFAULT_PREFS;
 }

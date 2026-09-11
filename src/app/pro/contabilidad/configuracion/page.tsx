@@ -1,3 +1,4 @@
+import { ActionForm } from "@/components/ui/ActionForm";
 import Link from "next/link";
 import { getConfiguracionFiscal } from "@/lib/queries/contabilidad";
 import { upsertConfiguracionFiscalAction } from "@/lib/actions/contabilidad";
@@ -19,7 +20,7 @@ export default async function ConfiguracionFiscalPage() {
 
       <DescargoFiscal className="mt-4" />
 
-      <form action={upsertConfiguracionFiscalAction} className="mt-5 flex flex-col gap-4">
+      <ActionForm action={upsertConfiguracionFiscalAction} className="mt-5 flex flex-col gap-4">
         <label className="block">
           <span className="field-label">Régimen de IRPF</span>
           <select
@@ -54,6 +55,45 @@ export default async function ConfiguracionFiscalPage() {
           </select>
           <span className="mt-1 block text-xs text-ink-3">
             La psicología suele estar exenta de IVA (art. 20.Uno.3º LIVA).
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="field-label">% IVA repercutido</span>
+          <input
+            type="number"
+            name="tipo_iva_repercutido"
+            min={0}
+            max={100}
+            step="1"
+            defaultValue={cfg?.tipo_iva_repercutido ?? 21}
+            className="field"
+          />
+          <span className="mt-1 block text-xs text-ink-3">
+            Solo se usa si la actividad NO es exenta: sirve para separar la base
+            imponible del IVA en los cobros que registres.
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="field-label">
+            Prorrata de IVA (%) — obligatoria en régimen mixto
+          </span>
+          <input
+            type="number"
+            name="prorrata_iva_pct"
+            min={0}
+            max={100}
+            step="1"
+            defaultValue={cfg?.prorrata_iva_pct ?? ""}
+            className="field"
+          />
+          <span className="mt-1 block text-xs text-ink-3">
+            Porcentaje del IVA soportado que recuperas vía modelo 303. En exenta
+            es 0 y en sujeta 100, y se deduce solo. En{" "}
+            <strong className="font-medium">mixta</strong> hay que indicarlo: sin
+            este dato no se puede saber qué parte del IVA de tus gastos es coste
+            deducible en IRPF, y el cálculo se detiene en vez de suponerlo.
           </span>
         </label>
 
@@ -103,7 +143,7 @@ export default async function ConfiguracionFiscalPage() {
             Guardar configuración
           </button>
         </div>
-      </form>
+      </ActionForm>
     </div>
   );
 }

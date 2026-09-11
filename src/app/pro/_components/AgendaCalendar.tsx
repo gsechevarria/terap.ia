@@ -1,4 +1,6 @@
 "use client";
+import { useDialogFocus } from "@/lib/use-dialog-focus";
+import { callAction } from "@/lib/action-result";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
@@ -11,7 +13,26 @@ import {
   setAttendanceAction,
   updateAppointmentAction,
 } from "@/lib/actions/appointments";
-import { toDatetimeLocal } from "@/lib/format";
+import {
+  formatDateTime,
+  formatTime,
+  fromDatetimeLocal,
+  toDatetimeLocal,
+} from "@/lib/format";
+import { actionErrorMessage } from "@/lib/errors";
+import { safeExternalUrl } from "@/lib/url";
+import { layoutDay, type LayoutBox } from "@/lib/appointment-layout";
+import {
+  TZ,
+  addDaysYMD,
+  formatYMD,
+  fromWallClock,
+  minutesOfDayInTZ,
+  mondayOfYMD,
+  parseYMD,
+  todayYMD,
+  ymdInTZ,
+} from "@/lib/tz";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import type { AgendaAppointment, AgendaBlock } from "@/lib/queries/appointments";
 
@@ -25,31 +46,24 @@ const HOUR_PX = 48;
 const GRID_H = (HOUR_END - HOUR_START) * HOUR_PX;
 const DURATIONS = [30, 45, 60, 90] as const;
 
-function parseYMD(s: string): Date {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
+/*
+ * Este componente es cliente, pero Next también lo renderiza en el servidor
+ * (UTC). Cualquier `getHours()`/`getDate()` daba una hora en el HTML inicial y
+ * otra tras hidratar. Todo lo horario pasa por `lib/tz`; las celdas del
+ * calendario son fechas sin zona ancladas a UTC (`parseYMD`/`formatYMD`).
+ */
+
+/** Día de calendario (en Madrid) al que pertenece una cita o un bloqueo. */
+function dayOf(iso: string): string {
+  return ymdInTZ(new Date(iso));
 }
-function ymd(d: Date): string {
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
-function mondayOf(d: Date): Date {
-  return addDays(d, -((d.getDay() + 6) % 7));
-}
-function timeLabel(iso: string): string {
-  return new Date(iso).toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+/** Minutos desde medianoche, en hora de Madrid. */
 function minutesOfDay(iso: string): number {
-  const d = new Date(iso);
-  return d.getHours() * 60 + d.getMinutes();
+  return minutesOfDayInTZ(new Date(iso));
+}
+/** Formatea una celda del calendario sin que la zona del proceso la desplace. */
+function cellLabel(d: Date, opts: Intl.DateTimeFormatOptions): string {
+  return d.toLocaleDateString("es-ES", { timeZone: "UTC", ...opts });
 }
 
 /* -------------------------------------------------------------- estados --- */
@@ -112,19 +126,19 @@ export function AgendaCalendar({
   const [editing, setEditing] = useState<AgendaAppointment | null>(null);
 
   // "Hoy"/"ahora" fuera del render (pureza de React); solo tras montar.
-  const [todayYMD, setTodayYMD] = useState<string | null>(null);
+  // El intervalo es necesario: sin él la línea roja se quedaba clavada en la
+  // hora de carga, y una agenda suele estar abierta toda la jornada.
+  const [today, setToday] = useState<string | null>(null);
   const [nowMin, setNowMin] = useState<number | null>(null);
   useEffect(() => {
-    let active = true;
-    (async () => {
+    function tick() {
       const n = new Date();
-      if (!active) return;
-      setTodayYMD(ymd(n));
-      setNowMin(n.getHours() * 60 + n.getMinutes());
-    })();
-    return () => {
-      active = false;
-    };
+      setToday(todayYMD(n));
+      setNowMin(minutesOfDayInTZ(n));
+    }
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
   }, []);
 
   // Cerrar popup/modal con Escape.
@@ -158,7 +172,7 @@ export function AgendaCalendar({
           date={date}
           appointments={appointments}
           blocks={blocks}
-          todayYMD={todayYMD}
+          todayYMD={today}
           onOpen={openPopup}
         />
       ) : (
@@ -167,7 +181,7 @@ export function AgendaCalendar({
           date={date}
           appointments={appointments}
           blocks={blocks}
-          todayYMD={todayYMD}
+          todayYMD={today}
           nowMin={nowMin}
           onOpen={openPopup}
         />
@@ -253,15 +267,17 @@ function MonthGrid({
     p: { kind: "appt"; appt: AgendaAppointment } | { kind: "block"; block: AgendaBlock },
   ) => void;
 }) {
-  const first = new Date(date.getFullYear(), date.getMonth(), 1);
-  const gridStart = mondayOf(first);
-  const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
-  const month = date.getMonth();
+  const first = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1),
+  );
+  const gridStart = mondayOfYMD(first);
+  const cells = Array.from({ length: 42 }, (_, i) => addDaysYMD(gridStart, i));
+  const month = date.getUTCMonth();
 
   const apptByDay = useMemo(() => {
     const m = new Map<string, AgendaAppointment[]>();
     for (const a of appointments) {
-      const k = ymd(new Date(a.starts_at));
+      const k = dayOf(a.starts_at);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(a);
     }
@@ -271,7 +287,7 @@ function MonthGrid({
   const blockByDay = useMemo(() => {
     const m = new Map<string, AgendaBlock[]>();
     for (const b of blocks) {
-      const k = ymd(new Date(b.starts_at));
+      const k = dayOf(b.starts_at);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(b);
     }
@@ -293,9 +309,9 @@ function MonthGrid({
         </div>
         <div className="grid grid-cols-7 gap-px bg-line">
           {cells.map((cell) => {
-            const k = ymd(cell);
+            const k = formatYMD(cell);
             const isToday = todayYMD === k;
-            const inMonth = cell.getMonth() === month;
+            const inMonth = cell.getUTCMonth() === month;
             const dayAppts = apptByDay.get(k) ?? [];
             const dayBlocks = blockByDay.get(k) ?? [];
             const MAX = 3;
@@ -315,7 +331,7 @@ function MonthGrid({
                         : "text-ink-3"
                   }`}
                 >
-                  {cell.getDate()}
+                  {cell.getUTCDate()}
                 </Link>
                 <div className="flex flex-col gap-0.5">
                   {dayBlocks.slice(0, 1).map((b) => (
@@ -336,7 +352,7 @@ function MonthGrid({
                       onClick={(e) => onOpen(e, { kind: "appt", appt: a })}
                       className={`w-full cursor-pointer truncate rounded-sm border-l-2 px-1 py-px text-left text-[10px] font-medium ${statusClasses(a.status)}`}
                     >
-                      {timeLabel(a.starts_at)} {a.patientName ?? "—"}
+                      {formatTime(a.starts_at)} {a.patientName ?? "—"}
                     </button>
                   ))}
                   {extra > 0 && (
@@ -359,47 +375,22 @@ function MonthGrid({
 
 /* ---------------------------------------------------- vista día/semana --- */
 
-type Placed = {
-  appt: AgendaAppointment;
-  top: number;
-  height: number;
-  leftPct: number;
-  widthPct: number;
-};
+type Placed = LayoutBox & { appt: AgendaAppointment };
 
-/** Coloca las citas de un día en carriles para resolver solapes. */
-function layoutDay(appts: AgendaAppointment[]): Placed[] {
-  const evs = appts
-    .map((a) => {
-      const s = Math.max(minutesOfDay(a.starts_at), HOUR_START * 60);
-      const e = Math.min(
-        Math.max(minutesOfDay(a.ends_at), s + 25),
-        HOUR_END * 60,
-      );
-      return { a, s, e };
-    })
-    .filter((ev) => ev.e > ev.s)
-    .sort((x, y) => x.s - y.s);
-
-  const laneEnds: number[] = [];
-  const withLane = evs.map((ev) => {
-    let lane = laneEnds.findIndex((end) => end <= ev.s);
-    if (lane === -1) {
-      lane = laneEnds.length;
-      laneEnds.push(0);
-    }
-    laneEnds[lane] = ev.e;
-    return { ...ev, lane };
-  });
-  const lanes = Math.max(1, laneEnds.length);
-
-  return withLane.map(({ a, s, e, lane }) => ({
-    appt: a,
-    top: ((s - HOUR_START * 60) / 60) * HOUR_PX,
-    height: Math.max(((e - s) / 60) * HOUR_PX - 2, 18),
-    leftPct: (lane / lanes) * 100,
-    widthPct: 100 / lanes,
-  }));
+/**
+ * Coloca las citas de un día en carriles. El algoritmo vive en
+ * `lib/appointment-layout.ts` para poder testearlo sin DOM.
+ */
+function placeDay(appts: AgendaAppointment[]): Placed[] {
+  const byId = new Map(appts.map((a) => [a.id, a]));
+  return layoutDay(
+    appts.map((a) => ({
+      id: a.id,
+      startMin: minutesOfDay(a.starts_at),
+      endMin: minutesOfDay(a.ends_at),
+    })),
+    { hourStart: HOUR_START, hourEnd: HOUR_END, hourPx: HOUR_PX },
+  ).map((box) => ({ ...box, appt: byId.get(box.id)! }));
 }
 
 function TimeGrid({
@@ -422,8 +413,8 @@ function TimeGrid({
     p: { kind: "appt"; appt: AgendaAppointment } | { kind: "block"; block: AgendaBlock },
   ) => void;
 }) {
-  const start = days === 7 ? mondayOf(date) : date;
-  const cols = Array.from({ length: days }, (_, i) => addDays(start, i));
+  const start = days === 7 ? mondayOfYMD(date) : date;
+  const cols = Array.from({ length: days }, (_, i) => addDaysYMD(start, i));
   const hours = Array.from(
     { length: HOUR_END - HOUR_START },
     (_, i) => HOUR_START + i,
@@ -432,7 +423,7 @@ function TimeGrid({
   const apptByDay = useMemo(() => {
     const m = new Map<string, AgendaAppointment[]>();
     for (const a of appointments) {
-      const k = ymd(new Date(a.starts_at));
+      const k = dayOf(a.starts_at);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(a);
     }
@@ -449,7 +440,7 @@ function TimeGrid({
         >
           <div />
           {cols.map((c) => {
-            const k = ymd(c);
+            const k = formatYMD(c);
             const isToday = todayYMD === k;
             return (
               <Link
@@ -460,7 +451,7 @@ function TimeGrid({
                 <span
                   className={`text-xs capitalize ${isToday ? "font-semibold text-accent" : "text-ink-2"}`}
                 >
-                  {c.toLocaleDateString("es-ES", {
+                  {cellLabel(c, {
                     weekday: "short",
                     day: "numeric",
                     ...(days === 1 ? { month: "long" } : {}),
@@ -489,11 +480,17 @@ function TimeGrid({
           </div>
           {/* Columnas de días */}
           {cols.map((c) => {
-            const k = ymd(c);
+            const k = formatYMD(c);
             const isToday = todayYMD === k;
-            const placed = layoutDay(apptByDay.get(k) ?? []);
-            const dayStartMs = c.getTime() + HOUR_START * 3600_000;
-            const dayEndMs = c.getTime() + HOUR_END * 3600_000;
+            const placed = placeDay(apptByDay.get(k) ?? []);
+            // Instantes reales de las 07:00 y las 21:00 EN MADRID de ese día.
+            // Con `c.getTime() + 7h` se obtenían las 07:00 UTC y los bloqueos
+            // se pintaban desplazados una o dos horas.
+            const cy = c.getUTCFullYear();
+            const cm = c.getUTCMonth() + 1;
+            const cd = c.getUTCDate();
+            const dayStartMs = fromWallClock(cy, cm, cd, HOUR_START, 0).getTime();
+            const dayEndMs = fromWallClock(cy, cm, cd, HOUR_END, 0).getTime();
             const dayBlocks = blocks
               .map((b) => {
                 const s = Math.max(new Date(b.starts_at).getTime(), dayStartMs);
@@ -553,7 +550,7 @@ function TimeGrid({
                     </span>
                     {height >= 34 && (
                       <span className="block truncate text-[10px] opacity-80">
-                        {timeLabel(appt.starts_at)} – {timeLabel(appt.ends_at)}
+                        {formatTime(appt.starts_at)} – {formatTime(appt.ends_at)}
                       </span>
                     )}
                   </button>
@@ -591,6 +588,7 @@ function ApptPreview({
   onEdit: () => void;
 }) {
   const day = new Date(appt.starts_at).toLocaleDateString("es-ES", {
+    timeZone: TZ,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -605,7 +603,7 @@ function ApptPreview({
       </div>
       <p className="mt-1 text-sm text-ink-2 capitalize">{day}</p>
       <p className="text-sm text-ink-2">
-        {timeLabel(appt.starts_at)} – {timeLabel(appt.ends_at)}
+        {formatTime(appt.starts_at)} – {formatTime(appt.ends_at)}
         {appt.attendance !== "pending" && (
           <span className="ml-2 text-xs text-ink-3">
             · {ATTENDANCE_LABEL[appt.attendance] ?? appt.attendance}
@@ -618,9 +616,11 @@ function ApptPreview({
         </p>
       )}
       <div className="mt-2 flex items-center gap-3 text-xs">
-        {appt.video_link && (
+        {/* Se revalida el esquema al pintar, no solo al guardar: cubre lo que ya
+            estuviera en BD antes de la validación en la server action. */}
+        {safeExternalUrl(appt.video_link) && (
           <a
-            href={appt.video_link}
+            href={safeExternalUrl(appt.video_link)!}
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-accent hover:underline"
@@ -655,16 +655,12 @@ function BlockPreview({
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleString("es-ES", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const [error, setError] = useState("");
+  const fmt = (iso: string) => formatDateTime(iso);
   return (
     <div>
       <p className="text-sm font-semibold">Bloqueo</p>
+      {error && <p role="alert" className="text-danger">{error}</p>}
       <p className="mt-1 text-sm text-ink-2">
         {fmt(block.starts_at)} → {fmt(block.ends_at)}
       </p>
@@ -675,8 +671,8 @@ function BlockPreview({
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
-              await deleteBlockAction(block.id);
-              onDone();
+              try { await callAction(deleteBlockAction, block.id); onDone(); }
+              catch (e) { setError(actionErrorMessage(e)); }
             })
           }
           className="btn-danger h-7 text-xs"
@@ -697,6 +693,7 @@ function EditModal({
   appt: AgendaAppointment;
   onClose: () => void;
 }) {
+  const dialogRef = useDialogFocus(onClose);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const initialMin = Math.round(
@@ -713,6 +710,10 @@ function EditModal({
   const [attendance, setAttendance] = useState(appt.attendance);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState("");
+  /** Aviso informativo: la acción se ha hecho, pero hay algo que contar. */
+  const [aviso, setAviso] = useState("");
+  const esDeSerie =
+    appt.parent_appointment_id != null || appt.recurrence_freq !== "none";
 
   const minutes = customMode
     ? Math.max(5, parseInt(customMin, 10) || 0)
@@ -722,15 +723,16 @@ function EditModal({
     if (conflict) setConflict("");
   }
 
-  function run(fn: () => Promise<void>, close = true) {
+  function run(fn: () => Promise<void | { warning?: string }>, close = true) {
     setError("");
     startTransition(async () => {
       try {
-        await fn();
+        const result = await fn();
         router.refresh();
-        if (close) onClose();
+        if (result?.warning) setAviso(result.warning);
+        else if (close) onClose();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error.");
+        setError(actionErrorMessage(e));
       }
     });
   }
@@ -744,12 +746,18 @@ function EditModal({
       setError("La duración debe ser de al menos 5 minutos.");
       return;
     }
+    // El valor del input se interpreta como hora de Madrid, no como hora del
+    // navegador: es la inversa exacta de `toDatetimeLocal`.
+    const startDate = fromDatetimeLocal(start);
+    if (!startDate) {
+      setError("La fecha y hora no son válidas.");
+      return;
+    }
     setError("");
-    const startDate = new Date(start);
     const endsAt = new Date(startDate.getTime() + minutes * 60_000).toISOString();
     startTransition(async () => {
       try {
-        const res = await updateAppointmentAction({
+        const res = await callAction(updateAppointmentAction, {
           id: appt.id,
           patientId: appt.patient_id,
           startsAt: startDate.toISOString(),
@@ -763,12 +771,19 @@ function EditModal({
           return;
         }
         if (attendance !== appt.attendance) {
-          await setAttendanceAction(appt.id, attendance);
+          const res = await callAction(setAttendanceAction, appt.id, attendance);
+          if (res.warning) {
+            // El modal NO se cierra: si se cerrara, el aviso se perdería y el
+            // profesional se quedaría pensando que el pago se ha borrado.
+            setAviso(res.warning);
+            router.refresh();
+            return;
+          }
         }
         router.refresh();
         onClose();
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Error.");
+        setError(actionErrorMessage(e));
       }
     });
   }
@@ -779,9 +794,12 @@ function EditModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
+        aria-label="Modificar cita"
         aria-modal
-        className="card w-full max-w-md p-6"
+        className="card max-h-[90dvh] w-full max-w-md overflow-y-auto p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -793,6 +811,18 @@ function EditModal({
             Cerrar
           </button>
         </div>
+
+        {/* La edición afecta SOLO a esta ocurrencia. Se dice de forma explícita
+            porque antes no se decía y mover la cita madre de una serie dejaba
+            las repeticiones en el horario antiguo, sin aviso. Editar la serie
+            completa está pendiente. */}
+        {esDeSerie && (
+          <p className="mt-3 rounded bg-info-soft p-2.5 text-xs text-info">
+            Esta cita forma parte de una serie. Los cambios se aplican{" "}
+            <strong className="font-semibold">solo a esta cita</strong>; las
+            demás repeticiones se quedan como están.
+          </p>
+        )}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="block sm:col-span-2">
@@ -902,13 +932,31 @@ function EditModal({
         </div>
 
         {error && (
-          <p className="mt-3 rounded bg-danger-soft p-3 text-sm text-danger">
+          <p role="alert" className="mt-3 rounded bg-danger-soft p-3 text-sm text-danger">
             {error}
           </p>
         )}
 
+        {aviso && (
+          <div
+            role="status"
+            className="mt-3 flex items-start gap-2 rounded-md border border-info/30 bg-info-soft p-3 text-sm text-info"
+          >
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
+            <div>
+              <p>{aviso}</p>
+              <Link
+                href={`/pro/patients/${appt.patient_id}?tab=pagos`}
+                className="mt-1 inline-block font-medium underline underline-offset-2"
+              >
+                Ir a Pagos de la ficha
+              </Link>
+            </div>
+          </div>
+        )}
+
         {conflict && (
-          <div className="mt-3 flex items-start gap-2 rounded-md border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
+          <div role="alert" className="mt-3 flex items-start gap-2 rounded-md border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
             <p>{conflict}</p>
           </div>
@@ -920,7 +968,7 @@ function EditModal({
               <button
                 type="button"
                 disabled={pending}
-                onClick={() => run(() => cancelAppointmentAction(appt.id))}
+                onClick={() => run(() => callAction(cancelAppointmentAction, appt.id))}
                 className="btn-subtle btn-sm text-warn hover:text-warn"
               >
                 Cancelar cita
@@ -931,7 +979,7 @@ function EditModal({
               disabled={pending}
               onClick={() => {
                 if (window.confirm("¿Eliminar esta cita definitivamente?")) {
-                  run(() => deleteAppointmentAction(appt.id));
+                  run(() => callAction(deleteAppointmentAction, appt.id));
                 }
               }}
               className="btn-danger btn-sm"

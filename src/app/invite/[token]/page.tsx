@@ -9,34 +9,25 @@ export default async function InvitePage({
 }) {
   const { token } = await params;
   const supabase = await createClient();
+  // `invitation_preview` es accesible a `anon` (esta landing es pública), así
+  // que desde 20260807120002 devuelve 0 filas para cualquier token que no esté
+  // vivo y ya no revela el nombre del profesional: para alguien anónimo, el
+  // psicólogo asociado a un destinatario es un dato de salud por inferencia.
+  // Por eso aquí solo hay dos estados: sirve o no sirve.
   const { data } = await supabase.rpc("invitation_preview", { p_token: token });
   const preview = data?.[0] ?? null;
-
-  const valid = preview?.valid === true;
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
       <div className="card w-full max-w-md p-8 text-center">
-        {!preview ? (
-          <>
-            <h1 className="text-xl font-semibold tracking-[-0.01em]">
-              Invitación no encontrada
-            </h1>
-            <p className="mt-2 text-sm text-ink-2">
-              El enlace no es válido. Pide a tu profesional que te envíe uno
-              nuevo.
-            </p>
-          </>
-        ) : valid ? (
+        {preview ? (
           <>
             <h1 className="text-xl font-semibold tracking-[-0.01em]">
               Te han invitado a terap.ia
             </h1>
             <p className="mt-2 text-sm text-ink-2">
-              {preview.professional_name
-                ? `${preview.professional_name} quiere acompañarte en terap.ia.`
-                : "Tu profesional quiere acompañarte en terap.ia."}{" "}
-              Válida hasta {formatDate(preview.expires_at)}.
+              Tu profesional quiere acompañarte en terap.ia. Válida hasta{" "}
+              {formatDate(preview.expires_at)}.
             </p>
             <Link
               href={`/login?invite=${token}`}
@@ -45,18 +36,19 @@ export default async function InvitePage({
               Acceder para aceptar
             </Link>
             <p className="mt-3 text-xs text-ink-3">
-              Recibirás un enlace por correo; ábrelo en este dispositivo para
-              completar tu alta.
+              Usa el mismo correo en el que has recibido la invitación: solo esa
+              dirección puede aceptarla. Recibirás un enlace y tendrás que
+              abrirlo en este dispositivo.
             </p>
           </>
         ) : (
           <>
             <h1 className="text-xl font-semibold tracking-[-0.01em]">
-              Invitación caducada
+              Esta invitación ya no sirve
             </h1>
             <p className="mt-2 text-sm text-ink-2">
-              Este enlace ya se usó o ha caducado. Pide uno nuevo a tu
-              profesional.
+              El enlace no es válido, ha caducado o ya se ha usado. Pide a tu
+              profesional que te envíe uno nuevo.
             </p>
           </>
         )}

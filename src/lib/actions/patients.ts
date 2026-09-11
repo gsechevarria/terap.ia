@@ -1,9 +1,11 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfessional } from "@/lib/queries/identity";
+import { getCurrentProfessional, requireOwnedPatient } from "@/lib/queries/identity";
 import type { PatientStatus } from "@/lib/types";
 
 function parseTags(raw: string): string[] {
@@ -28,13 +30,13 @@ const CONTACT_KEYS = [
 ] as const;
 
 /** Crea un paciente y redirige a su ficha. Se invoca desde un <form>. */
-export async function createPatientAction(formData: FormData) {
+async function createPatientActionImpl(formData: FormData) {
   const pro = await getCurrentProfessional();
   if (!pro) redirect("/login");
 
   const fullName = String(formData.get("full_name") ?? "").trim();
   const tags = parseTags(String(formData.get("tags") ?? ""));
-  if (!fullName) throw new Error("El nombre es obligatorio.");
+  if (!fullName) throw new ActionInputError("El nombre es obligatorio.");
 
   const contact = Object.fromEntries(
     CONTACT_KEYS.map((k) => [k, optionalText(formData, k)]),
@@ -63,54 +65,80 @@ export async function createPatientAction(formData: FormData) {
  * Actualiza los datos de contacto/personales del paciente desde la ficha.
  * RLS garantiza que solo el profesional dueño puede modificarlo.
  */
-export async function updatePatientDetailsAction(
+async function updatePatientDetailsActionImpl(
   patientId: string,
   formData: FormData,
 ) {
+  const { pro } = await requireOwnedPatient(patientId);
   const fullName = String(formData.get("full_name") ?? "").trim();
-  if (!fullName) throw new Error("El nombre es obligatorio.");
+  if (!fullName) throw new ActionInputError("El nombre es obligatorio.");
 
   const contact = Object.fromEntries(
     CONTACT_KEYS.map((k) => [k, optionalText(formData, k)]),
   );
 
   const supabase = await createClient();
-  const { error } = await supabase
+  // `.select().maybeSingle()`: en PostgREST un UPDATE/DELETE que no casa
+  // ninguna fila devuelve `error: null`, así que la UI cerraba el editor,
+  // refrescaba y mostraba los datos antiguos como si se hubieran guardado.
+  const { data, error } = await supabase
     .from("patients")
     .update({
       full_name: fullName,
       email: optionalText(formData, "email"),
       ...contact,
     })
-    .eq("id", patientId);
+    .eq("id", patientId)
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new ActionInputError("Paciente no encontrado.");
 
   revalidatePath("/pro");
   revalidatePath(`/pro/patients/${patientId}`);
 }
 
 /** Archiva o reactiva un paciente (sin borrar histórico). */
-export async function setPatientStatusAction(
+async function setPatientStatusActionImpl(
   patientId: string,
   status: PatientStatus,
 ) {
+  const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("patients")
     .update({ status })
-    .eq("id", patientId);
+    .eq("id", patientId)
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new ActionInputError("Paciente no encontrado.");
   revalidatePath("/pro");
   revalidatePath(`/pro/patients/${patientId}`);
 }
 
 /** Actualiza las etiquetas del paciente. */
-export async function updatePatientTagsAction(patientId: string, tags: string[]) {
+async function updatePatientTagsActionImpl(patientId: string, tags: string[]) {
+  const { pro } = await requireOwnedPatient(patientId);
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("patients")
     .update({ tags })
-    .eq("id", patientId);
+    .eq("id", patientId)
+    .eq("professional_id", pro.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new ActionInputError("Paciente no encontrado.");
   revalidatePath(`/pro/patients/${patientId}`);
 }
+
+export async function createPatientAction(...args: Parameters<typeof createPatientActionImpl>) { return runAction(() => createPatientActionImpl(...args)); }
+
+export async function updatePatientDetailsAction(...args: Parameters<typeof updatePatientDetailsActionImpl>) { return runAction(() => updatePatientDetailsActionImpl(...args)); }
+
+export async function setPatientStatusAction(...args: Parameters<typeof setPatientStatusActionImpl>) { return runAction(() => setPatientStatusActionImpl(...args)); }
+
+export async function updatePatientTagsAction(...args: Parameters<typeof updatePatientTagsActionImpl>) { return runAction(() => updatePatientTagsActionImpl(...args)); }

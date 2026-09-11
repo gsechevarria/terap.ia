@@ -132,9 +132,10 @@ export function DateField({
     const steps: Record<string, number> = {
       ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7,
     };
-    if (e.key in steps) {
+    const step = steps[e.key];
+    if (step != null) {
       e.preventDefault();
-      const next = addDays(focusKey, steps[e.key]);
+      const next = addDays(focusKey, step);
       setFocusKey(next);
       const p = parseKey(next);
       if (p) setView({ year: p.y, month: p.m });

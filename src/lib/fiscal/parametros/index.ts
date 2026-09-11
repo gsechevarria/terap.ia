@@ -1,4 +1,9 @@
-import { PARAMS_2026, type ParamsFiscales } from "./2026";
+import {
+  PARAMS_2026,
+  parametrosNoVerificados,
+  type ParamsFiscales,
+  type ParamVerificable,
+} from "./2026";
 
 /**
  * Selector de parámetros por ejercicio. Al añadir un nuevo año, crea
@@ -19,5 +24,5 @@ export function hayParamsExactos(ejercicio: number): boolean {
   return ejercicio in PARAMS_POR_ANIO;
 }
 
-export { PARAMS_2026 };
-export type { ParamsFiscales };
+export { PARAMS_2026, parametrosNoVerificados };
+export type { ParamsFiscales, ParamVerificable };

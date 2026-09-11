@@ -2,7 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { ROLES, getUserRole, homePathForRole, type Role } from "@/lib/auth/roles";
+import { authErrorMessage } from "@/lib/errors";
+import { getUserRole, homePathForRole } from "@/lib/auth/roles";
 
 type Method = "password" | "magic" | "reset";
 type Status = "idle" | "sending" | "sent" | "error";
@@ -12,9 +13,6 @@ export function LoginForm({ invite }: { invite?: string }) {
   const [method, setMethod] = useState<Method>(isInvite ? "magic" : "password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<Role>(
-    isInvite ? ROLES.PATIENT : ROLES.PROFESSIONAL,
-  );
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
@@ -38,11 +36,7 @@ export function LoginForm({ invite }: { invite?: string }) {
 
     if (error) {
       setStatus("error");
-      setMessage(
-        error.message === "Invalid login credentials"
-          ? "Correo o contraseña incorrectos."
-          : error.message,
-      );
+      setMessage(authErrorMessage(error));
       return;
     }
     const userRole = getUserRole(data.user);
@@ -61,17 +55,18 @@ export function LoginForm({ invite }: { invite?: string }) {
     }`;
 
     const supabase = createClient();
+    // El rol NO se envía desde el cliente: iba a `user_metadata`, que el propio
+    // usuario puede reescribir. Lo fija el servidor en `handle_new_user`.
+    // `shouldCreateUser` solo se permite en el alta por invitación: sin esto,
+    // cualquiera con un correo se daba de alta como profesional desde /login.
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: redirectTo,
-        data: { role: isInvite ? ROLES.PATIENT : role },
-      },
+      options: { emailRedirectTo: redirectTo, shouldCreateUser: isInvite },
     });
 
     if (error) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(authErrorMessage(error));
       return;
     }
     setStatus("sent");
@@ -93,9 +88,11 @@ export function LoginForm({ invite }: { invite?: string }) {
 
     if (error) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(authErrorMessage(error));
       return;
     }
+    // Mensaje deliberadamente neutro: no revela si la cuenta existe (evita
+    // enumeración de usuarios). No cambiar por un "te hemos enviado…" directo.
     setStatus("sent");
     setMessage(
       "Si existe una cuenta con ese correo, te hemos enviado un enlace para establecer tu contraseña.",
@@ -139,7 +136,7 @@ export function LoginForm({ invite }: { invite?: string }) {
 
       {status === "sent" ? (
         <div className="mt-6">
-          <p className="rounded bg-accent-soft p-4 text-sm text-accent">
+          <p role="status" className="rounded bg-accent-soft p-4 text-sm text-accent">
             {message}
           </p>
           {method === "reset" && (
@@ -180,7 +177,7 @@ export function LoginForm({ invite }: { invite?: string }) {
           </label>
 
           {status === "error" && (
-            <p className="rounded bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
               {message}
             </p>
           )}
@@ -216,7 +213,7 @@ export function LoginForm({ invite }: { invite?: string }) {
           </label>
 
           {status === "error" && (
-            <p className="rounded bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
               {message}
             </p>
           )}
@@ -252,30 +249,16 @@ export function LoginForm({ invite }: { invite?: string }) {
           </label>
 
           {!isInvite && (
-            <fieldset>
-              <legend className="field-label">Accedes como</legend>
-              <div className="grid grid-cols-2 gap-2">
-                <RoleOption
-                  label="Profesional"
-                  value={ROLES.PROFESSIONAL}
-                  checked={role === ROLES.PROFESSIONAL}
-                  onSelect={setRole}
-                />
-                <RoleOption
-                  label="Paciente"
-                  value={ROLES.PATIENT}
-                  checked={role === ROLES.PATIENT}
-                  onSelect={setRole}
-                />
-              </div>
-              <p className="mt-1.5 text-xs text-ink-3">
-                El rol solo se asigna en tu primer acceso.
-              </p>
-            </fieldset>
+            <p className="rounded bg-panel p-3 text-xs leading-relaxed text-ink-2">
+              El acceso por enlace es solo para cuentas ya existentes. Si eres
+              paciente, entra desde el enlace de invitación que te haya enviado
+              tu profesional; si eres profesional y aún no tienes cuenta,
+              ponte en contacto con nosotros.
+            </p>
           )}
 
           {status === "error" && (
-            <p className="rounded bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
               {message}
             </p>
           )}
@@ -317,34 +300,3 @@ function MethodTab({
   );
 }
 
-function RoleOption({
-  label,
-  value,
-  checked,
-  onSelect,
-}: {
-  label: string;
-  value: Role;
-  checked: boolean;
-  onSelect: (role: Role) => void;
-}) {
-  return (
-    <label
-      className={`cursor-pointer rounded border px-3 py-2 text-center text-sm font-medium transition-colors duration-100 ${
-        checked
-          ? "border-accent bg-accent-soft text-accent"
-          : "border-line text-ink-2 hover:bg-wash"
-      }`}
-    >
-      <input
-        type="radio"
-        name="role"
-        value={value}
-        checked={checked}
-        onChange={() => onSelect(value)}
-        className="sr-only"
-      />
-      {label}
-    </label>
-  );
-}

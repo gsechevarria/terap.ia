@@ -1,3 +1,5 @@
+import { ymdInTZ } from "@/lib/tz";
+import { checked, allRows } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
 import type { Payment, PaymentSetting, SessionPack } from "@/lib/types";
@@ -21,22 +23,22 @@ export async function getPatientPaymentDetail(
 ): Promise<PatientPaymentDetail> {
   const supabase = await createClient();
   const [priceRes, packRes, payRes] = await Promise.all([
-    supabase
+    checked(supabase
       .from("payment_settings")
       .select("*")
       .eq("patient_id", patientId)
       .eq("session_type", DEFAULT_SESSION_TYPE)
-      .maybeSingle(),
-    supabase
+      .maybeSingle()),
+    allRows(supabase
       .from("session_packs")
       .select("*")
       .eq("patient_id", patientId)
-      .order("purchased_at", { ascending: false }),
-    supabase
+      .order("purchased_at", { ascending: false })),
+    allRows(supabase
       .from("payments")
       .select("*, appointments(starts_at)")
       .eq("patient_id", patientId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })),
   ]);
 
   const payments: PaymentWithSession[] = (payRes.data ?? []).map((row) => {
@@ -75,10 +77,10 @@ export async function getPaymentsOverview(): Promise<PaymentsOverview> {
   const pro = await getCurrentProfessional();
   if (!pro) return { byMonth: [], totalPaidCents: 0, totalPendingCents: 0 };
 
-  const { data } = await supabase
+  const { data } = await allRows(supabase
     .from("payments")
     .select("amount_cents, status, paid_at, created_at")
-    .eq("professional_id", pro.id);
+    .eq("professional_id", pro.id));
 
   const rows = data ?? [];
   const monthMap = new Map<string, { paidCents: number; count: number }>();
@@ -89,7 +91,7 @@ export async function getPaymentsOverview(): Promise<PaymentsOverview> {
     if (r.status === "paid") {
       totalPaidCents += r.amount_cents;
       const when = r.paid_at ?? r.created_at;
-      const month = when.slice(0, 7); // YYYY-MM
+      const month = ymdInTZ(new Date(when)).slice(0, 7); // YYYY-MM
       const cur = monthMap.get(month) ?? { paidCents: 0, count: 0 };
       cur.paidCents += r.amount_cents;
       cur.count += 1;
@@ -159,9 +161,17 @@ const EMPTY_HISTORY: PaymentHistory = {
 
 /**
  * Pagos del profesional con filtros (rango de fechas, estado, método, paciente)
- * y agregados sobre el conjunto filtrado. La fecha efectiva de cada pago es
- * `paid_at ?? created_at`; el filtro de rango se aplica en JS sobre ella para
- * ser consistente con lo que se muestra. Para seguimiento, nunca facturación.
+ * y agregados sobre el conjunto filtrado.
+ *
+ * El filtro de fechas y la ordenación se hacen EN SQL sobre la columna generada
+ * `fecha_efectiva` (= `paid_at ?? created_at`). Antes se traía todo sin
+ * `order`, sin `limit` y sin `range`, y se filtraba en memoria: PostgREST corta
+ * en `db-max-rows` (1.000) y, sin ORDER BY, el subconjunto devuelto ni siquiera
+ * es determinista. Con cuatro años de historial, filtrar "enero 2024" mostraba
+ * 3 pagos en vez de 55 y los totales reportaban una fracción de lo real, sin
+ * ningún aviso.
+ *
+ * Para seguimiento, nunca facturación.
  */
 export async function getProfessionalPayments(
   filters: PaymentFilters = {},
@@ -179,31 +189,27 @@ export async function getProfessionalPayments(
   if (filters.patientId) q = q.eq("patient_id", filters.patientId);
   if (filters.method === "none") q = q.is("method", null);
   else if (filters.method) q = q.eq("method", filters.method);
+  if (filters.fromISO) q = q.gte("fecha_efectiva", filters.fromISO);
+  if (filters.toISO) q = q.lt("fecha_efectiva", filters.toISO);
 
-  const { data } = await q;
+  // El tope es explícito y alto: los agregados de la pantalla se calculan sobre
+  // lo devuelto, así que un recorte silencioso falsearía los totales. Si algún
+  // profesional lo supera habrá que mover los agregados a una RPC que sume en
+  // SQL (anotado en docs/MIGRACIONES-PENDIENTES.md).
+  const { data } = await allRows(q.order("fecha_efectiva", { ascending: false }));
 
-  const fromMs = filters.fromISO ? Date.parse(filters.fromISO) : null;
-  const toMs = filters.toISO ? Date.parse(filters.toISO) : null;
   const effective = (p: Payment) => p.paid_at ?? p.created_at;
-
-  const rows: PaymentHistoryRow[] = [];
-  for (const row of data ?? []) {
+  const rows: PaymentHistoryRow[] = (data ?? []).map((row) => {
     const { patients, appointments, ...rest } = row as typeof row & {
       patients: { full_name: string | null } | null;
       appointments: { starts_at: string } | null;
     };
-    const payment = rest as Payment;
-    const whenMs = Date.parse(effective(payment));
-    if (fromMs !== null && whenMs < fromMs) continue;
-    if (toMs !== null && whenMs >= toMs) continue;
-    rows.push({
-      ...payment,
+    return {
+      ...(rest as Payment),
       sessionAt: appointments?.starts_at ?? null,
       patientName: patients?.full_name ?? null,
-    });
-  }
-
-  rows.sort((a, b) => Date.parse(effective(b)) - Date.parse(effective(a)));
+    };
+  });
 
   let totalPaidCents = 0;
   let totalPendingCents = 0;
@@ -221,7 +227,7 @@ export async function getProfessionalPayments(
       m.paidCents += p.amount_cents;
       m.count += 1;
       methodMap.set(mKey, m);
-      const month = effective(p).slice(0, 7); // YYYY-MM
+      const month = ymdInTZ(new Date(effective(p))).slice(0, 7); // YYYY-MM
       const mm = monthMap.get(month) ?? { paidCents: 0, count: 0 };
       mm.paidCents += p.amount_cents;
       mm.count += 1;
@@ -263,15 +269,15 @@ export async function getMyPaymentSummary(): Promise<MyPaymentSummary> {
   if (!patient) return { payments: [], debtCents: 0, packRemaining: 0 };
 
   const [{ data: payments }, { data: packs }] = await Promise.all([
-    supabase
+    allRows(supabase
       .from("payments")
       .select("*")
       .eq("patient_id", patient.id)
-      .order("created_at", { ascending: false }),
-    supabase
+      .order("created_at", { ascending: false })),
+    allRows(supabase
       .from("session_packs")
       .select("total_sessions, used_sessions, active")
-      .eq("patient_id", patient.id),
+      .eq("patient_id", patient.id)),
   ]);
 
   const debtCents = (payments ?? [])

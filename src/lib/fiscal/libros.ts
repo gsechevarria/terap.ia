@@ -4,10 +4,10 @@
  * NO son facturas ni contabilidad oficial.
  */
 import type { FiscalArrays, Trimestre } from "./types";
-import { CATEGORIA_LABEL } from "./types";
+import { CATEGORIA_LABEL, prorrataEfectiva } from "./types";
 import type { ParamsFiscales } from "./parametros";
 import {
-  amortizacionAnual,
+  amortizacionEjercicio,
   anioDeFecha,
   deducibleIrpf,
   redondear,
@@ -42,7 +42,7 @@ export function libroIngresos(
     .filter((i) => enPeriodo(i.fecha, filtro))
     .sort((a, b) => a.fecha.localeCompare(b.fecha))
     .map((i, idx) => {
-      const retencion = i.retencionAplicable ? redondear(i.base * tasaRet) : 0;
+      const retencion = i.retencion ?? (i.retencionAplicable ? redondear(i.base * tasaRet) : 0);
       return [
         idx + 1,
         i.fecha.slice(0, 10),
@@ -74,9 +74,19 @@ export function libroIngresos(
   };
 }
 
+/**
+ * Libro de gastos CORRIENTES.
+ *
+ * Los bienes de inversión se excluyen: se amortizan y van en su propio libro.
+ * Antes se listaban aquí al 100 %, mientras `calcularResumenAnual` sí los
+ * excluía, así que el mismo XLSX traía el portátil por 3.000 € en "Libro de
+ * gastos" y por 750 € en "Bienes de inversión": quien sumase la columna
+ * "Deducible" se pasaba 2.250 €.
+ */
 export function libroGastos(data: FiscalArrays, filtro: FiltroPeriodo): Libro {
+  const prorrata = prorrataEfectiva(data.config);
   const rows = data.gastos
-    .filter((g) => enPeriodo(g.fecha, filtro))
+    .filter((g) => enPeriodo(g.fecha, filtro) && !g.esBienInversion)
     .sort((a, b) => a.fecha.localeCompare(b.fecha))
     .map((g, idx) => [
       idx + 1,
@@ -88,7 +98,7 @@ export function libroGastos(data: FiscalArrays, filtro: FiltroPeriodo): Libro {
       g.tipoIva,
       g.cuotaIva,
       g.porcentajeAfectacion,
-      deducibleIrpf(g, data.config.situacionIva),
+      deducibleIrpf(g, data.config.situacionIva, prorrata),
       g.total,
     ]);
   return {
@@ -117,11 +127,7 @@ export function libroBienesInversion(
   const rows = data.bienes
     .filter((b) => {
       const adq = anioDeFecha(b.fechaAdquisicion);
-      const dentroVida =
-        adq <= filtro.ejercicio &&
-        (b.aniosAmortizacion == null ||
-          filtro.ejercicio <= adq + b.aniosAmortizacion - 1);
-      return dentroVida;
+      return adq <= filtro.ejercicio && amortizacionEjercicio(b, filtro.ejercicio) > 0;
     })
     .sort((a, b) => a.fechaAdquisicion.localeCompare(b.fechaAdquisicion))
     .map((b) => [
@@ -130,7 +136,9 @@ export function libroBienesInversion(
       b.valorAdquisicion,
       b.porcentajeAmortizacion,
       b.aniosAmortizacion ?? "",
-      amortizacionAnual(b),
+      // Prorrateada por días desde la compra: el año de adquisición no se
+      // amortiza entero.
+      amortizacionEjercicio(b, filtro.ejercicio),
     ]);
   return {
     nombre: "Libro de bienes de inversión",
@@ -140,7 +148,7 @@ export function libroBienesInversion(
       "Valor",
       "% amortización",
       "Años",
-      "Amortización anual",
+      "Amortización del ejercicio",
     ],
     rows,
   };

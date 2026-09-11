@@ -1,21 +1,41 @@
 "use server";
+import { runAction } from "@/lib/action-server";
+import { ActionInputError } from "@/lib/action-result";
 
+import { allRows } from "@/lib/query-result";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentPatient, getCurrentProfessional } from "@/lib/queries/identity";
-import { settleAttendedAppointment } from "@/lib/payments";
+import {
+  getCurrentPatient,
+  requireOwnedPatient,
+  requireProfessional,
+} from "@/lib/queries/identity";
+
+import { revalidateAgenda, revalidatePayments } from "@/lib/revalidate";
+import { formatDateTime } from "@/lib/format";
+import { safeExternalUrl } from "@/lib/url";
+import { TZ } from "@/lib/tz";
+import { occurrenceAt, type Freq } from "@/lib/recurrence";
 import type { TablesInsert } from "@/lib/types";
 
-type Freq = "none" | "daily" | "weekly" | "biweekly" | "monthly";
 const RECURRENCE_CAP = 26;
 
-function nextOccurrence(d: Date, freq: Freq): Date {
-  const n = new Date(d);
-  if (freq === "daily") n.setDate(n.getDate() + 1);
-  else if (freq === "weekly") n.setDate(n.getDate() + 7);
-  else if (freq === "biweekly") n.setDate(n.getDate() + 14);
-  else if (freq === "monthly") n.setMonth(n.getMonth() + 1);
-  return n;
+/**
+ * Normaliza el link de videollamada, o lanza si no es http(s).
+ *
+ * Se rechaza en vez de guardarlo en silencio para que el profesional se entere:
+ * el campo se pinta como `href` en la agenda y en la app del paciente, así que
+ * un `javascript:` ahí sería XSS almacenado con un clic.
+ */
+function checkVideoLink(raw: string | undefined): string | null {
+  if (!raw || !raw.trim()) return null;
+  const safe = safeExternalUrl(raw);
+  if (!safe) {
+    throw new ActionInputError(
+      "El link de videollamada no es válido. Debe empezar por https:// o http://.",
+    );
+  }
+  return safe;
 }
 
 export type CreateAppointmentResult =
@@ -27,7 +47,7 @@ export type CreateAppointmentResult =
  * Si detecta un solape con otra cita o un bloqueo y `force` no es true, NO crea
  * nada y devuelve un aviso para que el profesional confirme.
  */
-export async function createAppointmentAction(input: {
+async function createAppointmentActionImpl(input: {
   patientId: string;
   startsAt: string; // ISO (UTC), convertido en el cliente desde hora local
   endsAt: string;
@@ -37,13 +57,13 @@ export async function createAppointmentAction(input: {
   notes?: string;
   force?: boolean;
 }): Promise<CreateAppointmentResult> {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro } = await requireOwnedPatient(input.patientId);
+  const videoLink = checkVideoLink(input.videoLink);
 
   const start = new Date(input.startsAt);
   const end = new Date(input.endsAt);
   if (!(end.getTime() > start.getTime())) {
-    throw new Error("La duración debe ser mayor que cero.");
+    throw new ActionInputError("La duración debe ser mayor que cero.");
   }
   const durationMs = end.getTime() - start.getTime();
 
@@ -53,73 +73,72 @@ export async function createAppointmentAction(input: {
   const occurrences: { start: Date; end: Date }[] = [{ start, end }];
   if (input.freq !== "none") {
     const until = input.until ? new Date(input.until) : null;
-    let cur = nextOccurrence(start, input.freq);
-    let count = 0;
-    while (count < RECURRENCE_CAP) {
+    for (let i = 1; i < RECURRENCE_CAP; i++) {
+      const cur = occurrenceAt(start, input.freq, i);
       if (until && cur.getTime() > until.getTime()) break;
       occurrences.push({ start: cur, end: new Date(cur.getTime() + durationMs) });
-      cur = nextOccurrence(cur, input.freq);
-      count++;
     }
   }
 
-  // Detección de solapes (a menos que el profesional ya haya confirmado).
+  // Solapes de la serie con lo que ya hay en la agenda.
   if (!input.force) {
     const conflict = await findConflict(supabase, pro.id, occurrences);
     if (conflict) return { ok: false, conflict };
+
+    // Y solapes de las ocurrencias ENTRE SÍ: con `daily` y una duración de más
+    // de 24 h, cada ocurrencia pisa la siguiente y no se avisaba. O(n²) con
+    // n ≤ 26, es gratis.
+    const selfConflict = findSelfOverlap(occurrences);
+    if (selfConflict) return { ok: false, conflict: selfConflict };
   }
 
+  // El id de la cita madre se genera aquí para poder insertar TODA la serie en
+  // una sola sentencia. Antes eran dos inserts: si el segundo fallaba quedaba
+  // una cita huérfana ya notificada, y al reintentar se duplicaba.
+  const parentId = crypto.randomUUID();
   const base = {
     professional_id: pro.id,
     patient_id: input.patientId,
-    video_link: input.videoLink?.trim() || null,
+    video_link: videoLink,
     notes: input.notes?.trim() || null,
     recurrence_freq: input.freq,
     recurrence_until: input.until || null,
   };
 
-  const { data: first, error } = await supabase
-    .from("appointments")
-    .insert({ ...base, starts_at: start.toISOString(), ends_at: end.toISOString() })
-    .select("id")
-    .single();
+  const rows: TablesInsert<"appointments">[] = occurrences.map((o, i) => ({
+    ...base,
+    id: i === 0 ? parentId : undefined,
+    starts_at: o.start.toISOString(),
+    ends_at: o.end.toISOString(),
+    parent_appointment_id: i === 0 ? null : parentId,
+  }));
+
+  const { error } = await supabase.from("appointments").insert(rows);
   if (error) throw new Error(error.message);
 
-  if (occurrences.length > 1) {
-    const rows: TablesInsert<"appointments">[] = occurrences.slice(1).map((o) => ({
-      ...base,
-      starts_at: o.start.toISOString(),
-      ends_at: o.end.toISOString(),
-      parent_appointment_id: first.id,
-    }));
-    if (rows.length) {
-      const { error: e2 } = await supabase.from("appointments").insert(rows);
-      if (e2) throw new Error(e2.message);
+  revalidateAgenda(input.patientId);
+  return { ok: true };
+}
+
+/** Primer solape entre dos ocurrencias de la propia serie generada. */
+function findSelfOverlap(
+  occurrences: { start: Date; end: Date }[],
+): string | null {
+  for (let i = 0; i < occurrences.length; i++) {
+    for (let j = i + 1; j < occurrences.length; j++) {
+      const a = occurrences[i];
+      const b = occurrences[j];
+      if (!a || !b) continue;
+      if (b.start.getTime() < a.end.getTime() && b.end.getTime() > a.start.getTime()) {
+        return `Las repeticiones se solapan entre sí (${formatDateTime(
+          a.start.toISOString(),
+        )} y ${formatDateTime(
+          b.start.toISOString(),
+        )}). Reduce la duración o cambia la frecuencia.`;
+      }
     }
   }
-
-  const { data: patient } = await supabase
-    .from("patients")
-    .select("user_id")
-    .eq("id", input.patientId)
-    .maybeSingle();
-  if (patient?.user_id) {
-    await supabase.from("notifications").insert({
-      user_id: patient.user_id,
-      professional_id: pro.id,
-      patient_id: input.patientId,
-      channel: "push",
-      type: "appointment_created",
-      title: "Nueva cita",
-      body: `Se ha programado una cita para el ${start.toLocaleString("es-ES")}.`,
-      scheduled_for: start.toISOString(),
-      status: "queued",
-    });
-  }
-
-  revalidatePath("/pro/agenda");
-  revalidatePath(`/pro/patients/${input.patientId}`);
-  return { ok: true };
+  return null;
 }
 
 /**
@@ -132,26 +151,35 @@ async function findConflict(
   occurrences: { start: Date; end: Date }[],
   excludeId?: string,
 ): Promise<string | null> {
-  const windowStart = occurrences[0].start.toISOString();
-  const windowEnd = occurrences[occurrences.length - 1].end.toISOString();
+  const primera = occurrences[0];
+  const ultima = occurrences[occurrences.length - 1];
+  if (!primera || !ultima) return null;
+  const windowStart = primera.start.toISOString();
+  const windowEnd = ultima.end.toISOString();
 
+  // `order` + `limit` explícitos: sin ellos, la ventana de una serie de 26
+  // ocurrencias (medio año) puede superar el `db-max-rows` de PostgREST y el
+  // recorte, además, sería no determinista — se dejarían de detectar solapes
+  // sin ningún aviso.
   let apptQuery = supabase
     .from("appointments")
     .select("starts_at, ends_at, patients(full_name)")
     .eq("professional_id", professionalId)
     .neq("status", "cancelled")
     .lt("starts_at", windowEnd)
-    .gt("ends_at", windowStart);
+    .gt("ends_at", windowStart)
+    .order("starts_at");
   if (excludeId) apptQuery = apptQuery.neq("id", excludeId);
 
   const [apptRes, blockRes] = await Promise.all([
-    apptQuery,
-    supabase
+    allRows(apptQuery),
+    allRows(supabase
       .from("agenda_blocks")
       .select("starts_at, ends_at, reason")
       .eq("professional_id", professionalId)
       .lt("starts_at", windowEnd)
-      .gt("ends_at", windowStart),
+      .gt("ends_at", windowStart)
+      .order("starts_at")),
   ]);
 
   const overlaps = (aStart: Date, aEnd: Date, bStart: string, bEnd: string) =>
@@ -195,10 +223,11 @@ async function findConflict(
     }
   }
 
-  if (hits.length === 0) return null;
-
   const first = hits[0];
+  if (!first) return null;
+
   const when = first.occ.toLocaleString("es-ES", {
+    timeZone: TZ,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -212,7 +241,7 @@ async function findConflict(
   return msg;
 }
 
-export async function updateAppointmentAction(input: {
+async function updateAppointmentActionImpl(input: {
   id: string;
   patientId: string;
   startsAt: string;
@@ -221,12 +250,12 @@ export async function updateAppointmentAction(input: {
   notes?: string;
   force?: boolean;
 }): Promise<CreateAppointmentResult> {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const { pro } = await requireOwnedPatient(input.patientId);
+  const videoLink = checkVideoLink(input.videoLink);
   const start = new Date(input.startsAt);
   const end = new Date(input.endsAt);
   if (!(end.getTime() > start.getTime())) {
-    throw new Error("La duración debe ser mayor que cero.");
+    throw new ActionInputError("La duración debe ser mayor que cero.");
   }
   const supabase = await createClient();
 
@@ -245,63 +274,53 @@ export async function updateAppointmentAction(input: {
     .update({
       starts_at: start.toISOString(),
       ends_at: end.toISOString(),
-      video_link: input.videoLink?.trim() || null,
+      video_link: videoLink,
       notes: input.notes?.trim() || null,
     })
-    .eq("id", input.id);
+    .eq("id", input.id)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+  revalidateAgenda(input.patientId);
   return { ok: true };
 }
 
-export async function cancelAppointmentAction(id: string) {
+export type SetAttendanceResult = { warning?: string };
+type Attendance = "pending" | "attended" | "no_show" | "late_cancel";
+
+async function changeAppointment(id: string, action: string, attendance?: Attendance): Promise<SetAttendanceResult> {
+  await requireProfessional();
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("appointments")
-    .update({ status: "cancelled" })
-    .eq("id", id);
+  const { data, error } = await supabase.rpc("change_appointment", {
+    p_id: id, p_action: action, p_attendance: attendance,
+  });
   if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+  revalidateAgenda();
+  revalidatePayments();
+  return data === "conservado_cobrado"
+    ? { warning: "Se conserva el cobro registrado. Revisa Pagos si corresponde una devolución." }
+    : {};
 }
-
-export async function deleteAppointmentAction(id: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("appointments").delete().eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+async function cancelAppointmentActionImpl(id: string) {
+  return changeAppointment(id, "cancel");
 }
-
-export async function setAttendanceAction(
-  id: string,
-  attendance: "pending" | "attended" | "no_show" | "late_cancel",
-) {
-  const supabase = await createClient();
-  const patch: { attendance: typeof attendance; status?: "completed" } = {
-    attendance,
-  };
-  if (attendance === "attended") patch.status = "completed";
-  const { error } = await supabase.from("appointments").update(patch).eq("id", id);
-  if (error) throw new Error(error.message);
-
-  // Consumo de bono / pago pendiente automático al acudir.
-  if (attendance === "attended") {
-    await settleAttendedAppointment(id);
-  }
-  revalidatePath("/pro/agenda");
+async function deleteAppointmentActionImpl(id: string) {
+  return changeAppointment(id, "delete");
+}
+async function setAttendanceActionImpl(id: string, attendance: Attendance): Promise<SetAttendanceResult> {
+  return changeAppointment(id, "attendance", attendance);
 }
 
 // ---- Bloqueos de agenda ----------------------------------------------------
-export async function createBlockAction(input: {
+async function createBlockActionImpl(input: {
   startsAt: string;
   endsAt: string;
   reason?: string;
 }) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
+  const pro = await requireProfessional();
   const start = new Date(input.startsAt);
   const end = new Date(input.endsAt);
   if (!(end.getTime() > start.getTime())) {
-    throw new Error("El fin del bloqueo debe ser posterior al inicio.");
+    throw new ActionInputError("El fin del bloqueo debe ser posterior al inicio.");
   }
   const supabase = await createClient();
   const { error } = await supabase.from("agenda_blocks").insert({
@@ -311,23 +330,28 @@ export async function createBlockAction(input: {
     reason: input.reason?.trim() || null,
   });
   if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+  revalidateAgenda();
 }
 
-export async function deleteBlockAction(id: string) {
+async function deleteBlockActionImpl(id: string) {
+  const pro = await requireProfessional();
   const supabase = await createClient();
-  const { error } = await supabase.from("agenda_blocks").delete().eq("id", id);
+  const { error } = await supabase
+    .from("agenda_blocks")
+    .delete()
+    .eq("id", id)
+    .eq("professional_id", pro.id);
   if (error) throw new Error(error.message);
-  revalidatePath("/pro/agenda");
+  revalidateAgenda();
 }
 
 // ---- Lado paciente ---------------------------------------------------------
-export async function respondAppointmentAction(
+async function respondAppointmentActionImpl(
   id: string,
   action: "confirm" | "cancel",
 ) {
   const patient = await getCurrentPatient();
-  if (!patient) throw new Error("Cuenta no vinculada.");
+  if (!patient) throw new ActionInputError("Cuenta no vinculada.");
   const supabase = await createClient();
   // Vía RPC acotada: el paciente solo puede confirmar/cancelar sus propias citas
   // (no reescribir horario, notas del profesional, etc.). La RLS de UPDATE
@@ -340,3 +364,19 @@ export async function respondAppointmentAction(
   revalidatePath("/app");
   revalidatePath("/app/appointments");
 }
+
+export async function createAppointmentAction(...args: Parameters<typeof createAppointmentActionImpl>) { return runAction(() => createAppointmentActionImpl(...args)); }
+
+export async function updateAppointmentAction(...args: Parameters<typeof updateAppointmentActionImpl>) { return runAction(() => updateAppointmentActionImpl(...args)); }
+
+export async function cancelAppointmentAction(...args: Parameters<typeof cancelAppointmentActionImpl>) { return runAction(() => cancelAppointmentActionImpl(...args)); }
+
+export async function deleteAppointmentAction(...args: Parameters<typeof deleteAppointmentActionImpl>) { return runAction(() => deleteAppointmentActionImpl(...args)); }
+
+export async function setAttendanceAction(...args: Parameters<typeof setAttendanceActionImpl>) { return runAction(() => setAttendanceActionImpl(...args)); }
+
+export async function createBlockAction(...args: Parameters<typeof createBlockActionImpl>) { return runAction(() => createBlockActionImpl(...args)); }
+
+export async function deleteBlockAction(...args: Parameters<typeof deleteBlockActionImpl>) { return runAction(() => deleteBlockActionImpl(...args)); }
+
+export async function respondAppointmentAction(...args: Parameters<typeof respondAppointmentActionImpl>) { return runAction(() => respondAppointmentActionImpl(...args)); }

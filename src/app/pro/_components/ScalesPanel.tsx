@@ -1,13 +1,14 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   createScaleAssignmentAction,
   setScaleAssignmentActiveAction,
 } from "@/lib/actions/scales";
 import { formatDate } from "@/lib/format";
+import { useAction } from "@/lib/use-action";
 import type { CatalogScale } from "@/lib/queries/scales";
 import type { ScaleAssignmentView } from "@/lib/queries/patient-detail";
 
@@ -20,8 +21,7 @@ export function ScalesPanel({
   catalog: CatalogScale[];
   assignments: ScaleAssignmentView[];
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const { run, pending, error } = useAction();
 
   const activeCodes = new Set(
     assignments.filter((a) => a.active).map((a) => a.scaleCode),
@@ -35,23 +35,20 @@ export function ScalesPanel({
   function activate() {
     const chosen = scaleId || available[0]?.id;
     if (!chosen) return;
-    startTransition(async () => {
-      await createScaleAssignmentAction({
-        patientId,
-        scaleId: chosen,
-        type,
-        intervalDays: type === "recurring" ? interval : null,
-      });
-      setScaleId("");
-      router.refresh();
-    });
+    run(
+      () =>
+        callAction(createScaleAssignmentAction, {
+          patientId,
+          scaleId: chosen,
+          type,
+          intervalDays: type === "recurring" ? interval : null,
+        }),
+      () => setScaleId(""),
+    );
   }
 
   function toggle(id: string, active: boolean) {
-    startTransition(async () => {
-      await setScaleAssignmentActiveAction(id, patientId, active);
-      router.refresh();
-    });
+    run(() => callAction(setScaleAssignmentActiveAction, id, patientId, active));
   }
 
   return (
@@ -67,17 +64,20 @@ export function ScalesPanel({
           </p>
         ) : (
           <div className="mt-3 flex flex-col gap-3">
-            <select
-              value={scaleId || available[0]?.id}
-              onChange={(e) => setScaleId(e.target.value)}
-              className="field"
-            >
-              {available.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.code} — {c.name}
-                </option>
-              ))}
-            </select>
+            <label className="block">
+              <span className="field-label">Escala</span>
+              <select
+                value={scaleId || available[0]?.id}
+                onChange={(e) => setScaleId(e.target.value)}
+                className="field"
+              >
+                {available.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.code} — {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-1.5 text-sm">
                 <input
@@ -124,6 +124,8 @@ export function ScalesPanel({
           </div>
         )}
       </div>
+
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       {assignments.length === 0 ? (
         <p className="text-sm text-ink-2">Ninguna escala activada todavía.</p>

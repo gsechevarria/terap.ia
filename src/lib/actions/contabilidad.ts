@@ -1,216 +1,88 @@
 "use server";
+import { runAction } from "@/lib/action-server";
 
-import { revalidatePath } from "next/cache";
+import { requireUploadedFile } from "@/lib/upload-server";
+import { revalidateContabilidad } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfessional } from "@/lib/queries/identity";
-import { CATEGORIAS_GASTO, type CategoriaGasto } from "@/lib/fiscal";
-import type { Database } from "@/lib/database.types";
-
-type GastoUpdate = Database["public"]["Tables"]["gastos"]["Update"];
+import { requireProfessional } from "@/lib/queries/identity";
+import { formToObject, parseOrThrow } from "@/lib/schemas/common";
+import {
+  configuracionFiscalRefined,
+  createGastoSchema,
+  updateGastoSchema,
+} from "@/lib/schemas/contabilidad";
+import type { Json } from "@/lib/database.types";
 
 const RECEIPTS_BUCKET = "receipts";
-const eurosToCents = (euros: number) => Math.round((Number(euros) || 0) * 100);
-const clampPct = (n: number) => Math.min(100, Math.max(0, Math.round(Number(n) || 0)));
-
-function str(fd: FormData, key: string): string {
-  return String(fd.get(key) ?? "").trim();
-}
-function num(fd: FormData, key: string): number {
-  return Number(str(fd, key).replace(",", ".")) || 0;
-}
-function bool(fd: FormData, key: string): boolean {
-  const v = str(fd, key);
-  return v === "on" || v === "true" || v === "1";
-}
-function isCategoria(v: string): v is CategoriaGasto {
-  return (CATEGORIAS_GASTO as readonly string[]).includes(v);
-}
+const eurosToCents = (euros: number) => Math.round(euros * 100);
 
 // --- Configuración fiscal ---------------------------------------------------
-export async function upsertConfiguracionFiscalAction(fd: FormData) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
-
-  const regimen = str(fd, "regimen");
-  const situacion_iva = str(fd, "situacion_iva");
-  const epigrafe_iae = str(fd, "epigrafe_iae") || null;
-  const fecha_alta_actividad = str(fd, "fecha_alta_actividad") || null;
-  const aplica_retencion_default = bool(fd, "aplica_retencion_default");
-
-  const regimenOk =
-    regimen === "estimacion_directa_simplificada" ||
-    regimen === "estimacion_directa_normal"
-      ? regimen
-      : "estimacion_directa_simplificada";
-  const ivaOk =
-    situacion_iva === "exenta" ||
-    situacion_iva === "sujeta" ||
-    situacion_iva === "mixta"
-      ? situacion_iva
-      : "exenta";
+async function upsertConfiguracionFiscalActionImpl(fd: FormData) {
+  const pro = await requireProfessional();
+  const v = parseOrThrow(configuracionFiscalRefined, formToObject(fd));
 
   const supabase = await createClient();
   const { error } = await supabase.from("configuracion_fiscal").upsert(
     {
       professional_id: pro.id,
-      regimen: regimenOk,
-      situacion_iva: ivaOk,
-      epigrafe_iae,
-      fecha_alta_actividad,
-      aplica_retencion_default,
+      regimen: v.regimen,
+      situacion_iva: v.situacion_iva,
+      epigrafe_iae: v.epigrafe_iae,
+      fecha_alta_actividad: v.fecha_alta_actividad,
+      aplica_retencion_default: v.aplica_retencion_default,
+      tipo_iva_repercutido: v.tipo_iva_repercutido,
+      // En exenta y sujeta la prorrata se deriva del régimen (0 y 100): solo se
+      // persiste el valor declarado cuando es mixta.
+      prorrata_iva_pct:
+        v.situacion_iva === "mixta" ? v.prorrata_iva_pct : null,
     },
     { onConflict: "professional_id" },
   );
   if (error) throw new Error(error.message);
-  revalidatePath("/contabilidad/configuracion");
-  revalidatePath("/contabilidad");
+  revalidateContabilidad();
 }
 
 // --- Gastos -----------------------------------------------------------------
-function receiptPath(proId: string, fileName: string): string {
-  const safe = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
-  return `${proId}/${crypto.randomUUID()}-${safe}`;
-}
-
-async function uploadReceipt(
-  proId: string,
-  file: File | null,
-): Promise<string | null> {
-  if (!file || file.size === 0) return null;
+async function saveGasto(fd: FormData, updating: boolean) {
+  const pro = await requireProfessional();
+  const v = updating ? parseOrThrow(updateGastoSchema, formToObject(fd)) : parseOrThrow(createGastoSchema, formToObject(fd));
   const supabase = await createClient();
-  const path = receiptPath(proId, file.name);
-  const up = await supabase.storage
-    .from(RECEIPTS_BUCKET)
-    .upload(path, file, { contentType: file.type || undefined });
-  if (up.error) throw new Error(up.error.message);
-  return path;
-}
-
-export async function createGastoAction(fd: FormData) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
-
-  const categoria = str(fd, "categoria_deducible");
-  if (!isCategoria(categoria)) throw new Error("Categoría no válida.");
-  const fecha = str(fd, "fecha");
-  if (!fecha) throw new Error("La fecha es obligatoria.");
-
-  const baseCents = eurosToCents(num(fd, "base"));
-  const tipoIva = clampPct(num(fd, "tipo_iva"));
-  const cuotaIvaCents = Math.round((baseCents * tipoIva) / 100);
-  const totalCents = baseCents + cuotaIvaCents;
-  const afectacion = clampPct(num(fd, "porcentaje_afectacion") || 100);
-  const esBien = bool(fd, "es_bien_inversion");
-
-  const supabase = await createClient();
-  const adjunto_path = await uploadReceipt(pro.id, fd.get("adjunto") as File | null);
-
-  const { data: gasto, error } = await supabase
-    .from("gastos")
-    .insert({
-      professional_id: pro.id,
-      fecha,
-      proveedor_nombre: str(fd, "proveedor_nombre") || null,
-      proveedor_nif: str(fd, "proveedor_nif") || null,
-      categoria_deducible: categoria,
-      concepto: str(fd, "concepto") || null,
-      base_cents: baseCents,
-      tipo_iva: tipoIva,
-      cuota_iva_cents: cuotaIvaCents,
-      total_cents: totalCents,
-      porcentaje_afectacion: afectacion,
-      es_bien_inversion: esBien,
-      adjunto_path,
-    })
-    .select("id")
-    .single();
-  if (error) throw new Error(error.message);
-
-  // Si es bien de inversión, crea también la ficha de amortización.
-  if (esBien && gasto) {
-    const pctAmort = clampPct(num(fd, "porcentaje_amortizacion"));
-    const aniosRaw = Math.round(num(fd, "anios_amortizacion"));
-    const { error: bErr } = await supabase.from("bienes_inversion").insert({
-      professional_id: pro.id,
-      gasto_id: gasto.id,
-      descripcion: str(fd, "concepto") || str(fd, "proveedor_nombre") || "Bien de inversión",
-      fecha_adquisicion: fecha,
-      valor_adquisicion_cents: baseCents,
-      porcentaje_amortizacion: pctAmort,
-      anios_amortizacion: aniosRaw > 0 ? aniosRaw : null,
+  const pathInput = String(fd.get("adjunto_path") ?? "");
+  const path = pathInput ? await requireUploadedFile(pathInput, "receipts", pro.id) : null;
+  try {
+    const payload: Record<string, Json | undefined> = {
+      ...v, base_cents: eurosToCents(v.base), adjunto_path: path,
+    };
+    // undefined significa conservar los campos de inversión en una edición parcial.
+    const { error } = await supabase.rpc("save_expense", {
+      p_id: updating ? String(fd.get("id")) : null,
+      p_data: payload, p_replace_receipt: path !== null,
     });
-    if (bErr) throw new Error(bErr.message);
-  }
-
-  revalidatePath("/contabilidad/gastos");
-  revalidatePath("/contabilidad");
-}
-
-export async function updateGastoAction(fd: FormData) {
-  const pro = await getCurrentProfessional();
-  if (!pro) throw new Error("No autenticado.");
-  const id = str(fd, "id");
-  if (!id) throw new Error("Falta el gasto.");
-
-  const categoria = str(fd, "categoria_deducible");
-  if (!isCategoria(categoria)) throw new Error("Categoría no válida.");
-  const fecha = str(fd, "fecha");
-  if (!fecha) throw new Error("La fecha es obligatoria.");
-
-  const baseCents = eurosToCents(num(fd, "base"));
-  const tipoIva = clampPct(num(fd, "tipo_iva"));
-  const cuotaIvaCents = Math.round((baseCents * tipoIva) / 100);
-  const totalCents = baseCents + cuotaIvaCents;
-  const afectacion = clampPct(num(fd, "porcentaje_afectacion") || 100);
-
-  const supabase = await createClient();
-  const patch: GastoUpdate = {
-    fecha,
-    proveedor_nombre: str(fd, "proveedor_nombre") || null,
-    proveedor_nif: str(fd, "proveedor_nif") || null,
-    categoria_deducible: categoria,
-    concepto: str(fd, "concepto") || null,
-    base_cents: baseCents,
-    tipo_iva: tipoIva,
-    cuota_iva_cents: cuotaIvaCents,
-    total_cents: totalCents,
-    porcentaje_afectacion: afectacion,
-  };
-
-  // Reemplazo opcional del justificante.
-  const nuevo = fd.get("adjunto") as File | null;
-  if (nuevo && nuevo.size > 0) {
-    const { data: prev } = await supabase
-      .from("gastos")
-      .select("adjunto_path")
-      .eq("id", id)
-      .maybeSingle();
-    patch.adjunto_path = await uploadReceipt(pro.id, nuevo);
-    if (prev?.adjunto_path) {
-      await supabase.storage.from(RECEIPTS_BUCKET).remove([prev.adjunto_path]);
+    if (error) throw new Error(error.message);
+  } catch (error) {
+    if (path) {
+      const cleanup = await supabase.storage.from(RECEIPTS_BUCKET).remove([path]);
+      if (cleanup.error) console.error("[storage] limpieza pendiente de justificante");
     }
+    throw error;
   }
-
-  const { error } = await supabase.from("gastos").update(patch).eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidatePath("/contabilidad/gastos");
-  revalidatePath("/contabilidad");
+  revalidateContabilidad();
 }
-
-export async function deleteGastoAction(id: string) {
+async function createGastoActionImpl(fd: FormData) { return saveGasto(fd, false); }
+async function updateGastoActionImpl(fd: FormData) { return saveGasto(fd, true); }
+async function deleteGastoActionImpl(id: string) {
+  await requireProfessional();
   const supabase = await createClient();
-  const { data: gasto } = await supabase
-    .from("gastos")
-    .select("adjunto_path")
-    .eq("id", id)
-    .maybeSingle();
-  if (gasto?.adjunto_path) {
-    await supabase.storage.from(RECEIPTS_BUCKET).remove([gasto.adjunto_path]);
-  }
-  // El bien de inversión vinculado se queda con gasto_id = null (on delete set null).
-  await supabase.from("bienes_inversion").delete().eq("gasto_id", id);
-  const { error } = await supabase.from("gastos").delete().eq("id", id);
+  const { error } = await supabase.rpc("delete_expense", { p_id: id });
   if (error) throw new Error(error.message);
-  revalidatePath("/contabilidad/gastos");
-  revalidatePath("/contabilidad");
+  // El trigger transaccional encola la limpieza del justificante.
+  revalidateContabilidad();
 }
+
+export async function upsertConfiguracionFiscalAction(...args: Parameters<typeof upsertConfiguracionFiscalActionImpl>) { return runAction(() => upsertConfiguracionFiscalActionImpl(...args)); }
+
+export async function createGastoAction(...args: Parameters<typeof createGastoActionImpl>) { return runAction(() => createGastoActionImpl(...args)); }
+
+export async function updateGastoAction(...args: Parameters<typeof updateGastoActionImpl>) { return runAction(() => updateGastoActionImpl(...args)); }
+
+export async function deleteGastoAction(...args: Parameters<typeof deleteGastoActionImpl>) { return runAction(() => deleteGastoActionImpl(...args)); }

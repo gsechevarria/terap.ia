@@ -1,4 +1,5 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -20,7 +21,7 @@ export function NewBlock() {
     setError("");
     startTransition(async () => {
       try {
-        await createBlockAction({
+        await callAction(createBlockAction, {
           startsAt: new Date(start).toISOString(),
           endsAt: new Date(end).toISOString(),
           reason,

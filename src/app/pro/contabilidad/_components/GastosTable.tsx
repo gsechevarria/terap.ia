@@ -1,6 +1,9 @@
 "use client";
+import { callAction } from "@/lib/action-result";
 
-import { useState } from "react";
+import { uploadFormFile } from "@/lib/upload-client";
+
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Paperclip } from "lucide-react";
 import {
@@ -8,33 +11,59 @@ import {
   deleteGastoAction,
 } from "@/lib/actions/contabilidad";
 import {
+  deducibleIrpf,
   CATEGORIAS_GASTO,
   CATEGORIA_LABEL,
   type CategoriaGasto,
   type SituacionIva,
 } from "@/lib/fiscal";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { actionErrorMessage } from "@/lib/errors";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { Gasto } from "@/lib/types";
 
-function deducibleCents(g: Gasto, situacionIva: SituacionIva): number {
-  const coste = situacionIva === "sujeta" ? g.base_cents : g.base_cents + g.cuota_iva_cents;
-  return Math.round((coste * g.porcentaje_afectacion) / 100);
+function deducibleCents(g: Gasto, situacionIva: SituacionIva, prorrata: number | null): number {
+  if (g.es_bien_inversion) return 0;
+  return Math.round(deducibleIrpf({ base: g.base_cents / 100, cuotaIva: g.cuota_iva_cents / 100, porcentajeAfectacion: g.porcentaje_afectacion, ivaRecuperablePct: g.iva_recuperable_pct ?? undefined }, situacionIva, prorrata) * 100);
 }
 
 export function GastosTable({
   gastos,
   situacionIva,
+  prorrata,
 }: {
   gastos: Gasto[];
   situacionIva: SituacionIva;
+  prorrata: number | null;
 }) {
   const router = useRouter();
+  const [pending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
+  // Sin `try/catch` un fallo al guardar tumbaba la pantalla entera (y con ella
+  // la tabla de gastos); el estado `pending` lo aporta `SubmitButton` vía
+  // `useFormStatus`, que además impide el doble envío.
   async function saveEdit(fd: FormData) {
-    await updateGastoAction(fd);
-    setEditingId(null);
-    router.refresh();
+    setError("");
+    try {
+      await uploadFormFile(fd, "adjunto", "receipts");
+      await callAction(updateGastoAction, fd);
+      setEditingId(null);
+      router.refresh();
+    } catch (e) {
+      setError(actionErrorMessage(e));
+    }
+  }
+
+  async function removeGasto(id: string) {
+    setError("");
+    try {
+      await callAction(deleteGastoAction, id);
+      router.refresh();
+    } catch (e) {
+      setError(actionErrorMessage(e));
+    }
   }
 
   if (gastos.length === 0) {
@@ -64,7 +93,7 @@ export function GastosTable({
             editingId === g.id ? (
               <tr key={g.id}>
                 <td colSpan={7} className="bg-panel">
-                  <form action={saveEdit} className="grid gap-3 p-3 sm:grid-cols-3">
+                  <form onSubmit={e => { e.preventDefault(); if (pending) return; const fd = new FormData(e.currentTarget); startTransition(() => saveEdit(fd)); }} className="grid gap-3 p-3 sm:grid-cols-3">
                     <input type="hidden" name="id" value={g.id} />
                     <label className="block">
                       <span className="field-label">Fecha</span>
@@ -109,13 +138,18 @@ export function GastosTable({
                       <input type="number" name="porcentaje_afectacion" min={0} max={100} step="1" defaultValue={g.porcentaje_afectacion} className="field" />
                     </label>
                     <label className="block">
+                      <span className="field-label">IVA recuperable (%)</span>
+                      <input type="number" name="iva_recuperable_pct" required min={0} max={100} step={1} defaultValue={g.iva_recuperable_pct ?? ""} className="field" />
+                      <span className="text-xs text-ink-3">Confirma el porcentaje aplicable a este gasto: 0 si no se recupera IVA.</span>
+                    </label>
+                    <label className="block">
                       <span className="field-label">Reemplazar justificante</span>
                       <input type="file" name="adjunto" accept="image/*,application/pdf" className="field py-1.5 text-xs" />
                     </label>
                     <div className="flex items-end gap-2 sm:col-span-3">
-                      <button type="submit" className="btn-primary btn-sm">
+                      <SubmitButton disabled={pending} className="btn-primary btn-sm">
                         Guardar
-                      </button>
+                      </SubmitButton>
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
@@ -123,6 +157,9 @@ export function GastosTable({
                       >
                         Cancelar
                       </button>
+                      {error && (
+                        <p className="text-xs text-danger">{error}</p>
+                      )}
                     </div>
                   </form>
                 </td>
@@ -145,10 +182,10 @@ export function GastosTable({
                   {formatCurrency(g.total_cents)}
                 </td>
                 <td className="text-right tabular-nums whitespace-nowrap">
-                  {formatCurrency(deducibleCents(g, situacionIva))}
+                  {g.iva_recuperable_pct == null ? "Pendiente de revisión" : formatCurrency(deducibleCents(g, situacionIva, prorrata))}
                 </td>
                 <td className="whitespace-nowrap text-right">
-                  <span className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                  <span className="inline-flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                     {g.adjunto_path && (
                       <a
                         href={`/receipts?path=${encodeURIComponent(g.adjunto_path)}`}
@@ -167,10 +204,13 @@ export function GastosTable({
                     >
                       Editar
                     </button>
-                    <form action={deleteGastoAction.bind(null, g.id)}>
-                      <button type="submit" className="btn-danger btn-sm">
+                    <form action={() => removeGasto(g.id)}>
+                      <SubmitButton
+                        className="btn-danger btn-sm"
+                        pendingLabel="Eliminando…"
+                      >
                         Eliminar
-                      </button>
+                      </SubmitButton>
                     </form>
                   </span>
                 </td>
