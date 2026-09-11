@@ -2,13 +2,13 @@ import { hasSignedConsent } from "@/lib/queries/consent";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Phone, Settings } from "lucide-react";
+import { Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Brandmark } from "@/components/ui/Brandmark";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
-import { SignOutForm } from "@/components/SignOutForm";
 import { ServiceWorkerRegister } from "@/app/app/_components/ServiceWorkerRegister";
 import { NativeGate } from "@/app/app/_components/NativeGate";
+import { AppTabBar } from "@/app/app/_components/AppTabBar";
 
 /**
  * Layout de la app del paciente (base de la futura PWA).
@@ -35,27 +35,21 @@ export default async function PatientLayout({ children }: { children: ReactNode 
           <Link href="/app" className="inline-flex items-center">
             <Brandmark height={30} />
           </Link>
-          <div className="flex items-center gap-1.5">
-            <a
-              href="tel:024"
-              className="inline-flex h-7 items-center gap-1 rounded-md bg-danger px-2.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-            >
-              <Phone className="size-3.5" strokeWidth={2.25} aria-hidden />
-              Emergencia · 024
-            </a>
-            <Link
-              href="/app/settings"
-              className="btn-subtle h-7 gap-1 px-2 text-xs"
-              aria-label="Ajustes"
-            >
-              <Settings className="size-3.5" strokeWidth={2} aria-hidden />
-              <span className="hidden sm:inline">Ajustes</span>
-            </Link>
-            <SignOutForm />
-          </div>
+          {/* El 024 no se esconde nunca detrás de un menú. */}
+          <a
+            href="tel:024"
+            className="inline-flex h-7 items-center gap-1 rounded-md bg-danger px-2.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            <Phone className="size-3.5" strokeWidth={2.25} aria-hidden />
+            Emergencia · 024
+          </a>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-md flex-1 px-4 py-6">{children}</main>
+      {/* El padding inferior deja sitio a la barra de pestañas fija. */}
+      <main className="mx-auto w-full max-w-md flex-1 px-4 pt-6 pb-28">
+        {children}
+      </main>
+      <AppTabBar />
       <ServiceWorkerRegister />
     </div>
     </NativeGate>
