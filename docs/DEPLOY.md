@@ -1,3 +1,5 @@
+> 11/09/2026: añadir también `20260911090001_explicit_api_grants.sql` (38 migraciones en total). Corrige el acceso API en instalaciones sin grants automáticos. El script `supabase/scripts/configurar-cron.sql` configura el programador de Supabase desactivado; activarlo únicamente tras verificar el despliegue.
+
 > Actualización 10/09/2026: Vercel Hobby rechaza cron cada minuto. `vercel.json` ya no registra el cron; el despliegue requiere programar la llamada GET autenticada a `/api/cron/notifications` desde Supabase Cron (pg_cron + pg_net), con CRON_SECRET en Vault. No se debe dar por activa la entrega de notificaciones hasta verificar la ejecución remota.
 
 > Estado de la copia de correcciones (10-sep-2026): consultar primero

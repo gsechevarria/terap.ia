@@ -28,7 +28,7 @@ try {
       $$ select (string_to_array($1, '/'))[1:array_length(string_to_array($1, '/'),1)-1] $$;
     grant usage on schema public, auth, storage, extensions to authenticated, anon, service_role;
     grant all on all tables in schema storage to authenticated, service_role;
-    alter default privileges in schema public grant all on tables to authenticated, service_role;
+    -- Sin grants automáticos: las migraciones deben declarar el acceso API.
   `);
   const files = (await readdir('supabase/migrations')).filter(f => f.endsWith('.sql')).sort();
   let legacy;
