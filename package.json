@@ -34,7 +34,8 @@
     "test:integration": "node --env-file=.env.test scripts/test-integration.mjs",
     "test:sql": "node scripts/test-sql.mjs",
     "gen:types:embedded": "node scripts/test-sql.mjs --generate-types",
-    "test:types": "node scripts/test-sql.mjs --check-types"
+    "test:types": "node scripts/test-sql.mjs --check-types",
+    "seed:demo": "node --env-file=.env.local scripts/seed-demo.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
