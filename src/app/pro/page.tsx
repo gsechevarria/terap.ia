@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Plus, TriangleAlert } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import {
   listPatientsWithOverview,
   listPatientTags,
   type PatientOverview,
 } from "@/lib/queries/patients";
 import type { PatientStatus } from "@/lib/types";
-import { StatusCritical } from "@/components/ui/Status";
+import { Status, StatusCritical } from "@/components/ui/Status";
 import { PatientSearch } from "@/app/pro/_components/PatientSearch";
 import { formatDate, formatDateTime } from "@/lib/format";
 
@@ -33,74 +33,65 @@ export default async function ProDashboard({
     listPatientTags(),
   ]);
 
-  const withAlerts = patients.filter((p) => p.openAlerts > 0);
+  const conAlertas = patients.filter((p) => p.openAlerts > 0);
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="flex items-center justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="page-title">Pacientes</h1>
-          <p className="mt-1 text-sm text-ink-2">
-            {patients.length} {patients.length === 1 ? "paciente" : "pacientes"}
+          <p className="mt-1.5 text-sm text-ink-2">
+            {patients.length} {patients.length === 1 ? "expediente" : "expedientes"}
+            {status === "active"
+              ? " en seguimiento"
+              : status === "archived"
+                ? " archivados"
+                : " en total"}
           </p>
         </div>
         <Link href="/pro/patients/new" className="btn-primary">
-          <Plus className="size-4" strokeWidth={2} /> Nuevo paciente
+          <Plus size={16} strokeWidth={1.75} aria-hidden /> Nuevo paciente
         </Link>
-      </div>
+      </header>
 
-      {withAlerts.length > 0 && (
-        <div className="mt-5 flex items-start gap-2.5 rounded-md border border-danger/25 bg-danger-soft p-3 text-sm text-danger">
-          <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
-          <p>
-            <span className="font-semibold">Alertas por revisar:</span>{" "}
-            {withAlerts.map((p, i) => (
-              <span key={p.id}>
-                <Link
-                  href={`/pro/patients/${p.id}?tab=escalas`}
-                  className="font-medium underline underline-offset-2"
-                >
-                  {p.full_name ?? "Sin nombre"}
-                </Link>
-                {i < withAlerts.length - 1 ? ", " : ""}
-              </span>
-            ))}
-          </p>
-        </div>
-      )}
+      {conAlertas.length > 0 && <BandaAlertas pacientes={conAlertas} />}
 
-      {/* Buscador */}
-      <div className="mt-6 max-w-sm">
-        <Suspense fallback={<div className="field h-9 w-full" aria-hidden />}>
-          <PatientSearch initialValue={q} />
+      {/* Filtros: búsqueda, estado y etiqueta */}
+      <section className="mt-7 space-y-4" aria-label="Filtros">
+        <Suspense fallback={<div className="field h-10 max-w-sm" aria-hidden />}>
+          <div className="max-w-sm">
+            <PatientSearch initialValue={q} />
+          </div>
         </Suspense>
-      </div>
 
-      {/* Filtro por estado */}
-      <div className="mt-4 flex flex-wrap items-center gap-1">
-        <StatusTab label="Activos" value="active" current={status} tag={tag} q={q} />
-        <StatusTab label="Archivados" value="archived" current={status} tag={tag} q={q} />
-        <StatusTab label="Todos" value="all" current={status} tag={tag} q={q} />
-      </div>
-
-      {/* Filtro por etiqueta */}
-      {tags.length > 0 && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <TagChip
-            label="Todas las etiquetas"
-            href={buildHref(status, undefined, q)}
-            active={!tag}
-          />
-          {tags.map((t) => (
-            <TagChip key={t} label={t} href={buildHref(status, t, q)} active={tag === t} />
-          ))}
+        <div className="tabs">
+          <FiltroEstado label="Activos" value="active" current={status} tag={tag} q={q} />
+          <FiltroEstado label="Archivados" value="archived" current={status} tag={tag} q={q} />
+          <FiltroEstado label="Todos" value="all" current={status} tag={tag} q={q} />
         </div>
-      )}
 
-      {/* Lista */}
-      <div className="mt-5">
+        {tags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <EtiquetaFiltro
+              label="Todas las etiquetas"
+              href={construirHref(status, undefined, q)}
+              activa={!tag}
+            />
+            {tags.map((t) => (
+              <EtiquetaFiltro
+                key={t}
+                label={t}
+                href={construirHref(status, t, q)}
+                activa={tag === t}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-6" aria-label="Listado de pacientes">
         {patients.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-line p-10 text-center text-sm text-ink-2">
+          <p className="empty">
             {q ? (
               <>
                 No se encontraron pacientes para{" "}
@@ -118,25 +109,77 @@ export default async function ProDashboard({
                   href="/pro/patients/new"
                   className="font-medium text-accent hover:underline"
                 >
-                  Crea el primero
+                  Cree el primero
                 </Link>
                 .
               </>
             )}
-          </div>
+          </p>
         ) : (
-          <div className="card divide-y divide-line overflow-hidden">
+          <ul className="island divide-y divide-line overflow-hidden">
             {patients.map((p) => (
-              <PatientRow key={p.id} patient={p} />
+              <li key={p.id}>
+                <FilaPaciente paciente={p} />
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }
 
-function buildHref(status: PatientStatus | "all", tag?: string, q?: string): string {
+/**
+ * Banda de alertas clínicas prioritarias. Precede al listado y es sobria a
+ * propósito: informa de que hay respuestas con ítems de riesgo por revisar y
+ * lleva directamente a ellas. Ni alarmismo ni interpretación clínica — la
+ * lectura del caso es del profesional.
+ */
+function BandaAlertas({ pacientes }: { pacientes: PatientOverview[] }) {
+  const total = pacientes.reduce((suma, p) => suma + p.openAlerts, 0);
+  return (
+    <section className="alert-clinical mt-6" aria-labelledby="alertas-titulo">
+      {/* El punto va suelto, fuera de `.st`, así que lleva su geometría
+          explícita: las reglas de `.dot` están acotadas a `.st .dot`. */}
+      <span
+        aria-hidden
+        className="d-danger mt-1.5 block size-2 shrink-0 rounded-full"
+        style={{ boxShadow: "0 0 0 3px color-mix(in srgb, currentColor 20%, transparent)" }}
+      />
+      <div className="min-w-0 flex-1">
+        <h2 id="alertas-titulo" className="font-semibold">
+          {total === 1
+            ? "Hay 1 respuesta con ítem de riesgo pendiente de revisar"
+            : `Hay ${total} respuestas con ítem de riesgo pendientes de revisar`}
+        </h2>
+        <p className="mt-1 text-ink-2">
+          Corresponden a {pacientes.length}{" "}
+          {pacientes.length === 1 ? "expediente" : "expedientes"}. Revíselas en su
+          ficha clínica.
+        </p>
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {pacientes.map((p) => (
+            <li key={p.id}>
+              <Link
+                href={`/pro/patients/${p.id}?tab=escalas`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink transition-colors hover:bg-surface-2"
+              >
+                {p.full_name ?? "Sin nombre"}
+                <ArrowRight size={13} strokeWidth={1.75} aria-hidden />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function construirHref(
+  status: PatientStatus | "all",
+  tag?: string,
+  q?: string,
+): string {
   const params = new URLSearchParams();
   if (status !== "active") params.set("status", status);
   if (tag) params.set("tag", tag);
@@ -145,7 +188,7 @@ function buildHref(status: PatientStatus | "all", tag?: string, q?: string): str
   return qs ? `/pro?${qs}` : "/pro";
 }
 
-function StatusTab({
+function FiltroEstado({
   label,
   value,
   current,
@@ -158,37 +201,35 @@ function StatusTab({
   tag?: string;
   q?: string;
 }) {
-  const active = current === value;
+  const activa = current === value;
   return (
     <Link
-      href={buildHref(value, tag, q)}
-      className={`rounded px-2.5 py-1 text-sm transition-colors duration-100 ${
-        active
-          ? "bg-wash-2 font-medium text-ink"
-          : "text-ink-2 hover:bg-wash hover:text-ink"
-      }`}
+      href={construirHref(value, tag, q)}
+      aria-current={activa ? "page" : undefined}
+      className={`tab${activa ? " tab-active" : ""}`}
     >
       {label}
     </Link>
   );
 }
 
-function TagChip({
+function EtiquetaFiltro({
   label,
   href,
-  active,
+  activa,
 }: {
   label: string;
   href: string;
-  active: boolean;
+  activa: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={`rounded-sm px-1.5 py-0.5 text-xs font-medium transition-colors duration-100 ${
-        active
+      aria-current={activa ? "true" : undefined}
+      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150 ${
+        activa
           ? "bg-accent-soft text-accent"
-          : "bg-panel text-ink-2 hover:bg-wash-2"
+          : "bg-surface-2 text-ink-2 hover:bg-wash-2 hover:text-ink"
       }`}
     >
       {label}
@@ -196,57 +237,64 @@ function TagChip({
   );
 }
 
-function PatientRow({ patient }: { patient: PatientOverview }) {
+function FilaPaciente({ paciente }: { paciente: PatientOverview }) {
+  const archivado = paciente.status === "archived";
   return (
     <Link
-      href={`/pro/patients/${patient.id}`}
-      className="row-hover flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+      href={`/pro/patients/${paciente.id}`}
+      className="row-hover flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-panel text-xs font-semibold text-ink-2">
-          {(patient.full_name ?? "?").charAt(0).toUpperCase()}
+      <div className="flex min-w-0 items-center gap-3.5">
+        <span
+          aria-hidden
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-semibold text-ink-2"
+        >
+          {(paciente.full_name ?? "?").charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium">
-              {patient.full_name ?? "Sin nombre"}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span className="truncate text-sm font-medium text-ink">
+              {paciente.full_name ?? "Sin nombre"}
             </span>
-            {patient.status === "archived" && (
-              <span className="chip">archivado</span>
-            )}
-            {patient.openAlerts > 0 && (
+            {paciente.openAlerts > 0 ? (
               <StatusCritical>
-                {patient.openAlerts} alerta{patient.openAlerts > 1 ? "s" : ""}
+                {paciente.openAlerts === 1
+                  ? "Requiere atención"
+                  : `Requiere atención · ${paciente.openAlerts}`}
               </StatusCritical>
+            ) : (
+              <Status tone={archivado ? "neutral" : "success"}>
+                {archivado ? "Archivado" : "En seguimiento"}
+              </Status>
             )}
           </div>
-          {patient.tags.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {patient.tags.map((t) => (
-                <span key={t} className="chip">
+          {paciente.tags.length > 0 && (
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {paciente.tags.map((t) => (
+                <li key={t} className="chip">
                   {t}
-                </span>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
       </div>
-      <div className="flex flex-wrap gap-x-6 gap-y-1 pl-11 text-xs sm:pl-0">
-        <Stat label="Tareas pendientes" value={String(patient.pendingTasks)} />
-        <Stat label="Próxima cita" value={formatDateTime(patient.nextAppointment)} />
-        <Stat label="Última actividad" value={formatDate(patient.lastActivity)} />
-      </div>
+      <dl className="flex flex-wrap gap-x-8 gap-y-2 pl-[3.375rem] text-xs sm:pl-0">
+        <Dato label="Tareas pendientes" valor={String(paciente.pendingTasks)} />
+        <Dato label="Próxima cita" valor={formatDateTime(paciente.nextAppointment)} />
+        <Dato label="Última actividad" valor={formatDate(paciente.lastActivity)} />
+      </dl>
     </Link>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Dato({ label, valor }: { label: string; valor: string }) {
   return (
-    <span className="flex flex-col gap-0.5">
-      <span className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
+    <div className="flex flex-col gap-1">
+      <dt className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
         {label}
-      </span>
-      <span className="text-ink-2">{value}</span>
-    </span>
+      </dt>
+      <dd className="text-ink-2">{valor}</dd>
+    </div>
   );
 }
