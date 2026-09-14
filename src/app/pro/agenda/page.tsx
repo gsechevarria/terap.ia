@@ -75,14 +75,14 @@ export default async function AgendaPage({
                 {w.label}
               </span>
             </div>
-            <div className="flex rounded-full bg-surface-2 p-1">
+            <div className="flex rounded-lg bg-surface-2 p-0.5">
               {VIEWS.map((v) => (
                 <Link
                   key={v.key}
                   href={href(v.key, w.dateYMD)}
-                  className={`rounded-full px-3.5 py-1 text-sm font-medium transition-colors duration-150 ${
+                  className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors duration-150 ${
                     w.view === v.key
-                      ? "bg-surface text-ink"
+                      ? "border border-line bg-surface text-ink"
                       : "text-ink-2 hover:text-ink"
                   }`}
                 >

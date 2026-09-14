@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { siteUrl } from "@/lib/site-url";
 import { addDaysYMD, formatYMD, parseYMD, todayYMD } from "@/lib/tz";
 import { notFound } from "next/navigation";
@@ -75,23 +75,25 @@ export default async function PatientDetailPage({
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Link
-        href="/pro"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-3 transition-colors hover:text-ink"
-      >
-        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
-        Pacientes
-      </Link>
+      <nav aria-label="Ruta" className="flex items-center gap-2 text-label-sm text-ink-3">
+        <Link href="/pro" className="transition-colors hover:text-accent">
+          Pacientes
+        </Link>
+        <ChevronRight size={13} strokeWidth={1.75} aria-hidden className="text-ink-faint" />
+        <span className="truncate font-medium text-ink">
+          {patient.full_name ?? "Sin nombre"}
+        </span>
+      </nav>
 
       <FlaggedAlerts patientId={id} responses={flagged} />
 
       {/* Cabecera del expediente, como isla: el dato de identidad se separa del
           contenido por superficie y no por una línea más. */}
-      <header className="island mt-3 flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between">
+      <header className="card mt-4 flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-start gap-4">
           <span
             aria-hidden
-            className="flex size-14 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl font-semibold text-ink-2"
+            className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-line bg-accent-soft text-headline font-semibold text-accent"
           >
             {(patient.full_name ?? "?").charAt(0).toUpperCase()}
           </span>
@@ -115,8 +117,8 @@ export default async function PatientDetailPage({
         <StatusButton patientId={patient.id} status={patient.status} />
       </header>
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_18rem]">
-        <div className="min-w-0">
+      <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <div className="min-w-0 lg:col-span-8">
           {/* Pestañas */}
           <nav className="tabs" aria-label="Secciones del expediente">
             {TABS.map((t) => (
@@ -167,7 +169,7 @@ export default async function PatientDetailPage({
           </div>
         </div>
 
-        <aside className="flex flex-col gap-4">
+        <aside className="flex flex-col gap-6 lg:col-span-4">
           <InvitePanel
             patientId={id}
             baseUrl={baseUrl}

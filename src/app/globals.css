@@ -26,9 +26,10 @@
   color-scheme: light dark;
 
   /* ---- Superficies (neutros cálidos) ---------------------------------- */
-  --canvas: light-dark(#fbfbfa, #18181b); /* fondo de página, nunca #FFF */
+  --canvas: light-dark(#fbf8fe, #18181b); /* fondo de página, nunca #FFF */
   --surface: light-dark(#ffffff, #212124); /* tarjetas e islas */
   --surface-2: light-dark(#f5f2f8, #2a2a2e); /* superficie secundaria / hover */
+  --surface-3: light-dark(#f0edf2, #303034); /* contenedor, un paso más */
   --panel: var(--surface-2); /* alias histórico: sidebar, chips, hundidos */
   --sunken: light-dark(#efece9, #2a2a2e); /* fondo hundido / active */
   --wash: light-dark(rgba(31, 31, 35, 0.045), rgba(255, 255, 255, 0.05));
@@ -95,6 +96,7 @@
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-panel: var(--panel);
   --color-sunken: var(--sunken);
   --color-wash: var(--wash);
@@ -119,18 +121,50 @@
   --color-info-soft: var(--info-soft);
 
   --font-sans:
-    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    var(--font-sans-loaded), system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono:
+    var(--font-mono-loaded), ui-monospace, SFMono-Regular, Menlo, Consolas,
+    monospace;
 
-  /* Geometría orgánica: controles 12-14, tarjetas 16, islas grandes 24.
-     Las píldoras de estado y los botones de acción van a `rounded-full`. */
-  --radius-sm: 6px;
-  --radius-DEFAULT: 10px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-xl: 14px;
+  /* Geometría del mockup, más contenida que la etapa anterior: los controles
+     son rectángulos de esquina corta y la curva grande se reserva a las
+     tarjetas. La píldora de estado es lo único que se acerca a la cápsula. */
+  --radius-sm: 3px;
+  --radius-DEFAULT: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
   --radius-2xl: 16px;
-  --radius-3xl: 24px;
+  --radius-3xl: 20px;
+
+  /* Escala tipográfica explícita (tamaño / interlineado / espaciado). */
+  --text-display: 32px;
+  --text-display--line-height: 40px;
+  --text-display--letter-spacing: -0.025em;
+  --text-headline-xl: 26px;
+  --text-headline-xl--line-height: 34px;
+  --text-headline-xl--letter-spacing: -0.02em;
+  --text-headline-lg: 20px;
+  --text-headline-lg--line-height: 28px;
+  --text-headline-lg--letter-spacing: -0.015em;
+  --text-headline: 16px;
+  --text-headline--line-height: 24px;
+  --text-headline--letter-spacing: -0.01em;
+  --text-body-lg: 15px;
+  --text-body-lg--line-height: 24px;
+  --text-body-lg--letter-spacing: -0.005em;
+  --text-body: 14px;
+  --text-body--line-height: 22px;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 20px;
+  --text-body-sm--letter-spacing: 0.005em;
+  --text-label: 12px;
+  --text-label--line-height: 16px;
+  --text-label--letter-spacing: 0.01em;
+  --text-label-sm: 11px;
+  --text-label-sm--line-height: 14px;
+  --text-label-sm--letter-spacing: 0.02em;
 }
 
 body {
@@ -171,7 +205,7 @@ body {
   .btn-ghost,
   .btn-subtle,
   .btn-danger {
-    @apply inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors duration-150 select-none disabled:cursor-not-allowed disabled:opacity-45;
+    @apply inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 select-none disabled:cursor-not-allowed disabled:opacity-45;
   }
   .btn-primary {
     @apply bg-accent text-accent-ink;
@@ -183,16 +217,16 @@ body {
     @apply border border-line-strong bg-surface text-ink hover:bg-surface-2;
   }
   .btn-subtle {
-    @apply rounded-lg px-3 text-ink-2 hover:bg-wash hover:text-ink;
+    @apply px-3 text-ink-2 hover:bg-surface-2 hover:text-ink;
   }
   .btn-danger {
     @apply text-danger hover:bg-danger-soft;
   }
   .btn-sm {
-    @apply h-7 px-3 text-xs;
+    @apply h-7 px-2.5 text-[12px];
   }
   .btn-lg {
-    @apply h-11 px-5 text-[15px];
+    @apply h-10 px-4.5 text-[15px];
   }
 
   /* ---- Campos ----------------------------------------------------------
@@ -202,7 +236,7 @@ body {
      El fondo es `canvas` sobre tarjeta `surface`: el control queda
      ligeramente hundido sin necesidad de sombra. */
   .field {
-    @apply w-full rounded-xl border border-line-strong bg-canvas px-3.5 py-2 text-base text-ink transition-colors duration-150 outline-none placeholder:text-ink-3;
+    @apply w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-base text-ink transition-colors duration-150 outline-none placeholder:text-ink-3;
   }
   .field:focus {
     border-color: var(--accent);
@@ -219,12 +253,12 @@ body {
     @apply rounded-2xl border border-line bg-surface;
   }
   .island {
-    @apply rounded-3xl border border-line bg-surface;
+    @apply rounded-2xl border border-line bg-surface;
   }
 
   /* ---- Tag / chip (etiquetas de contenido, no estado) ------------------ */
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-ink-2;
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-ink-2;
   }
 
   /* ---- Estados: punto + etiqueta --------------------------------------
@@ -232,10 +266,10 @@ body {
      etiqueta de texto visible. Quien no distingue el verde del rojo sigue
      leyendo "Requiere atención". */
   .st {
-    @apply inline-flex items-center gap-2 text-sm font-medium whitespace-nowrap text-ink;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-ink-2;
   }
   .st .dot {
-    @apply size-2 shrink-0 rounded-full;
+    @apply size-1.5 shrink-0 rounded-full;
   }
   .st .dot.halo {
     box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 20%, transparent);
@@ -266,7 +300,7 @@ body {
 
   /* Estado crítico — píldora sólida, reservada a lo que debe destacar. */
   .st-solid {
-    @apply inline-flex items-center gap-1.5 rounded-full py-1 pr-3 pl-2.5 text-xs font-semibold whitespace-nowrap text-white;
+    @apply inline-flex items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-2 text-[11px] font-semibold whitespace-nowrap text-white;
     background: var(--danger-solid);
   }
 
@@ -280,10 +314,18 @@ body {
 
   /* ---- Encabezados ----------------------------------------------------- */
   .page-title {
-    @apply text-2xl font-semibold tracking-[-0.015em] text-ink;
+    @apply text-headline-xl font-semibold text-ink;
+  }
+  .card-title {
+    @apply text-headline font-semibold text-ink;
   }
   .section-label {
-    @apply text-xs font-semibold tracking-wide text-ink-3 uppercase;
+    @apply text-label-sm font-semibold tracking-wide text-ink-3 uppercase;
+  }
+  /* Cifras e identificadores: ancho fijo para que las columnas no bailen. */
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 
   /* ---- Filas interactivas --------------------------------------------- */
@@ -293,13 +335,13 @@ body {
 
   /* ---- Tabs ------------------------------------------------------------ */
   .tabs {
-    @apply flex flex-wrap gap-1;
+    @apply flex items-center gap-6 overflow-x-auto border-b border-line;
   }
   .tab {
-    @apply cursor-pointer rounded-full px-3.5 py-1.5 text-sm text-ink-2 transition-colors duration-150 hover:bg-wash hover:text-ink;
+    @apply relative cursor-pointer border-b-2 border-transparent pb-3 text-[13px] whitespace-nowrap text-ink-2 transition-colors duration-150 hover:text-ink;
   }
   .tab-active {
-    @apply bg-accent-soft font-medium text-accent hover:bg-accent-soft;
+    @apply border-accent font-semibold text-accent;
   }
 
   /* ---- Tablas ---------------------------------------------------------- */
@@ -307,15 +349,15 @@ body {
     @apply w-full border-collapse text-sm;
   }
   .table-base th {
-    @apply border-b border-line px-4 py-2.5 text-left text-xs font-medium text-ink-3;
+    @apply border-b border-line px-4 py-2.5 text-left text-label-sm font-medium tracking-wide text-ink-3 uppercase;
   }
   .table-base td {
-    @apply border-b border-line px-4 py-3 align-middle text-ink;
+    @apply border-b border-line px-4 py-3 align-middle text-[13px] text-ink;
   }
 
   /* ---- Modal ----------------------------------------------------------- */
   .modal {
-    @apply w-full overflow-hidden rounded-3xl border border-line bg-surface;
+    @apply w-full overflow-hidden rounded-2xl border border-line bg-surface;
     box-shadow: var(--shadow-menu);
   }
   .modal-header {
@@ -336,12 +378,12 @@ body {
 
   /* ---- Empty state ----------------------------------------------------- */
   .empty {
-    @apply rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center text-sm text-ink-2;
+    @apply rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center text-[13px] text-ink-2;
   }
 
   /* ---- Skeleton -------------------------------------------------------- */
   .skeleton {
-    @apply rounded-xl;
+    @apply rounded-lg;
     background: linear-gradient(
       90deg,
       var(--surface-2) 25%,

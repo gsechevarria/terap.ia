@@ -861,7 +861,7 @@ function EditModal({
                       setDuration(d);
                       clearConflict();
                     }}
-                    className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors duration-150 ${
+                    className={`rounded-lg border px-3 py-1 text-sm font-medium transition-colors duration-150 ${
                       active
                         ? "border-accent bg-accent-soft text-accent"
                         : "border-line-strong bg-canvas text-ink-2 hover:bg-wash hover:text-ink"
@@ -877,7 +877,7 @@ function EditModal({
                   setCustomMode(true);
                   clearConflict();
                 }}
-                className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors duration-150 ${
+                className={`rounded-lg border px-3 py-1 text-sm font-medium transition-colors duration-150 ${
                   customMode
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-line-strong bg-canvas text-ink-2 hover:bg-wash hover:text-ink"

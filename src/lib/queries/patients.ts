@@ -154,6 +154,22 @@ export async function listPatientTags(): Promise<string[]> {
   return [...set].sort();
 }
 
+/**
+ * Cuántos expedientes activos tiene el profesional. Para el contador de la
+ * barra lateral: `head: true` no trae filas, solo el recuento.
+ */
+export async function countActivePatients(): Promise<number> {
+  const supabase = await createClient();
+  const pro = await getCurrentProfessional();
+  if (!pro) return 0;
+  const { count } = await checked(supabase
+    .from("patients")
+    .select("id", { count: "exact", head: true })
+    .eq("professional_id", pro.id)
+    .eq("status", "active"));
+  return count ?? 0;
+}
+
 /** Ficha del paciente (RLS garantiza pertenencia al profesional actual). */
 export async function getPatient(id: string): Promise<Patient | null> {
   const supabase = await createClient();

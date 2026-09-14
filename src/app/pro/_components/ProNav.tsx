@@ -34,7 +34,7 @@ function Badge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
     <span
-      className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-2 py-0.5 text-[11px] leading-none font-semibold text-accent-ink"
+      className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[10px] leading-none font-semibold text-accent-ink"
       aria-label={`${count} pendiente${count === 1 ? "" : "s"}`}
     >
       {count > 9 ? "9+" : count}
@@ -42,8 +42,24 @@ function Badge({ count }: { count: number }) {
   );
 }
 
+/** Recuento neutro (p. ej. expedientes activos): dato, no aviso. */
+function Recuento({ value }: { value: number }) {
+  if (value <= 0) return null;
+  return (
+    <span className="mono ml-auto rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-ink-3">
+      {value}
+    </span>
+  );
+}
+
 /** Navegación lateral del panel (sidebar), estado activo por ruta. */
-export function ProNav({ pendingRequests = 0 }: { pendingRequests?: number }) {
+export function ProNav({
+  pendingRequests = 0,
+  patientCount = 0,
+}: {
+  pendingRequests?: number;
+  patientCount?: number;
+}) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-1">
@@ -54,15 +70,16 @@ export function ProNav({ pendingRequests = 0 }: { pendingRequests?: number }) {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-full px-3.5 py-2 text-sm transition-colors duration-150 ${
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-colors duration-150 ${
               active
-                ? "bg-accent-soft font-medium text-accent"
-                : "text-ink-2 hover:bg-wash hover:text-ink"
+                ? "bg-surface-2 font-medium text-accent"
+                : "text-ink-2 hover:bg-surface-2 hover:text-ink"
             }`}
           >
-            <Icon size={16} strokeWidth={1.75} className="shrink-0" aria-hidden />
+            <Icon size={18} strokeWidth={1.75} className="shrink-0" aria-hidden />
             {label}
             {href === "/pro/solicitudes" && <Badge count={pendingRequests} />}
+            {href === "/pro" && <Recuento value={patientCount} />}
           </Link>
         );
       })}
@@ -84,10 +101,10 @@ export function ProNavMobile({
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-colors duration-150 ${
+            className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-[13px] transition-colors duration-150 ${
               active
-                ? "bg-accent-soft font-medium text-accent"
-                : "text-ink-2 hover:bg-wash hover:text-ink"
+                ? "bg-surface-2 font-medium text-accent"
+                : "text-ink-2 hover:bg-surface-2 hover:text-ink"
             }`}
           >
             <Icon size={20} strokeWidth={1.75} className="shrink-0" aria-hidden />
