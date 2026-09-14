@@ -296,7 +296,7 @@ function MonthGrid({
 
   return (
     <div className="card overflow-x-auto">
-      <div className="min-w-[640px]">
+      <div className="min-w-[640px] lg:min-w-0">
         <div className="grid grid-cols-7 border-b border-line">
           {["lun", "mar", "mié", "jue", "vie", "sáb", "dom"].map((d) => (
             <div
@@ -432,11 +432,14 @@ function TimeGrid({
 
   return (
     <div className="card overflow-x-auto">
-      <div className={days === 7 ? "min-w-[860px]" : "min-w-[420px]"}>
+      {/* El ancho mínimo solo rige por debajo de `lg`, donde desplazar en
+          horizontal es aceptable. A partir de ahí la rejilla es fluida y cabe
+          entera: la semana no se corta nunca en escritorio. */}
+      <div className={days === 7 ? "min-w-[860px] lg:min-w-0" : "min-w-[420px] sm:min-w-0"}>
         {/* Cabecera de días */}
         <div
           className="grid border-b border-line"
-          style={{ gridTemplateColumns: `3.5rem repeat(${days}, 1fr)` }}
+          style={{ gridTemplateColumns: `3.5rem repeat(${days}, minmax(0, 1fr))` }}
         >
           <div />
           {cols.map((c) => {
@@ -449,7 +452,7 @@ function TimeGrid({
                 className="border-l border-line px-2 py-2 text-center transition-colors hover:bg-wash"
               >
                 <span
-                  className={`text-xs capitalize ${isToday ? "font-semibold text-accent" : "text-ink-2"}`}
+                  className={`block truncate text-xs capitalize ${isToday ? "font-semibold text-accent" : "text-ink-2"}`}
                 >
                   {cellLabel(c, {
                     weekday: "short",
@@ -464,7 +467,7 @@ function TimeGrid({
         {/* Cuerpo */}
         <div
           className="grid"
-          style={{ gridTemplateColumns: `3.5rem repeat(${days}, 1fr)` }}
+          style={{ gridTemplateColumns: `3.5rem repeat(${days}, minmax(0, 1fr))` }}
         >
           {/* Columna de horas */}
           <div className="relative" style={{ height: GRID_H }}>

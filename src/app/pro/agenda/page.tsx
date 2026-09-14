@@ -42,7 +42,11 @@ export default async function AgendaPage({
     <div className="mx-auto max-w-6xl">
       <h1 className="page-title">Agenda</h1>
 
-      <div className="mt-5 grid items-start gap-6 lg:grid-cols-[1fr_19rem]">
+      {/* La columna derecha se aparta hasta `xl`: con `max-w-6xl` (1152 px) y
+          19rem de aside, al calendario le quedaban ~824 px, por debajo de lo que
+          necesitan siete días. La semana se cortaba a CUALQUIER anchura de
+          ventana, porque el tope no depende de la pantalla. */}
+      <div className="mt-5 grid items-start gap-6 xl:grid-cols-[1fr_19rem]">
         {/* Izquierda: toolbar + calendario */}
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
