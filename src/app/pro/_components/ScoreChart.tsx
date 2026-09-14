@@ -99,7 +99,7 @@ export function ScoreChart({
             points={linePath}
             fill="none"
             stroke="var(--accent)"
-            strokeWidth={2}
+            strokeWidth={1.75}
             strokeLinejoin="round"
             strokeLinecap="round"
           />
@@ -114,7 +114,7 @@ export function ScoreChart({
               r={5}
               fill="var(--accent)"
               stroke="var(--canvas, #fff)"
-              strokeWidth={2}
+              strokeWidth={1.75}
             />
             <title>
               {formatDate(p.date)}: {p.score}

@@ -23,11 +23,11 @@ export default async function AnalyticsPage() {
     <div className="mx-auto max-w-4xl">
       <h1 className="page-title">Analítica</h1>
       <p className="mt-1 text-sm text-ink-2">
-        Resumen descriptivo de tu consulta.
+        Resumen descriptivo de su consulta.
       </p>
 
       {/* Tiles */}
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Tile label="Pacientes activos" value={String(a.patients.active)} />
         <Tile label="Archivados" value={String(a.patients.archived)} />
         <Tile
@@ -110,11 +110,11 @@ function Tile({
   hint?: string;
 }) {
   return (
-    <div className="card p-4">
+    <div className="card p-5">
       <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
         {label}
       </div>
-      <div className="mt-0.5 text-2xl font-semibold tracking-[-0.01em]">
+      <div className="mt-1.5 text-2xl font-semibold tracking-[-0.01em] tabular-nums">
         {value}
       </div>
       {hint && <div className="text-xs text-ink-3">{hint}</div>}

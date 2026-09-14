@@ -41,16 +41,16 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-full flex-col md:flex-row">
       <ServiceWorkerRegister />
       {/* Sidebar (escritorio) */}
-      <aside className="hidden shrink-0 border-r border-line bg-panel md:block md:w-56">
-        <div className="sticky top-[var(--banner-h)] flex h-[calc(100dvh-var(--banner-h))] flex-col gap-4 p-3">
+      <aside className="hidden shrink-0 border-r border-line bg-surface-2 md:block md:w-60">
+        <div className="sticky top-[var(--banner-h)] flex h-[calc(100dvh-var(--banner-h))] flex-col gap-5 p-4">
           <div className="px-1.5 pt-1">
             <Brand />
           </div>
           <div className="flex-1 overflow-y-auto">
             <ProNav pendingRequests={pendingRequests} />
           </div>
-          <div className="border-t border-line px-1.5 pt-3">
-            <p className="mb-1.5 truncate text-xs text-ink-3" title={user.email}>
+          <div className="border-t border-line px-1.5 pt-4">
+            <p className="mb-2 truncate text-xs text-ink-3" title={user.email}>
               {user.email}
             </p>
             <SignOutForm />
@@ -70,7 +70,7 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* Contenido */}
-      <main className="min-w-0 flex-1 px-4 py-8 sm:px-8">{children}</main>
+      <main className="min-w-0 flex-1 px-4 py-9 sm:px-9">{children}</main>
     </div>
   );
 }

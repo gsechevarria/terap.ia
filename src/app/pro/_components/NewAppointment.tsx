@@ -152,7 +152,7 @@ export function NewAppointment({
                     setDuration(d);
                     clearConflict();
                   }}
-                  className={`rounded-md border px-2.5 py-1 text-sm font-medium transition-colors duration-150 ${
+                  className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors duration-150 ${
                     active
                       ? "border-accent bg-accent-soft text-accent"
                       : "border-line-strong bg-canvas text-ink-2 hover:bg-wash hover:text-ink"
@@ -168,7 +168,7 @@ export function NewAppointment({
                 setCustomMode(true);
                 clearConflict();
               }}
-              className={`rounded-md border px-2.5 py-1 text-sm font-medium transition-colors duration-150 ${
+              className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors duration-150 ${
                 customMode
                   ? "border-accent bg-accent-soft text-accent"
                   : "border-line-strong bg-canvas text-ink-2 hover:bg-wash hover:text-ink"
@@ -254,9 +254,9 @@ export function NewAppointment({
       )}
 
       {conflict ? (
-        <div role="alert" className="mt-3 rounded-md border border-warn/30 bg-warn-soft p-3">
+        <div role="alert" className="mt-3 rounded-2xl border border-warn/30 bg-warn-soft p-3">
           <div className="flex items-start gap-2 text-sm text-warn">
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} aria-hidden />
             <p>{conflict}</p>
           </div>
           <div className="mt-3 flex gap-2">

@@ -30,7 +30,7 @@ export function RequestsPanel({
   if (pending.length === 0 && resolved.length === 0) {
     return (
       <div className="empty">
-        <p className="text-sm">Aquí llegarán las peticiones de tus pacientes.</p>
+        <p className="text-sm">Aquí llegarán las peticiones de sus pacientes.</p>
         <p className="mt-1 text-xs text-ink-3">
           Desde su aplicación pueden pedir una cita nueva, proponer otro horario
           o anular una. Tú decides siempre.
@@ -137,7 +137,7 @@ function RequestCard({ req }: { req: PendingRequest }) {
   return (
     <article className="card p-4">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Icon className="size-4 shrink-0 text-ink-2" strokeWidth={2} aria-hidden />
+        <Icon className="size-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden />
         <Link
           href={`/pro/patients/${req.patient_id}`}
           className="text-sm font-medium hover:underline"
@@ -181,7 +181,7 @@ function RequestCard({ req }: { req: PendingRequest }) {
       </dl>
 
       {req.note && (
-        <p className="mt-2 rounded-md bg-wash px-3 py-2 text-sm whitespace-pre-wrap text-ink-2">
+        <p className="mt-2 rounded-xl bg-wash px-3 py-2 text-sm whitespace-pre-wrap text-ink-2">
           “{req.note}”
         </p>
       )}
@@ -240,7 +240,7 @@ function RequestCard({ req }: { req: PendingRequest }) {
                 disabled={pending}
                 className="btn-subtle btn-sm"
               >
-                <Clock className="size-3.5" strokeWidth={2} aria-hidden />
+                <Clock className="size-3.5" strokeWidth={1.75} aria-hidden />
                 Proponer otra hora
               </button>
             )}

@@ -189,7 +189,7 @@ function GastoFields({
       </label>
 
       {esBien && (
-        <div className="mt-2 grid gap-3 rounded-md border border-line bg-canvas p-3 sm:grid-cols-2">
+        <div className="mt-2 grid gap-3 rounded-2xl border border-line bg-canvas p-3 sm:grid-cols-2">
           <label className="block">
             <span className="field-label">% amortización anual</span>
             <input

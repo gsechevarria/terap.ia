@@ -1,10 +1,5 @@
 import { Lock, ShieldCheck, TriangleAlert } from "lucide-react";
-import {
-  CIFRADO,
-  MARCO_NORMATIVO,
-  MODO_DEMOSTRACION,
-  NODO_CLINICO,
-} from "@/lib/entorno-clinico";
+import { CIFRADO, MARCO_NORMATIVO, MODO_DEMOSTRACION } from "@/lib/entorno-clinico";
 
 /**
  * Franja superior fija: marco normativo, nodo de procesamiento y estado del
@@ -42,14 +37,11 @@ export function FranjaReglamentaria() {
         )}
       </p>
 
-      {/* Nodo y cifrado. Se ocultan en pantallas estrechas: en un móvil el
-          mensaje principal es lo único que cabe sin truncarse. */}
-      <p className="hidden shrink-0 items-center gap-3 sm:flex">
-        <span className="tabular-nums">Nodo clínico: {NODO_CLINICO}</span>
-        <span className="flex items-center gap-1.5">
-          <Lock size={12} strokeWidth={1.75} aria-hidden />
-          Cifrado {CIFRADO}
-        </span>
+      {/* Cifrado. Se oculta en pantallas estrechas: en un móvil el mensaje
+          principal es lo único que cabe sin truncarse. */}
+      <p className="hidden shrink-0 items-center gap-1.5 sm:flex">
+        <Lock size={12} strokeWidth={1.75} aria-hidden />
+        Cifrado {CIFRADO}
       </p>
     </div>
   );

@@ -95,7 +95,7 @@ export default async function ScaleEvolutionPage({
                     <td className="text-ink-2">{r.severity ?? "—"}</td>
                     <td>
                       {r.flagged ? (
-                        <span className="rounded-sm bg-danger-soft px-1.5 py-px text-xs font-semibold text-danger">
+                        <span className="rounded-full bg-danger-soft px-2 py-px text-xs font-semibold text-danger">
                           riesgo
                         </span>
                       ) : (

@@ -10,17 +10,12 @@
  * responsable del tratamiento. Hoy el entorno es de demostración.
  */
 
-/**
- * Ubicación del nodo que procesa los datos.
- *
- * Por defecto la región REAL del proyecto Supabase (`.env.example`, línea 1:
- * "Supabase — proyecto en EU (Frankfurt)"). Se puede sobrescribir cuando la
- * infraestructura cambie, pero el valor mostrado debe corresponder siempre con
- * dónde se procesan los datos de verdad: decir otra cosa en la interfaz es una
- * información inexacta sobre transferencias y ubicación del tratamiento.
+/*
+ * No se declara nodo ni ubicación de procesamiento. La franja no es el sitio
+ * para eso: si algún día hay que informar de dónde se tratan los datos, va en
+ * la política de privacidad, que es donde el interesado puede leerla completa y
+ * con su contexto, no en una tira de 32 píxeles.
  */
-export const NODO_CLINICO =
-  process.env.NEXT_PUBLIC_CLINICAL_NODE?.trim() || "UE · Frankfurt";
 
 /**
  * Cifrado declarado.

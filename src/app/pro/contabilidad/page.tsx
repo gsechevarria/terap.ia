@@ -60,7 +60,7 @@ export default async function ContabilidadPage() {
       <DescargoFiscal className="mt-4" />
 
       {!hayParamsExactos(anio) && (
-        <p className="mt-3 flex items-start gap-2 rounded-md border border-warn-soft bg-warn-soft px-3 py-2 text-xs text-warn">
+        <p className="mt-3 flex items-start gap-2 rounded-2xl border border-warn-soft bg-warn-soft px-3 py-2 text-xs text-warn">
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
           No hay parámetros fiscales confirmados para {anio}; se usan los del
           último ejercicio disponible. Verifica las cifras con tu asesor.

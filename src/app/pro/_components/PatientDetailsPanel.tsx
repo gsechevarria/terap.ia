@@ -118,7 +118,7 @@ export function PatientDetailsPanel({
           onClick={() => setEditing(true)}
           className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-ink-3 hover:bg-wash hover:text-ink"
         >
-          <Pencil className="size-3.5" strokeWidth={2} />
+          <Pencil className="size-3.5" strokeWidth={1.75} />
           Editar
         </button>
       </div>

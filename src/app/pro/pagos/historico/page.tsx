@@ -150,7 +150,7 @@ export default async function PaymentsHistoryPage({
           <Link
             key={p.key}
             href={p.href}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-150 ${
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150 ${
               p.active
                 ? "bg-accent-soft text-accent"
                 : "bg-panel text-ink-2 hover:bg-wash-2 hover:text-ink"

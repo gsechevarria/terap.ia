@@ -15,7 +15,7 @@ export default async function ProSettingsPage() {
       </section>
 
       <section className="mt-8 flex flex-col gap-2">
-        <h2 className="section-label">¿Qué quieres recibir?</h2>
+        <h2 className="section-label">¿Qué desea recibir?</h2>
         <NotificationPreferences initial={prefs} />
       </section>
 

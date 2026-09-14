@@ -8,7 +8,7 @@ import { DESCARGO_FISCAL } from "@/lib/fiscal";
 export function DescargoFiscal({ className = "" }: { className?: string }) {
   return (
     <p
-      className={`flex items-start gap-2 rounded-md border border-line bg-panel px-3 py-2 text-xs text-ink-2 ${className}`}
+      className={`flex items-start gap-2 rounded-2xl border border-line bg-panel px-3 py-2 text-xs text-ink-2 ${className}`}
     >
       <Info className="mt-0.5 size-3.5 shrink-0 text-ink-3" aria-hidden />
       <span>{DESCARGO_FISCAL}</span>

@@ -42,7 +42,7 @@ export function TagsEditor({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="rounded-sm px-1 text-xs text-ink-3 opacity-0 transition-opacity duration-100 group-hover:opacity-100 hover:bg-wash hover:text-ink focus-visible:opacity-100"
+          className="rounded-full px-1.5 text-xs text-ink-3 opacity-0 transition-opacity duration-100 group-hover:opacity-100 hover:bg-wash hover:text-ink focus-visible:opacity-100"
         >
           Editar
         </button>

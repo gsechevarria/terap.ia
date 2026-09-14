@@ -45,7 +45,7 @@ export function NotesPanel({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             rows={3}
-            placeholder="Nota rápida (privada, solo tú la ves)…"
+            placeholder="Nota rápida (privada, solo usted la ve)…"
             className="field"
           />
         </label>
