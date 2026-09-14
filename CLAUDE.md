@@ -21,11 +21,11 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 | | |
 |---|---|
 | Producción | https://terap.vercel.app |
-| Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin` configurado; PR #1 integrada) |
-| Commit de producción | `8ac6931b6b46a490822f4aa85cb252954c96564d` |
-| Despliegue verificado | `dpl_DVW9ohDCEUxhYTebT7ycKi23tPrV` |
-| Supabase `levufuoigdlexscpvlgk` | **39 migraciones aplicadas**; 30 tablas, 1 vista, 25 funciones tipadas |
-| Rama de esta copia | `fix/correcciones-integrales-20260909-185808` |
+| Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin`; todo entra por PR) |
+| Commit en producción | `16477d1b41f70f6efc50d798291b4ffae955b066` |
+| Último despliegue comprobado a mano | `dpl_DVW9ohDCEUxhYTebT7ycKi23tPrV` (11-sep, commit `8ac6931b`). Las PR posteriores (#9, #10) desplegaron solas y **no** se han vuelto a comprobar en producción. |
+| Supabase `levufuoigdlexscpvlgk` | **40 migraciones aplicadas**; 31 tablas, 1 vista, 28 funciones tipadas. Local y remoto coinciden (`supabase migration list`, 14-sep). |
+| Rama de esta copia | `main`, al día con `origin/main` |
 
 Sigue siendo **entorno de demostración con datos ficticios**
 (`NEXT_PUBLIC_DEMO_MODE=true`, banner permanente). El paso a datos reales sigue
@@ -42,6 +42,36 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   `20260911090002_admin_professional_provisioning`. Informe:
   [docs/CORRECCIONES-2026-09.md](docs/CORRECCIONES-2026-09.md); despliegue:
   [docs/DESPLIEGUE-2026-09-11.md](docs/DESPLIEGUE-2026-09-11.md).
+- **Solicitudes de cita del paciente** (migración
+  `20260911140001_appointment_requests`, la número 40). Tabla
+  `appointment_requests` + enums `appointment_request_kind` /
+  `appointment_request_status`, **sin políticas de insert ni de update**: el
+  único camino de escritura son tres funciones `security definer` —
+  `patient_request_appointment`, `patient_withdraw_request` y
+  `resolve_appointment_request`. Aceptar crea o mueve la cita y cierra la
+  solicitud en la misma transacción, con `for update` sobre la solicitud y
+  comprobación de solapes contra citas y bloqueos. Tope de 3 solicitudes vivas
+  por paciente, antelación mínima de 1 h y una sola pendiente por cita (índice
+  único parcial). Interfaz: **`/pro/solicitudes`**
+  (`src/app/pro/_components/RequestsPanel.tsx`, con contador en `ProNav`
+  calculado en el layout) y **`/app/appointments/new`**
+  (`src/app/app/_components/RequestAppointmentForm.tsx`). La cancelación
+  directa del paciente **no** es una solicitud: sigue yendo por
+  `patient_respond_appointment`.
+- **Armazón de la app del paciente.** `AppTabBar`
+  (`src/app/app/_components/AppTabBar.tsx`) fija abajo con área segura de iOS
+  (Inicio · Citas · Diario · Recursos · Más), cabecera reducida a marca + 024,
+  nueva `/app/more` (pagos, notificaciones, contraseña, cerrar sesión) y
+  `loading.tsx` para toda el área de paciente. `/app` vuelve a renderizarse en
+  servidor: Capacitor marca su WebView (`appendUserAgent: "terapia-native"`) y
+  `esAppNativa()` (`src/lib/native-request.ts`) lo detecta antes de montar
+  `NativeGate`.
+- **Escenario de demostración:** `scripts/seed-demo.mjs` (idempotente, script
+  `npm run seed:demo`) da contraseña conocida a la profesional, da de alta a una
+  paciente por el camino real (invitación → token → consentimiento) y refresca
+  la línea temporal. Credenciales ficticias:
+  `dra.romero@demo.terapia` / `ana.nadal@demo.terapia`. Lee `.env.local`, así
+  que **lo ejecuta una persona**, nunca el agente.
 - **El cron ya NO está en Vercel.** Vercel Hobby no admite cron por minuto; la
   programación vive en **Supabase (`pg_cron` + `pg_net`)** con el secreto en
   Vault y en Vercel. `vercel.json` **ya no registra ningún cron** (solo trae
@@ -57,8 +87,8 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   → 0 vulnerabilidades, incluyendo desarrollo. Ver
   [docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md).
 - **Batería de pruebas nueva.** `npm test` = **124 pruebas de lógica** (vitest, 8
-  ficheros, sin BD). `npm run test:types` = **38 regresiones SQL** sobre
-  PostgreSQL embebido (**PGlite**), que ejecuta las 39 migraciones y comprueba
+  ficheros, sin BD). `npm run test:types` = **51 regresiones SQL** sobre
+  PostgreSQL embebido (**PGlite**), que ejecuta las 40 migraciones y comprueba
   RLS sin Docker. `npm run test:integration` = **11 escenarios HTTP** contra
   Supabase local (Auth/PostgREST/Storage y concurrencia), ejecutados en CI. Los
   antiguos `test:integration:*` por área delegan en esa batería: **no se les
@@ -70,13 +100,24 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
 **Datos de demostración con incoherencias históricas** (no se han inventado datos
 para taparlas): 121 ingresos sin tratamiento fiscal confirmado, 31 gastos y 3
 bienes pendientes de revisión, 5 bonos con diferencias entre saldo y consumos y 5
-sin registro de compra. Diagnóstico:
-`supabase/scripts/diagnostico-correcciones-202609.sql`.
+sin registro de compra. Diagnóstico (solo lectura):
+`supabase/scripts/diagnostico-correcciones-202609.sql`. **Criterio propuesto,
+pendiente de tu decisión — no se ha tocado ni un dato:**
+[docs/DIAGNOSTICO-HISTORICOS.md](docs/DIAGNOSTICO-HISTORICOS.md).
+
+**Efecto de esas filas pendientes:** `/pro/contabilidad` y
+`/pro/contabilidad/export` lanzan excepción a propósito mientras quede una sin
+confirmar (guardas en `src/lib/queries/contabilidad.ts`); un solo bien de
+inversión marcado las tumba en **todos** los ejercicios, porque los bienes no se
+filtran por año. `/pro/contabilidad/gastos` y `/pro/contabilidad/configuracion`
+siguen funcionando. Deducido leyendo el código, no comprobado contra producción.
 
 **Verificación que falta:** revisión visual en navegador de los dos roles
 (consentimiento, errores de red, formularios, diálogo con teclado, exportaciones,
-CSP, PWA), pruebas en móviles físicos, entrega push real a un dispositivo, y
-ensayo de restauración completa de la copia de seguridad.
+CSP, PWA, cierre de sesión en dispositivo compartido), pruebas en móviles
+físicos, entrega push real a un dispositivo, y ensayo de restauración completa de
+la copia de seguridad. Guion paso a paso, para ejecutarlo a mano:
+[docs/REVISION-VISUAL.md](docs/REVISION-VISUAL.md).
 
 **Antes del primer paciente real:** DPA + base jurídica art. 9 · revisión
 administrativa de las altas profesionales antiguas (el rol actual no demuestra el
@@ -1112,7 +1153,7 @@ tienen recuento propio; delegan en la batería HTTP):
 npm run lint          # ESLint 9, --max-warnings=0
 npm run typecheck     # tsc --noEmit
 npm test              # vitest: 124 pruebas de lógica pura, sin BD
-npm run test:types    # 38 regresiones SQL + tipos, sobre PGlite (39 migraciones)
+npm run test:types    # 51 regresiones SQL + tipos, sobre PGlite (40 migraciones)
 npm run test:integration   # 11 escenarios HTTP contra Supabase LOCAL (nunca el remoto)
 npm run build
 npm audit --audit-level=low
