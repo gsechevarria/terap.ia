@@ -27,23 +27,48 @@ export const PARAMS_2026 = {
   retencionReducidaNuevos: 0.07, // año de alta + 2 siguientes
   ivaExencionArticulo: "20.Uno.3º LIVA",
 
-  // ⚠️ PENDIENTES DE CONFIRMAR CONTRA LA AEAT 2026:
+  // COMPROBADOS CONTRA LA AEAT (14-sep-2026) PERO NO VERIFICADOS AQUÍ.
+  //
+  // La sede de la AEAT (Estimación directa simplificada) dice literalmente:
+  // «5% en general y 10% en 2026 para Ceuta s/diferencia positiva (Máximo 2.000
+  // euros)», y anota «En 2023 fue el 7%».
+  // https://sede.agenciatributaria.gob.es/Sede/irpf/empresarios-individuales-profesionales/regimenes-determinar-rendimiento-actividad/estimacion-directa-simplificada.html
+  //
+  // Los dos valores de abajo son, por tanto, correctos para el CASO GENERAL. Se
+  // dejan como no verificados a propósito por dos motivos, y basta con uno:
+  //
+  //  1. El motor aplica un porcentaje plano y NO modela el 10 % de Ceuta de
+  //     2026. Para un profesional en Ceuta la cifra sería baja (conservadora,
+  //     pero baja). Modelarlo exige un campo nuevo en `configuracion_fiscal`.
+  //  2. Poner `verificado: true` apaga el aviso de «estimación no verificada»
+  //     en el panel y la fila de advertencia dentro del XLSX. Quién asume esa
+  //     certeza sobre cifras fiscales es una decisión de la persona
+  //     responsable, no del código.
+  //
+  // Para darlos por verificados basta cambiar los dos `false` a `true`.
   gastosDificilJustificacionPct: {
     valor: 0.05,
     verificado: false,
-    fuente: "5 % general; fue 7 % excepcional en 2023 — confirmar para 2026",
+    fuente:
+      "5 % general (AEAT, comprobado 14-sep-2026). No se modela el 10 % de Ceuta de 2026",
   } as ParamVerificable,
   gastosDificilJustificacionTope: {
     valor: 2000,
     verificado: false,
-    fuente: "Tope anual en € — confirmar para 2026",
+    fuente: "Tope anual de 2.000 € (AEAT, comprobado 14-sep-2026)",
   } as ParamVerificable,
 
-  // Tramos RETA 2026 (cuota mensual por ingresos reales). Vacío a propósito:
-  // las tablas no estaban publicadas a ene-2026.
+  // Tramos RETA 2026 (cuota mensual por ingresos reales). Sigue vacío, pero ya
+  // NO porque falte publicarlos: las tablas de 2026 están en la Orden
+  // PJC/297/2026 (BOE de 31-mar-2026). Está vacío porque **ningún código lee
+  // este campo**: no hay ninguna funcionalidad que estime la cuota de autónomos.
+  // Rellenarlo antes de que exista esa funcionalidad sería meter una tabla
+  // fiscal que nadie usa y que envejece sola. Cuando haga falta, los importes se
+  // copian del BOE, no de resúmenes de terceros.
   reta: {
     verificado: false,
-    fuente: "Tablas RETA 2026 pendientes de publicación",
+    fuente:
+      "Orden PJC/297/2026 (BOE 31-mar-2026). Sin rellenar: ningún cálculo usa este campo",
     tramos: [] as Array<{
       ingresosMin: number;
       ingresosMax: number;

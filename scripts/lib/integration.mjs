@@ -82,6 +82,41 @@ export async function integration(group = 'all') {
   const batches=await Promise.all([1,2].map(()=>ok(admin.rpc('claim_notifications',{p_token:randomUUID(),p_limit:20}))));
   assert(batches.flat().length>0);assert(!batches[0].some(x=>batches[1].some(y=>x.id===y.id)));
  });
+ await test('notifications','Endpoint de proveedor conocido y rechazo de los demás',async()=>{
+  // El constraint `push_endpoint_allowed` solo admite los cuatro proveedores
+  // previstos: una IP o un puerto alternativo serían exfiltración disfrazada.
+  const keys={p256dh:'a'.repeat(87),auth:'a'.repeat(22)};
+  const sub=await ok(admin.from('push_subscriptions').insert({user_id:patient.id,endpoint:'https://fcm.googleapis.com/fcm/send/'+randomUUID(),...keys}).select().single());
+  for(const endpoint of ['https://127.0.0.1/push','https://fcm.googleapis.com:8443/x','https://evil.example/fcm.googleapis.com'])
+    await deny(admin.from('push_subscriptions').insert({user_id:patient.id,endpoint,...keys}));
+  // Una entrega por notificación y dispositivo: la clave primaria lo impone.
+  const aviso=await ok(admin.from('notifications').insert({user_id:patient.id,professional_id:owner.id,patient_id:p.id,type:'new_task',title:'terap.ia',status:'queued'}).select().single());
+  await ok(admin.from('notification_deliveries').insert({notification_id:aviso.id,subscription_id:sub.id}));
+  await deny(admin.from('notification_deliveries').insert({notification_id:aviso.id,subscription_id:sub.id}));
+ });
+ await test('notifications','El reintento diferido no se reclama antes de tiempo',async()=>{
+  const futuro=new Date(Date.now()+3600e3).toISOString();
+  const aviso=await ok(admin.from('notifications').insert({user_id:patient.id,professional_id:owner.id,patient_id:p.id,type:'new_task',title:'terap.ia',status:'queued',next_attempt_at:futuro}).select().single());
+  const enEspera=await ok(admin.rpc('claim_notifications',{p_token:randomUUID(),p_limit:20}));
+  assert(!enEspera.some(x=>x.id===aviso.id),'Un reintento futuro no debe reclamarse');
+  // Vencido el plazo, vuelve a entrar en el lote.
+  await ok(admin.from('notifications').update({next_attempt_at:new Date(Date.now()-1000).toISOString()}).eq('id',aviso.id));
+  const lote=await ok(admin.rpc('claim_notifications',{p_token:randomUUID(),p_limit:20}));
+  assert(lote.some(x=>x.id===aviso.id),'Vencido el plazo, debe reclamarse');
+ });
+ await test('rls','La cola de limpieza registra el archivo sustituido y el borrado',async()=>{
+  const antigua=p.id+'/'+randomUUID()+'.pdf', nueva=p.id+'/'+randomUUID()+'.pdf';
+  const doc=await ok(admin.from('documents').insert({professional_id:owner.id,patient_id:p.id,title:'Ficticio',storage_path:antigua}).select().single());
+  const enCola=async path=>(await ok(admin.from('storage_cleanup_jobs').select('id').eq('bucket','files').eq('path',path))).length;
+  assert.equal(await enCola(antigua),0,'Nada que limpiar antes de sustituir');
+  // Cambiar un campo que no es la ruta no encola nada.
+  await ok(admin.from('documents').update({title:'Otro título'}).eq('id',doc.id));
+  assert.equal(await enCola(antigua),0,'Editar el título no encola limpieza');
+  await ok(admin.from('documents').update({storage_path:nueva}).eq('id',doc.id));
+  assert.equal(await enCola(antigua),1,'La ruta sustituida queda encolada');
+  await ok(admin.from('documents').delete().eq('id',doc.id));
+  assert.equal(await enCola(nueva),1,'La ruta borrada queda encolada');
+ });
  await test('contabilidad','Gasto y tratamiento fiscal por operación',async()=>{
   const id=await ok(pro.db.rpc('save_expense',{p_id:null,p_data:{fecha:'2026-09-01',categoria_deducible:'software',base_cents:100000,tipo_iva:21,porcentaje_afectacion:50,es_bien_inversion:true,porcentaje_amortizacion:25,anios_amortizacion:4}}));
   assert.equal((await ok(pro.db.from('bienes_inversion').select('valor_adquisicion_cents').eq('gasto_id',id).single())).valor_adquisicion_cents,60500);

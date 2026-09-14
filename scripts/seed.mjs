@@ -181,37 +181,84 @@ async function seedPatient(proId, idx, scales, opts) {
     attendance: "pending",
     video_link: "https://meet.example/terapia",
   });
-  await db.from("appointments").insert(appts);
+  // Se recuperan los identificadores: los pagos se vinculan a su cita, igual
+  // que haría `settle_attended_appointment` en la aplicación.
+  const { data: insertados } = await db
+    .from("appointments")
+    .insert(appts)
+    .select("id, starts_at, attendance");
+  const atendidas = (insertados ?? [])
+    .filter((a) => a.attendance === "attended")
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
 
-  // --- Pagos: atendidas -> pagado (deja 2 recientes pendientes) + 1 bono ----
-  const attendedCount = appts.filter((a) => a.attendance === "attended").length;
+  // --- Bono: compra registrada + imputación de las sesiones consumidas ------
+  // El bono se vende y se consume por el mismo camino que la aplicación: una
+  // fila de compra por el precio y una imputación de importe 0 por sesión. Sin
+  // ellas, el saldo del bono no cuadra con sus consumos ni consta el ingreso.
+  const SESIONES_BONO = 4;
+  let bono = null;
+  if (idx % 4 === 1) {
+    const { data } = await db
+      .from("session_packs")
+      .insert({
+        professional_id: proId,
+        patient_id: pid,
+        total_sessions: 10,
+        used_sessions: Math.min(SESIONES_BONO, atendidas.length),
+        price_cents: 50000,
+        currency: "EUR",
+      })
+      .select("id")
+      .single();
+    bono = data ?? null;
+  }
+  const cubiertasPorBono = bono ? atendidas.slice(0, SESIONES_BONO) : [];
+  const idsCubiertas = new Set(cubiertasPorBono.map((a) => a.id));
+
+  // --- Pagos: atendidas -> pagado (deja 2 recientes pendientes) -------------
   const payments = [];
-  let attendedSeen = 0;
-  for (const a of appts) {
-    if (a.attendance !== "attended") continue;
-    attendedSeen++;
-    const pending = attendedSeen > attendedCount - 2; // 2 más recientes pendientes
+  if (bono) {
     payments.push({
       professional_id: proId,
       patient_id: pid,
+      session_pack_id: bono.id,
+      amount_cents: 50000,
+      currency: "EUR",
+      status: "paid",
+      paid_at: cubiertasPorBono[0]?.starts_at ?? iso(now - 12 * 7 * DAY),
+      method: "transferencia",
+      note: "Compra de bono",
+    });
+    for (const a of cubiertasPorBono) {
+      payments.push({
+        professional_id: proId,
+        patient_id: pid,
+        appointment_id: a.id,
+        session_pack_id: bono.id,
+        amount_cents: 0,
+        currency: "EUR",
+        status: "paid",
+        paid_at: a.starts_at,
+        method: "bono",
+        note: "Sesión cubierta por bono",
+      });
+    }
+  }
+  const sueltas = atendidas.filter((a) => !idsCubiertas.has(a.id));
+  sueltas.forEach((a, i) => {
+    const pending = i >= sueltas.length - 2; // 2 más recientes pendientes
+    payments.push({
+      professional_id: proId,
+      patient_id: pid,
+      appointment_id: a.id,
       amount_cents: 6000,
       currency: "EUR",
       status: pending ? "pending" : "paid",
       paid_at: pending ? null : a.starts_at,
       method: pending ? null : "transferencia",
     });
-  }
+  });
   if (payments.length) await db.from("payments").insert(payments);
-  if (idx % 4 === 1) {
-    await db.from("session_packs").insert({
-      professional_id: proId,
-      patient_id: pid,
-      total_sessions: 10,
-      used_sessions: 4,
-      price_cents: 50000,
-      currency: "EUR",
-    });
-  }
 
   // --- Escalas (opt-in en ~60% de pacientes) con trayectoria ----------------
   if (idx % 5 !== 4) {
@@ -328,6 +375,18 @@ const GASTOS_SEED = [
   { m: 6, categoria: "software", concepto: "Herramienta de videollamada", proveedor: "Video SaaS", base: 15, iva: 21, afect: 100 },
 ];
 
+// La configuración fiscal sembrada es `situacion_iva: "exenta"`, y con ella
+// `save_expense` deriva 0 % de IVA recuperable. Sembrar el mismo valor evita que
+// los gastos nazcan marcados como pendientes de revisión.
+const IVA_RECUPERABLE_PCT = 0;
+
+/** Misma fórmula que `save_expense`: el IVA no recuperable se activa. */
+function valorAdquisicionCents(baseC, cuotaC, afectacionPct) {
+  return Math.round(
+    ((baseC + cuotaC * (1 - IVA_RECUPERABLE_PCT / 100)) * afectacionPct) / 100,
+  );
+}
+
 // Bienes de inversión (se registran como gasto marcado + ficha de amortización).
 const BIENES_SEED = [
   { m: 5, descripcion: "Portátil de consulta", proveedor: "Tienda Informática", base: 1200, iva: 21, afect: 100, amort: 25, anios: 4 },
@@ -380,6 +439,10 @@ async function seedContabilidad(proId, variante) {
       total_cents: baseC + cuotaC,
       porcentaje_afectacion: g.afect,
       es_bien_inversion: false,
+      // La configuración sembrada es `exenta`, así que no hay IVA recuperable.
+      // Es el mismo valor que derivaría `save_expense`; sin él, el gasto nace
+      // "pendiente de revisión" y tumba el panel de contabilidad.
+      iva_recuperable_pct: IVA_RECUPERABLE_PCT,
     };
   });
   await db.from("gastos").insert(rows);
@@ -404,6 +467,7 @@ async function seedContabilidad(proId, variante) {
         total_cents: baseC + cuotaC,
         porcentaje_afectacion: b.afect,
         es_bien_inversion: true,
+        iva_recuperable_pct: IVA_RECUPERABLE_PCT,
       })
       .select("id")
       .single();
@@ -412,9 +476,12 @@ async function seedContabilidad(proId, variante) {
       gasto_id: gasto?.id ?? null,
       descripcion: b.descripcion,
       fecha_adquisicion: fecha,
-      valor_adquisicion_cents: baseC,
+      valor_adquisicion_cents: valorAdquisicionCents(baseC, cuotaC, b.afect),
       porcentaje_amortizacion: b.amort,
       anios_amortizacion: b.anios,
+      // El valor se calcula con la misma fórmula que `save_expense`, así que no
+      // queda pendiente de revisión: no hay ninguna regla sin constatar.
+      fiscal_review_required: false,
     });
   }
   console.log(`    · contabilidad: ${rows.length} gastos + ${bienes.length} bien(es) de inversión`);

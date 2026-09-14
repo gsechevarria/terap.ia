@@ -57,17 +57,22 @@ Contabilidad en la demostración.
 **Qué detecta.** `select id from public.payments where status='paid' and
 amount_cents>0 and fiscal_snapshot is null`.
 
-**Por qué existe.** Dos causas, las dos verificadas:
+**Por qué existe.** Una sola causa, y es deliberada: la migración
+[`20260909190006_fiscal_snapshots`](../supabase/migrations/20260909190006_fiscal_snapshots.sql)
+añade `payments.fiscal_snapshot` **sin relleno retroactivo**, y lo dice en su
+primera línea: «No se reconstruye el pasado usando la configuración de hoy». Todo
+pago anterior a la migración quedó a `null` a propósito.
 
-1. La migración [`20260909190006_fiscal_snapshots`](../supabase/migrations/20260909190006_fiscal_snapshots.sql)
-   añade `payments.fiscal_snapshot` **sin relleno retroactivo**, y lo dice en su
-   primera línea: «No se reconstruye el pasado usando la configuración de hoy».
-   Todo pago anterior a la migración quedó a `null` a propósito.
-2. Además, `scripts/seed.mjs` inserta los pagos en la **línea 204** y la
-   `configuracion_fiscal` en la **línea 345**. Cuando el disparador
-   `payments_capture_fiscal` se ejecuta no hay configuración que leer (`if not
-   found … return new`), así que deja el snapshot a `null`. **Una siembra limpia
-   hoy reproduciría el problema entero.** Ver «Defecto de orden» más abajo.
+> **Corrección (14-sep).** La primera versión de este documento añadía una
+> segunda causa: que `scripts/seed.mjs` insertaba los pagos antes que la
+> `configuracion_fiscal`, dejando sin datos al disparador
+> `payments_capture_fiscal`. **Es falso.** Me guié por el número de línea en el
+> fichero en vez de por el orden de llamada: `seedContabilidad()` —que hace el
+> `upsert` de la configuración— se invoca en la línea 427, antes que
+> `seedPatient()` en la 447. Con la configuración ya escrita, el disparador
+> encuentra `situacion_iva = 'exenta'` y captura el snapshot. **Una siembra
+> limpia NO reproduce esta clase A.** Sí reproduce las clases B, C, D y E; ver
+> «Qué reproducía el sembrado» más abajo.
 
 **Qué no se puede deducir.** Cuál era el tratamiento fiscal *en la fecha de cada
 cobro*. La configuración actual de los profesionales de demostración declara
@@ -222,23 +227,33 @@ ingreso cobrado y la trazabilidad queda escrita en la propia fila.
 
 ---
 
-## Defecto de orden en `scripts/seed.mjs` (código, no datos)
+## Qué reproducía el sembrado — ya corregido
 
-Independientemente de lo que decidas sobre los datos ya existentes, **la siembra
-vuelve a generar el problema A cada vez que se ejecuta**:
+`scripts/seed.mjs` escribe con la `service_role`, así que los disparadores de
+guarda (`guard_transactional_write`, que solo bloquea a `authenticated`) lo dejan
+insertar directamente. Eso le permitía saltarse las reglas que la aplicación sí
+aplica, y **volvía a generar las clases B, C, D y E en cada siembra limpia**. La
+clase A no: ver la corrección de más arriba.
 
-| Línea | Qué hace |
-|---|---|
-| 204 | `db.from("payments").insert(payments)` → el disparador busca configuración fiscal y **no la encuentra** |
-| 345 | `db.from("configuracion_fiscal").upsert(…)` → llega tarde |
+| Clase | Qué hacía el sembrado | Qué hace ahora |
+|---|---|---|
+| B | Insertaba los gastos sin `iva_recuperable_pct` | Siembra `0`, el mismo valor que deriva `save_expense` con `situacion_iva = 'exenta'` |
+| C | Insertaba los bienes con `valor_adquisicion_cents = base` y la bandera por defecto (`true`) | Calcula el valor con la **misma fórmula que `save_expense`** —`(base + cuota·(1−recuperable/100))·afectación/100`— y deja `fiscal_review_required = false` |
+| D | `used_sessions: 4` sin ninguna imputación | Crea una imputación de importe 0 por sesión, ligada a una **cita atendida real** |
+| E | Bono sin registro de compra | Crea la fila de compra por `price_cents`, como hace `create_session_pack` |
 
-La corrección es mover el `upsert` de `configuracion_fiscal` por delante del
-bucle de pacientes. Es un cambio pequeño y contenido, pero **no lo he aplicado**:
-interactúa con la decisión de resembrar o no (D1/E1) y el encargo era proponer y
-esperar. Dilo y lo hago.
+De paso, los pagos de las citas atendidas ahora llevan su `appointment_id`, que
+es lo que hace `settle_attended_appointment` en la aplicación; antes eran filas
+sueltas sin relación con la cita que las originaba.
 
-Conviene además que `seed.mjs` cree los bonos con `create_session_pack` en lugar
-del `insert` directo, que es lo que cerraría D y E de raíz.
+**El bono no puede crearse llamando a `create_session_pack`**, aunque sería lo
+ideal: la función resuelve al profesional con `current_professional_id()`, que
+depende de `auth.uid()`. El sembrado corre con la `service_role` y sin JWT, así
+que `auth.uid()` es nulo y la llamada acabaría en «No autorizado». Por eso el
+sembrado replica el resultado de la función en vez de invocarla.
+
+Nada de esto toca los datos ya existentes en el remoto: solo cambia lo que
+produciría una siembra futura.
 
 ---
 
@@ -249,14 +264,25 @@ del `insert` directo, que es lo que cerraría D y E de raíz.
 | A | 121 ingresos: regularizar en bloque, uno a uno, o dejarlos | **A1** con `source: "regularizacion_demo"` |
 | B | 31 gastos: aplicar la regla de `save_expense` en bloque o editarlos | **B1** (el resultado es 0 con `exenta`) |
 | C | 3 bienes: reguardar el gasto de origen | **C1**, anotando antes los valores actuales |
-| D | 5 bonos descuadrados | **D1**: no tocar, arreglar la siembra |
-| E | 5 bonos sin compra | **E1**: no tocar, arreglar la siembra |
-| — | ¿Corrijo ya el orden de `seed.mjs`? | Sí, en cuanto lo confirmes |
-| — | ¿Resembramos el entorno de demostración en limpio? | Es lo que deja la historia coherente de verdad |
+| D | 5 bonos descuadrados | **D1**: no tocar los existentes; la siembra ya está corregida |
+| E | 5 bonos sin compra | **E1**: igual que D |
+| — | ¿Resembramos el entorno de demostración en limpio? | Es lo único que deja la historia coherente de verdad, y ya no arrastra estas cinco clases |
 
 Con A y B resueltos —y C detrás— la sección de Contabilidad vuelve a poder
 enseñarse. D y E no la bloquean.
 
-**Ninguno de estos scripts los ejecuta el agente.** Van a `supabase/scripts/`,
-los lanzas tú, y llevan su `where` de seguridad para no alcanzar filas que ya
-estén confirmadas.
+## Los scripts ya están escritos — los ejecutas tú
+
+Los tres criterios recomendados viven en `supabase/scripts/`, listos para pegar
+en el editor SQL del panel. **No los ejecuta el agente**, y cada uno lleva su
+`where` para no alcanzar filas ya confirmadas:
+
+| Script | Qué hace | Reversible |
+|---|---|---|
+| [`regularizar-ingresos-demo.sql`](../supabase/scripts/regularizar-ingresos-demo.sql) | Criterio **A1** sobre `payments` con `fiscal_snapshot is null` | Sí: basta volver a poner el snapshot a `null` |
+| [`regularizar-gastos-demo.sql`](../supabase/scripts/regularizar-gastos-demo.sql) | Criterio **B1** sobre `gastos` con `iva_recuperable_pct is null` | Sí |
+| [`revisar-bienes-demo.sql`](../supabase/scripts/revisar-bienes-demo.sql) | Criterio **C1**: enseña antes y después, y recalcula con la fórmula de `save_expense` | Sí, con los valores que imprime antes |
+
+Empieza por el primer bloque de cada uno, que es de solo lectura y te dice
+cuántas filas tocaría. Los tres van envueltos en una transacción con
+`rollback` comentado al final: quita el comentario para ensayarlos sin efecto.

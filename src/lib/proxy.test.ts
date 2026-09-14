@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 const auth = vi.hoisted(() => ({ user: null as null | { id: string; app_metadata: { role: string } } }));
 vi.mock("@supabase/ssr", () => ({ createServerClient: () => ({ auth: { getUser: async () => ({ data: { user: auth.user } }) } }) }));
-import { proxy } from "../proxy";
+import { config, proxy } from "../proxy";
 afterEach(() => { vi.unstubAllEnvs(); auth.user = null; });
 function setup(role?: string) {
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
@@ -19,6 +19,17 @@ describe("proxy y límites de rutas", () => {
     setup("patient");
     const result = await proxy(new NextRequest("https://example.invalid/pro/pagos"));
     expect(result.headers.get("location")).toBe("https://example.invalid/app");
+  });
+  it("el matcher deja fuera los artefactos que el service worker precachea", () => {
+    const matcher = new RegExp(`^${config.matcher[0]}$`);
+    // `cache.addAll` rechaza un redirect: si el proxy protegiera estas rutas,
+    // una sesión caducada rompería la instalación entera del service worker.
+    for (const ruta of ["/offline.html", "/sw.js", "/manifest.webmanifest", "/icon-192.png"]) {
+      expect(matcher.test(ruta), ruta).toBe(false);
+    }
+    for (const ruta of ["/pro", "/app/appointments/new", "/login"]) {
+      expect(matcher.test(ruta), ruta).toBe(true);
+    }
   });
   it("la CSP de petición y respuesta comparte nonce, distinto por visita", async () => {
     setup();
