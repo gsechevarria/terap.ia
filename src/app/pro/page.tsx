@@ -116,7 +116,7 @@ export default async function ProDashboard({
             )}
           </p>
         ) : (
-          <ul className="island divide-y divide-line overflow-hidden">
+          <ul className="card divide-y divide-line overflow-hidden">
             {patients.map((p) => (
               <li key={p.id}>
                 <FilaPaciente paciente={p} />
@@ -226,10 +226,10 @@ function EtiquetaFiltro({
     <Link
       href={href}
       aria-current={activa ? "true" : undefined}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150 ${
+      className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors duration-150 ${
         activa
-          ? "bg-accent-soft text-accent"
-          : "bg-surface-2 text-ink-2 hover:bg-wash-2 hover:text-ink"
+          ? "border-accent/30 bg-accent-soft text-accent"
+          : "border-line bg-surface-2 text-ink-2 hover:text-ink"
       }`}
     >
       {label}
@@ -247,13 +247,13 @@ function FilaPaciente({ paciente }: { paciente: PatientOverview }) {
       <div className="flex min-w-0 items-center gap-3.5">
         <span
           aria-hidden
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-semibold text-ink-2"
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-accent-soft text-[13px] font-semibold text-accent"
         >
           {(paciente.full_name ?? "?").charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <span className="truncate text-sm font-medium text-ink">
+            <span className="truncate text-body-lg font-semibold text-ink">
               {paciente.full_name ?? "Sin nombre"}
             </span>
             {paciente.openAlerts > 0 ? (
@@ -294,7 +294,7 @@ function Dato({ label, valor }: { label: string; valor: string }) {
       <dt className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
         {label}
       </dt>
-      <dd className="text-ink-2">{valor}</dd>
+      <dd className="mono text-ink-2">{valor}</dd>
     </div>
   );
 }

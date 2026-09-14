@@ -114,7 +114,7 @@ function Tile({
       <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
         {label}
       </div>
-      <div className="mt-1.5 text-2xl font-semibold tracking-[-0.01em] tabular-nums">
+      <div className="mono mt-1.5 text-headline-xl font-semibold">
         {value}
       </div>
       {hint && <div className="text-xs text-ink-3">{hint}</div>}
