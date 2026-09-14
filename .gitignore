@@ -50,3 +50,5 @@ next-env.d.ts
 
 # Estado local del CLI: puede contener claves de la instancia de pruebas.
 /supabase-local.json
+
+Claude outputs/
