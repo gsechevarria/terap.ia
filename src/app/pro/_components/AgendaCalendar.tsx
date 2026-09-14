@@ -44,6 +44,12 @@ const HOUR_START = 7;
 const HOUR_END = 21;
 const HOUR_PX = 48;
 const GRID_H = (HOUR_END - HOUR_START) * HOUR_PX;
+/**
+ * Columna de horas. Se encoge con la pantalla en vez de robar sitio fijo a los
+ * días: es lo que permite que las siete columnas quepan sin desplazamiento
+ * horizontal incluso en un móvil. El mínimo es el ancho de "08:00" a 10px.
+ */
+const GUTTER = "clamp(2.5rem, 5vw, 3.5rem)";
 const DURATIONS = [30, 45, 60, 90] as const;
 
 /*
@@ -296,7 +302,8 @@ function MonthGrid({
 
   return (
     <div className="card overflow-x-auto">
-      <div className="min-w-[640px]">
+      {/* Sin ancho mínimo: el mes cabe entero a cualquier anchura. */}
+      <div>
         <div className="grid grid-cols-7 border-b border-line">
           {["lun", "mar", "mié", "jue", "vie", "sáb", "dom"].map((d) => (
             <div
@@ -432,11 +439,14 @@ function TimeGrid({
 
   return (
     <div className="card overflow-x-auto">
-      <div className={days === 7 ? "min-w-[860px]" : "min-w-[420px]"}>
+      {/* Sin ancho mínimo a ninguna anchura: el calendario cabe siempre entero y
+          nunca hay que desplazarlo en horizontal. La columna de horas se encoge
+          con la pantalla (`clamp`) para dejar sitio a los días. */}
+      <div>
         {/* Cabecera de días */}
         <div
           className="grid border-b border-line"
-          style={{ gridTemplateColumns: `3.5rem repeat(${days}, 1fr)` }}
+          style={{ gridTemplateColumns: `${GUTTER} repeat(${days}, minmax(0, 1fr))` }}
         >
           <div />
           {cols.map((c) => {
@@ -449,7 +459,7 @@ function TimeGrid({
                 className="border-l border-line px-2 py-2 text-center transition-colors hover:bg-wash"
               >
                 <span
-                  className={`text-xs capitalize ${isToday ? "font-semibold text-accent" : "text-ink-2"}`}
+                  className={`block truncate text-xs capitalize ${isToday ? "font-semibold text-accent" : "text-ink-2"}`}
                 >
                   {cellLabel(c, {
                     weekday: "short",
@@ -464,7 +474,7 @@ function TimeGrid({
         {/* Cuerpo */}
         <div
           className="grid"
-          style={{ gridTemplateColumns: `3.5rem repeat(${days}, 1fr)` }}
+          style={{ gridTemplateColumns: `${GUTTER} repeat(${days}, minmax(0, 1fr))` }}
         >
           {/* Columna de horas */}
           <div className="relative" style={{ height: GRID_H }}>
