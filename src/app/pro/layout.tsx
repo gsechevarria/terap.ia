@@ -42,7 +42,7 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
       <ServiceWorkerRegister />
       {/* Sidebar (escritorio) */}
       <aside className="hidden shrink-0 border-r border-line bg-panel md:block md:w-56">
-        <div className="sticky top-0 flex h-[calc(100dvh-var(--banner-h))] flex-col gap-4 p-3">
+        <div className="sticky top-[var(--banner-h)] flex h-[calc(100dvh-var(--banner-h))] flex-col gap-4 p-3">
           <div className="px-1.5 pt-1">
             <Brand />
           </div>
@@ -59,7 +59,7 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
       </aside>
 
       {/* Barra superior (móvil) */}
-      <header className="sticky top-0 z-10 border-b border-line bg-canvas/95 backdrop-blur-sm md:hidden">
+      <header className="sticky top-[var(--banner-h)] z-10 border-b border-line bg-canvas/95 backdrop-blur-sm md:hidden">
         <div className="flex items-center justify-between gap-4 px-4 py-2">
           <Brand />
           <SignOutForm />

@@ -33,7 +33,7 @@ export default async function PatientLayout({ children }: { children: ReactNode 
   return (
     <NativeGate nativo={nativo}>
     <div className="flex min-h-full flex-col">
-      <header className="sticky top-0 z-10 border-b border-line bg-canvas/95 backdrop-blur-sm">
+      <header className="sticky top-[var(--banner-h)] z-10 border-b border-line bg-canvas/95 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2">
           <Link href="/app" className="inline-flex items-center">
             <Brandmark height={30} />
