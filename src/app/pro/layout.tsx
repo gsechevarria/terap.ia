@@ -4,10 +4,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
+import { CalendarPlus } from "lucide-react";
 import { SignOutForm } from "@/components/SignOutForm";
 import { Brandmark } from "@/components/ui/Brandmark";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ProNav, ProNavMobile } from "@/app/pro/_components/ProNav";
+import { SidebarPerfil } from "@/app/pro/_components/SidebarPerfil";
 import { countPendingRequests } from "@/lib/queries/appointment-requests";
+import { countActivePatients } from "@/lib/queries/patients";
+import { getCurrentProfessional } from "@/lib/queries/identity";
 
 function Brand() {
   return (
@@ -35,25 +40,41 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
 
   // Lo que el paciente ha pedido y espera respuesta: visible desde cualquier
   // pantalla, porque una solicitud sin contestar es una cita que no se agenda.
-  const pendingRequests = await countPendingRequests();
+  // Los tres son independientes entre sí: en secuencia serían tres viajes.
+  const [pendingRequests, patientCount, profesional] = await Promise.all([
+    countPendingRequests(),
+    countActivePatients(),
+    getCurrentProfessional(),
+  ]);
 
   return (
     <div className="flex min-h-full flex-col md:flex-row">
       <ServiceWorkerRegister />
       {/* Sidebar (escritorio) */}
-      <aside className="hidden shrink-0 border-r border-line bg-surface-2 md:block md:w-60">
-        <div className="sticky top-[var(--banner-h)] flex h-[calc(100dvh-var(--banner-h))] flex-col gap-5 p-4">
-          <div className="px-1.5 pt-1">
-            <Brand />
+      <aside className="hidden shrink-0 border-r border-line bg-surface md:block md:w-60">
+        <div className="sticky top-[var(--banner-h)] flex h-[calc(100dvh-var(--banner-h))] flex-col justify-between gap-5 p-4">
+          <div className="flex min-h-0 flex-col gap-4">
+            <div className="px-1 pt-1">
+              <Brand />
+            </div>
+
+            {/* Acción destacada: dar cita es lo que más se hace desde aquí. */}
+            <Link href="/pro/agenda" className="btn-primary w-full">
+              <CalendarPlus size={16} strokeWidth={1.75} aria-hidden />
+              Nueva cita
+            </Link>
+
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <ProNav
+                pendingRequests={pendingRequests}
+                patientCount={patientCount}
+              />
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            <ProNav pendingRequests={pendingRequests} />
-          </div>
-          <div className="border-t border-line px-1.5 pt-4">
-            <p className="mb-2 truncate text-xs text-ink-3" title={user.email}>
-              {user.email}
-            </p>
-            <SignOutForm />
+
+          <div className="flex flex-col gap-2.5 border-t border-line pt-3">
+            <ThemeToggle />
+            <SidebarPerfil nombre={profesional?.full_name ?? null} correo={user.email ?? ""} />
           </div>
         </div>
       </aside>

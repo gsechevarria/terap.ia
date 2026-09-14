@@ -3,7 +3,17 @@ import { callAction } from "@/lib/action-result";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil } from "lucide-react";
+import {
+  Cake,
+  ContactRound,
+  Home,
+  Mail,
+  Pencil,
+  Phone,
+  User,
+  Briefcase,
+  type LucideIcon,
+} from "lucide-react";
 import { updatePatientDetailsAction } from "@/lib/actions/patients";
 import { DateField } from "@/components/ui/DateField";
 import { formatDate } from "@/lib/format";
@@ -94,42 +104,68 @@ export function PatientDetailsPanel({
     );
   }
 
-  const rows: { label: string; value: string | null; wide?: boolean }[] = [
-    { label: "Nombre completo", value: details.full_name, wide: true },
-    { label: "Correo", value: details.email },
-    { label: "Teléfono", value: details.phone },
+  const rows: {
+    label: string;
+    value: string | null;
+    Icono: LucideIcon;
+    wide?: boolean;
+  }[] = [
+    { label: "Nombre completo", value: details.full_name, Icono: User, wide: true },
+    { label: "Correo electrónico", value: details.email, Icono: Mail },
+    { label: "Teléfono", value: details.phone, Icono: Phone },
     {
       label: "Fecha de nacimiento",
       value: details.birth_date
         ? `${formatDate(details.birth_date)}${age !== null ? ` · ${age} años` : ""}`
         : null,
+      Icono: Cake,
     },
-    { label: "Profesión", value: details.profession },
-    { label: "Dirección", value: details.address, wide: true },
-    { label: "Contacto de emergencia", value: details.emergency_contact, wide: true },
+    { label: "Profesión", value: details.profession, Icono: Briefcase },
+    { label: "Dirección", value: details.address, Icono: Home, wide: true },
+    {
+      label: "Contacto de emergencia",
+      value: details.emergency_contact,
+      Icono: ContactRound,
+      wide: true,
+    },
   ];
 
   return (
-    <section className="card p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="section-label">Datos del paciente</h2>
+    <section className="card p-6">
+      <div className="mb-5 flex items-start justify-between gap-4 border-b border-line pb-4">
+        <div>
+          <h2 className="card-title">Datos personales y de contacto</h2>
+          <p className="mt-0.5 text-body-sm text-ink-2">
+            Amparados por el secreto profesional. Solo usted y el propio paciente
+            acceden a este expediente.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-ink-3 hover:bg-wash hover:text-ink"
+          className="btn-ghost btn-sm shrink-0"
         >
-          <Pencil className="size-3.5" strokeWidth={1.75} />
+          <Pencil size={14} strokeWidth={1.75} aria-hidden />
           Editar
         </button>
       </div>
-      <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
-        {rows.map((r) => (
-          <div key={r.label} className={`flex flex-col gap-1 ${r.wide ? "sm:col-span-2" : ""}`}>
-            <dt className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-              {r.label}
-            </dt>
-            <dd className={`text-sm break-words ${r.value ? "text-ink" : "text-ink-3"}`}>
-              {r.value ?? "—"}
+      <dl className="grid grid-cols-1 gap-x-8 gap-y-1 md:grid-cols-2">
+        {rows.map(({ label, value, Icono, wide }) => (
+          <div
+            key={label}
+            className={`flex flex-col gap-1 rounded-lg p-2 transition-colors hover:bg-surface-2 ${wide ? "md:col-span-2" : ""}`}
+          >
+            <dt className="text-label-sm text-ink-3">{label}</dt>
+            <dd className="flex items-start gap-2">
+              <Icono
+                size={16}
+                strokeWidth={1.75}
+                aria-hidden
+                className="mt-0.5 shrink-0 text-ink-3"
+              />
+              <span className={`text-body break-words ${value ? "font-medium text-ink" : "text-ink-3"}`}>
+                {value ?? "Sin registrar"}
+              </span>
             </dd>
           </div>
         ))}
@@ -164,7 +200,7 @@ function Field({
         required={required}
         placeholder={placeholder}
         defaultValue={defaultValue ?? ""}
-        className="field h-9 w-full px-2.5 text-sm"
+        className="field"
       />
     </label>
   );
