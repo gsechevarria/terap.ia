@@ -7,13 +7,125 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 > El plan de sesiones vive en
 > `../01. DOCUMENTACION/PLAN_APP_sesiones_claude_code_v2.md`.
 
+---
+
+# ⚑ ESTADO ACTUAL — 14 de septiembre de 2026
+
+> **Lee este bloque antes que nada.** Todo lo que hay bajo `## Estado` es el
+> registro histórico sesión a sesión: sirve para entender *por qué* cada cosa
+> está como está, pero **no describe el estado de hoy**. Donde haya conflicto,
+> manda este bloque.
+
+**El proyecto está desplegado en producción desde el 11-sep-2026.**
+
+| | |
+|---|---|
+| Producción | https://terap.vercel.app |
+| Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin` configurado; PR #1 integrada) |
+| Commit de producción | `8ac6931b6b46a490822f4aa85cb252954c96564d` |
+| Despliegue verificado | `dpl_DVW9ohDCEUxhYTebT7ycKi23tPrV` |
+| Supabase `levufuoigdlexscpvlgk` | **39 migraciones aplicadas**; 30 tablas, 1 vista, 25 funciones tipadas |
+| Rama de esta copia | `fix/correcciones-integrales-20260909-185808` |
+
+Sigue siendo **entorno de demostración con datos ficticios**
+(`NEXT_PUBLIC_DEMO_MODE=true`, banner permanente). El paso a datos reales sigue
+bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
+
+## Qué ha cambiado desde el registro histórico de abajo
+
+- **Correcciones integrales de septiembre aplicadas y desplegadas.** Once
+  migraciones `20260909190001`–`20260909190011` (invariantes de seguridad,
+  transacciones económicas, consentimiento versionado, entregas y limpieza,
+  subidas pendientes, fiscalidad de ingresos, guardas de escritura directa,
+  notificaciones transaccionales, fiscalidad de gastos, tareas idempotentes,
+  integridad del consentimiento) más `20260911090001_explicit_api_grants` y
+  `20260911090002_admin_professional_provisioning`. Informe:
+  [docs/CORRECCIONES-2026-09.md](docs/CORRECCIONES-2026-09.md); despliegue:
+  [docs/DESPLIEGUE-2026-09-11.md](docs/DESPLIEGUE-2026-09-11.md).
+- **El cron ya NO está en Vercel.** Vercel Hobby no admite cron por minuto; la
+  programación vive en **Supabase (`pg_cron` + `pg_net`)** con el secreto en
+  Vault y en Vercel. `vercel.json` **ya no registra ningún cron** (solo trae
+  `$schema`). Script: `supabase/scripts/configurar-cron.sql`. La primera
+  invocación programada devolvió 200.
+- **Bandera de canales no implementados:** push nativo desactivado
+  (`NEXT_PUBLIC_NATIVE_PUSH_ENABLED=false`, no hay emisor FCM/APNs) y el
+  **fallback por correo se retiró de la interfaz** (nunca se implementó el
+  envío). Sentry requiere activación explícita y no envía texto libre ni trazas.
+- **Dependencias:** Next.js **16.3.4**, Node **`>=24.15 <25`**, SheetJS **0.20.3**
+  desde el tarball oficial fijado por integridad (sustituye a `xlsx@0.18.5`, así
+  que **ya no existe la excepción de `npm audit`**). `npm audit --audit-level=low`
+  → 0 vulnerabilidades, incluyendo desarrollo. Ver
+  [docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md).
+- **Batería de pruebas nueva.** `npm test` = **124 pruebas de lógica** (vitest, 8
+  ficheros, sin BD). `npm run test:types` = **38 regresiones SQL** sobre
+  PostgreSQL embebido (**PGlite**), que ejecuta las 39 migraciones y comprueba
+  RLS sin Docker. `npm run test:integration` = **11 escenarios HTTP** contra
+  Supabase local (Auth/PostgREST/Storage y concurrencia), ejecutados en CI. Los
+  antiguos `test:integration:*` por área delegan en esa batería: **no se les
+  atribuyen ya los recuentos históricos** (24/24, 40/40, 16/16…) que aparecen
+  más abajo.
+
+## Lo que queda pendiente
+
+**Datos de demostración con incoherencias históricas** (no se han inventado datos
+para taparlas): 121 ingresos sin tratamiento fiscal confirmado, 31 gastos y 3
+bienes pendientes de revisión, 5 bonos con diferencias entre saldo y consumos y 5
+sin registro de compra. Diagnóstico:
+`supabase/scripts/diagnostico-correcciones-202609.sql`.
+
+**Verificación que falta:** revisión visual en navegador de los dos roles
+(consentimiento, errores de red, formularios, diálogo con teclado, exportaciones,
+CSP, PWA), pruebas en móviles físicos, entrega push real a un dispositivo, y
+ensayo de restauración completa de la copia de seguridad.
+
+**Antes del primer paciente real:** DPA + base jurídica art. 9 · revisión
+administrativa de las altas profesionales antiguas (el rol actual no demuestra el
+origen legítimo de un alta creada bajo el esquema vulnerable) · validación con los
+responsables de producto del uso de datos reales, conservación y alcance de las
+estimaciones fiscales.
+
+**Deuda técnica abierta:** ver "Queda abierto" al final de la sección de la
+auditoría de agosto, con estas correcciones — `xlsx@0.18.5` ya **no** aplica
+(resuelto con SheetJS 0.20.3) y `email_fallback` ya **no** está en la interfaz.
+Siguen abiertos: `FORCE ROW LEVEL SECURITY`, parámetros fiscales 2026 sin
+confirmar contra la AEAT, los cinco cambios fiscales pendientes de validar con
+asesor, edición de series completas de citas, deep links nativos, `FLAG_SECURE` /
+overlay iOS, offline real y agregados del histórico de pagos en SQL.
+
+**App móvil (`terap-app`, Expo, `C:\dev\terap-app`):** comparte el mismo backend
+Supabase. La decisión de retirar la envoltura Capacitor de este repo a favor de
+Expo **no se ha ejecutado**: Capacitor 8 sigue en `package.json`. Cualquier cambio
+de esquema, RLS, RPC o configuración de Auth afecta a **dos clientes**.
+
+## Copias de seguridad
+
+- `../BACKUPS/PROYECTO-20260909-185808` — repositorio original. **Privada: puede
+  contener secretos.**
+- `../BACKUPS/SUPABASE-predeploy-20260911-072941/database.dump` — copia previa a
+  las migraciones, con índice de objetos y SHA-256 en `manifest.json`. Privada.
+
+Los tres scripts preexistentes del usuario se conservan sin incluirlos en los
+commits de la revisión: `supabase/scripts/reparar-historial.sql`,
+`verificar-historial.sql`, `verificar-remoto.sql`.
+
+---
+
 ## Stack
 
-- **Next.js 16** (App Router, TypeScript) + **Tailwind CSS v4** (config CSS-based,
-  sin `tailwind.config.js`).
-- **Supabase** (EU-Frankfurt): Auth, Postgres, RLS, Storage, Edge Functions.
-- **Vercel** para el despliegue.
-- App paciente: **PWA** (Capacitor en la Sesión 10).
+- **Next.js 16.3.4** (App Router, TypeScript strict) + **React 19.2.4** +
+  **Tailwind CSS v4** (config CSS-based, sin `tailwind.config.js`).
+- **Node `>=24.15 <25`** (declarado en `engines`; CI y Vercel con esa versión).
+- **Supabase** (EU-Frankfurt): Auth, Postgres, RLS, Storage. El cron de
+  notificaciones se programa desde **Supabase (`pg_cron` + `pg_net`)**, no desde
+  Vercel.
+- **Vercel** para el despliegue (plan Hobby; no se ha contratado ninguno mayor).
+- App paciente: **PWA** (envoltura Capacitor 8 presente, ver Sesión 10 y el
+  bloque de estado actual).
+- Pruebas: **Vitest 4** (lógica pura) + **PGlite 0.5.8** (PostgreSQL embebido
+  para migraciones y RLS) + batería HTTP contra Supabase local.
+- Otras dependencias con decisión detrás: **SheetJS 0.20.3** desde el tarball
+  oficial (no `xlsx` de npm), `pdf-lib`, `zod` 4, `web-push`, `lucide-react`,
+  `@sentry/nextjs` (desactivado salvo activación explícita).
 
 > Nota Next.js 16: el "middleware" se llama ahora **`proxy`** (`src/proxy.ts`) y
 > corre en runtime Node.js. `cookies()` es **asíncrono**. Consulta las guías en
@@ -104,6 +216,23 @@ src/
 
 - **Migraciones SQL** siempre en `supabase/migrations/` y en el repo. Nunca
   cambios manuales en la BD sin migración.
+- **Toda migración idempotente y reejecutable:** `drop policy if exists` antes de
+  cada `create policy`, `create index if not exists`, `add column if not exists`,
+  `create or replace function`.
+- **`CREATE OR REPLACE FUNCTION` no puede cambiar el tipo de retorno ni la
+  firma.** Una migración que redefine una función creada por otra anterior deja a
+  la anterior **irreproducible** sobre una base que ya tiene el estado final,
+  aunque cada fichero sea idempotente por separado. Si una migración cambia la
+  firma o el tipo de retorno, lleva `drop function if exists <firma completa>`
+  delante — y se añade el mismo `drop` a la migración que la creó.
+- **El historial del CLI se desincroniza** cada vez que se aplica algo desde el
+  editor SQL del panel. Antes de cualquier `db push`:
+  `verificar-historial.sql` → `supabase migration repair --status applied <versiones>`
+  → `db push` → `verificar-remoto.sql` (los tres scripts en `supabase/scripts/`).
+- **Nunca apuntar `test:integration*` ni `seed` al proyecto remoto.** Leen
+  `.env.test`, no `.env.local`: crean usuarios en Auth e insertan datos reales.
+- **El agente trabaja solo hasta producción**, con la CI como puerta. Ver
+  "Bucle de trabajo autónomo" justo debajo.
 - **Commit por bloque funcional.** Al cerrar cada sesión: commit + push +
   actualizar la sección **Estado** de este archivo.
 - Tipos de Supabase se generarán con `supabase gen types` (Sesión 1).
@@ -113,6 +242,44 @@ src/
   convención del archivo.
 - **Secretos:** `.env.local` y `.env*` fuera del repo (solo `.env.example` se
   versiona).
+
+## Bucle de trabajo autónomo
+
+Claude Code cierra cada encargo por su cuenta: rama → trabajo → verificación →
+commit → PR → CI verde → merge a `main` → Vercel despliega. El comando
+**`/ship`** (`.claude/commands/ship.md`) tiene el pipeline paso a paso.
+
+**Lo que el agente hace solo:** ramificar desde `origin/main`, editar, ejecutar
+lint/typecheck/test/test:types/build/audit y la batería de integración contra
+Supabase **local**, commitear, subir la rama, abrir el PR, esperar a
+`gh pr checks --watch` y, con todo en verde, `gh pr merge --squash`.
+
+**Lo que no hace nunca, y no es negociable:**
+
+| Operación | Por qué la hace una persona |
+|---|---|
+| `supabase db push`, `db reset --linked`, `migration repair`, `link` | Irreversible sobre una base con histórico clínico y contable |
+| `npm run seed` | Escribe con la `service_role` sobre la base real |
+| `npm run gen:types` | Necesita credenciales remotas |
+| Leer `.env.local` | Lleva la `service_role`, que salta la RLS |
+| `npm audit fix` | Deshace pines deliberados (SheetJS, next+eslint-config-next, overrides) |
+| `vercel --prod`, `promote`, `rollback` | El despliegue lo dispara el merge, no un comando |
+| `git push` a `main`, push forzado, `gh pr merge --admin` | Saltarse el PR es saltarse la CI y el preview |
+
+Dos capas lo sostienen: la lista `deny` de `.claude/settings.json` y el hook
+**`scripts/guard-agente.mjs`** (PreToolUse sobre Bash), que además **verifica
+contra GitHub que todos los checks del PR estén en verde antes de permitir el
+merge**. El hook falla abierto si no entiende la entrada, y no es una frontera
+de seguridad: con suficiente ingenio de shell se esquiva. Es una red que evita
+el error tonto, no un sustituto del criterio.
+
+**Cuando una migración acompaña al código, el PR se queda abierto.** El código
+nuevo sobre el esquema viejo rompe producción: primero se aplica la migración en
+el remoto (persona), después se mergea.
+
+**Regla de honestidad:** si un hallazgo parece equivocado o ya corregido, se
+anota como "descartado: \<motivo\>" en el resumen. Un informe honesto vale más
+que un cambio inventado.
 
 ## Configuración local
 
@@ -126,7 +293,14 @@ src/
 
 ---
 
-## Estado
+## Estado — registro histórico
+
+> ⚠️ **Esto es historia, no el estado de hoy.** Las cifras de tests, los
+> "pendiente de aplicar" y los recuentos de migraciones de los apartados
+> siguientes eran ciertos en su fecha y han quedado superados por la auditoría de
+> agosto, las correcciones de septiembre y el despliegue del 11-sep. El estado
+> vigente está en el bloque **ESTADO ACTUAL** al principio de este fichero.
+> Conserva este registro: explica el porqué de cada decisión.
 
 ### Sesión 0 — Scaffold ✅ (completada)
 
@@ -449,6 +623,10 @@ src/
   deploy** en Hobby. Es correcto: la ventana de recordatorio 24-48 h da ventanas
   diarias contiguas → cada cita recibe 1 recordatorio (idempotente por
   `appointment_id`). Con plan Pro puede volver a ponerse horario.
+  > **Superado (sep 2026):** `vercel.json` ya no registra ningún cron. La
+  > programación se hace desde Supabase con `pg_cron` + `pg_net` llamando al
+  > endpoint con `Authorization: Bearer`, y el secreto vive en Vault y en Vercel.
+  > Ver `supabase/scripts/configurar-cron.sql`.
 
 **Pendiente / al empezar la Sesión 9:**
 - Probar en navegador: activar push, recibir un recordatorio/tarea.
@@ -593,7 +771,7 @@ quedar fuera de Verifactu / Ley Antifraude), no envía a la AEAT, sin OCR.
 **Fases futuras (fuera de alcance):** OCR de justificantes y facturación vía API
 certificada (opción B, Verifactu).
 
-### Buscador de pacientes + datos de contacto en la ficha (jul 2026) 🟡 (código listo; migración pendiente de aplicar al remoto)
+### Buscador de pacientes + datos de contacto en la ficha (jul 2026) ✅ (migración `20260723110001` aplicada al remoto desde ago 2026)
 
 Solicitado por el usuario: buscador en la lista de pacientes (activos y
 archivados) y más campos en la ficha (teléfono, correo, dirección, profesión…).
@@ -627,6 +805,10 @@ archivados) y más campos en la ficha (teléfono, correo, dirección, profesión
 - Verificación local: `build` + `typecheck` + `lint` **OK**.
 
 **⚠️ Pendiente de aplicar al remoto (bloqueante para el deploy):**
+
+> **Resuelto (ago 2026):** la migración está aplicada y registrada en el
+> historial del CLI. Se conserva el texto por el procedimiento, no por el estado.
+
 - Este entorno **no tiene `SUPABASE_ACCESS_TOKEN`** (falla `supabase db push` y
   `gen:types`) ni contraseña de BD en el pooler ni `psql`, así que **la migración
   no se pudo aplicar aquí**. Antes de desplegar hay que aplicarla, por cualquiera:
@@ -764,8 +946,9 @@ vuelven a decir la verdad. Vuelve a desajustarse cada vez que se aplica algo
 desde el editor SQL del panel; el arreglo está en
 `supabase/scripts/reparar-historial.sql`.
 
-🔴 **Queda una migración por aplicar:** `20260809100001_unsettle_informativo`,
-salida de las pruebas manuales (ver abajo).
+~~🔴 **Queda una migración por aplicar:** `20260809100001_unsettle_informativo`,
+salida de las pruebas manuales (ver abajo).~~
+**Aplicada.** Hoy el remoto tiene las 39 migraciones del repositorio.
 
 **Sigue pendiente:** las **comprobaciones funcionales**. Que el esquema tenga la
 columna no demuestra que la RLS haga lo que debe. Están listadas por migración
@@ -825,12 +1008,16 @@ justificación`) viajan marcados y el XLSX lleva una fila de aviso dentro.
 - **Offline real.** Hay página de "sin conexión" y precache del shell; no hay
   funcionamiento sin red (y cachear datos clínicos en el dispositivo es una
   decisión de producto, no técnica).
-- **`email_fallback`** se lee en el cron pero no se envía ningún correo: la
-  opción sigue en la interfaz sin hacer nada. O se implementa o se quita.
+- ~~**`email_fallback`** se lee en el cron pero no se envía ningún correo: la
+  opción sigue en la interfaz sin hacer nada. O se implementa o se quita.~~
+  **Cerrado (sep 2026): retirado de la interfaz.** El envío por correo sigue sin
+  implementarse; cuando exista proveedor SMTP se vuelve a ofrecer.
 - **Agregados del histórico de pagos en SQL.** Hoy se calculan en JS sobre un
   máximo de 5.000 filas; con más habría que pasarlos a una RPC.
-- **`xlsx@0.18.5`**: excepción de `npm audit` documentada en
-  `docs/DEPENDENCIAS.md` (solo se usa para escribir, nunca para parsear).
+- ~~**`xlsx@0.18.5`**: excepción de `npm audit` documentada en
+  `docs/DEPENDENCIAS.md` (solo se usa para escribir, nunca para parsear).~~
+  **Cerrado (sep 2026):** sustituido por **SheetJS 0.20.3** desde el tarball
+  oficial, fijado por integridad en el lockfile. Ya no hay excepción de audit.
 
 ### PWA del paciente lista para demo (11-sep-2026) ✅ (en producción)
 
@@ -910,14 +1097,26 @@ no por pantalla) e instalación como PWA en móvil real.
 
 ## Resumen del proyecto (plan v2)
 
-Sesiones 0-9 y 11 **completas y verificadas** (build/lint/typecheck + tests contra
-Supabase real). Sesión 10 (Capacitor) con código/config/docs listos; build nativo
-pendiente de toolchains. Pendiente de ejecución manual (documentado): deploy Vercel,
-build nativo iOS/Android, Lighthouse, envío push nativo (FCM) y fallback email.
+Sesiones 0-9 y 11 **completas y verificadas**. Sesión 10 (Capacitor) con
+código/config/docs listos; build nativo pendiente de toolchains.
 
-**Tests (todos verdes):** `test:rls` `test:pro` `test:onboarding` `test:scales`
-`test:agenda` `test:payments` `test:wellbeing` `test:notifications` `test:analytics`
-`test:contabilidad`.
+**Deploy a Vercel: hecho** (11-sep-2026, ver el bloque ESTADO ACTUAL). Sigue
+pendiente de ejecución manual: build nativo iOS/Android, Lighthouse, envío push
+nativo (FCM/APNs) y fallback por correo — estos dos últimos **desactivados a
+propósito** hasta tener emisor y proveedor.
+
+**Comandos de verificación vigentes** (los `test:integration:*` por área ya no
+tienen recuento propio; delegan en la batería HTTP):
+
+```
+npm run lint          # ESLint 9, --max-warnings=0
+npm run typecheck     # tsc --noEmit
+npm test              # vitest: 124 pruebas de lógica pura, sin BD
+npm run test:types    # 38 regresiones SQL + tipos, sobre PGlite (39 migraciones)
+npm run test:integration   # 11 escenarios HTTP contra Supabase LOCAL (nunca el remoto)
+npm run build
+npm audit --audit-level=low
+```
 
 <!-- Reglas del agente para esta versión de Next.js -->
 
@@ -1015,6 +1214,45 @@ subidas firmadas, cron recuperable, históricos fiscales, errores estructurados,
 CSP por nonce y dependencias corregidas. Informe y verificación actualizados en
 [docs/CORRECCIONES-2026-09.md](docs/CORRECCIONES-2026-09.md).
 
-No se ha desplegado ni migrado el remoto. La integración HTTP está preparada;
-el motor de Docker local no está disponible. La validación de navegador sigue
-pendiente del arranque permitido del servidor. Publicación Git pendiente por falta de remoto.
+A fecha del informe (10-sep) no se había desplegado ni migrado el remoto, no
+había motor de Docker local para la integración HTTP y no había remoto Git.
+**Todo eso se resolvió al día siguiente:** ver el apartado de despliegue.
+
+### Despliegue a producción — 11-sep-2026 ✅
+
+Rama integrada en `main` por la PR #1 de `github.com/gsechevarria/terap.ia`.
+Commit de producción `8ac6931b`; despliegue `dpl_DVW9ohDCEUxhYTebT7ycKi23tPrV`;
+URL `https://terap.vercel.app`. Supabase `levufuoigdlexscpvlgk` con las **39
+migraciones aplicadas** (13 nuevas). Detalle en
+[docs/DESPLIEGUE-2026-09-11.md](docs/DESPLIEGUE-2026-09-11.md).
+
+**Verificado.** CI de la PR y de `main` completas: lint, tipos, 124 pruebas de
+lógica, 38 regresiones SQL, 39 migraciones, conservación de históricos,
+integración HTTP con Auth/PostgREST/Storage y operaciones simultáneas (11
+escenarios), auditoría y compilación. En producción: portada, acceso y manifiesto
+200; con sesión profesional temporal —después cerrada— panel, agenda, pagos,
+analítica y gastos 200 sin errores RSC; rutas privadas sin sesión redirigen al
+acceso; el cron responde 401 sin autorización y 200 autenticado.
+
+La introspección remota coincide con los nombres de las 30 tablas, sus columnas,
+la vista y las 25 funciones tipadas; **no** afirma identidad textual ni de
+nulabilidad con el generador del CLI.
+
+**Cron trasladado a Supabase.** Vercel Hobby no permite cron por minuto. La
+programación usa `pg_cron` + `pg_net` con el secreto en Vault y en Vercel; la
+primera invocación programada devolvió 200 sin timeout. No se ha contratado
+ningún plan adicional.
+
+**Datos de prueba con incoherencias históricas** (no se han inventado pagos,
+consumos ni criterios fiscales para hacerlas desaparecer): 121 ingresos sin
+tratamiento fiscal confirmado, 31 gastos y 3 bienes pendientes de revisión, 5
+bonos con diferencias entre saldo y consumos y 5 sin registro de compra. No hay
+pagos vinculados a expedientes ajenos, roles profesionales incoherentes ni
+endpoints push inválidos. Volumen sin variación antes y después de migrar: 17
+pacientes, 3 profesionales, 217 citas, 157 pagos, 933.000 céntimos acumulados y
+31 gastos.
+
+**Sin hacer:** revisión visual con navegador, pruebas en móviles físicos y
+entrega push a un dispositivo real. Push nativo y envío alternativo por correo
+siguen desactivados. Dominio configurado: `terap.vercel.app`; no hay dominio
+personalizado.
