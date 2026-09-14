@@ -114,7 +114,10 @@ export const config = {
      * - api (route handlers propios)
      * - _next/static, _next/image (assets de Next)
      * - favicon.ico y archivos de imagen estáticos
+     * - offline.html: fallback de navegación del service worker. Es estática,
+     *   no lleva datos y trae el 024. Protegerla hacía fallar el `addAll` de la
+     *   instalación del service worker si la sesión caducaba justo entonces.
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|offline.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$).*)",
   ],
 };

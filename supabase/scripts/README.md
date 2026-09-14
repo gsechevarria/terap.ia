@@ -25,6 +25,29 @@ saltaría para siempre y el esquema quedaría incompleto sin ningún aviso.
 > constan como aplicadas. El script se conserva porque el desajuste se repite
 > cada vez que se aplica algo desde el panel.
 
+## Regularización de los históricos de demostración
+
+Tres scripts aplican los criterios de
+[`docs/DIAGNOSTICO-HISTORICOS.md`](../../docs/DIAGNOSTICO-HISTORICOS.md) a los
+datos ficticios que quedaron sin tratamiento fiscal al añadirse las columnas
+correspondientes. Todos empiezan por un bloque de **solo lectura** que te dice
+qué tocarían, y llevan un `rollback` comentado para ensayarlos sin efecto.
+
+| Script | Criterio | Orden |
+|---|---|---|
+| `regularizar-ingresos-demo.sql` | A1 — tratamiento fiscal de los cobros históricos | independiente |
+| `regularizar-gastos-demo.sql` | B1 — `iva_recuperable_pct` con la regla de `save_expense` | **antes** que el de bienes |
+| `revisar-bienes-demo.sql` | C1 — recalcular el valor de adquisición y cerrar la revisión | después del de gastos |
+
+⚠️ **Son para el entorno de demostración.** Sobre datos reales, dar por bueno el
+criterio fiscal de un cobro pasado es inventarlo: ahí cada cobro se confirma uno
+a uno desde la pestaña Pagos de la ficha del paciente, y cada bien se revisa
+reguardando su gasto de origen.
+
+Mientras queden filas pendientes, `/pro/contabilidad` y su exportación fallan a
+propósito: las guardas de `src/lib/queries/contabilidad.ts` se niegan a calcular
+con históricos sin confirmar.
+
 ## Dónde está cada cosa
 
 | Qué | Dónde |

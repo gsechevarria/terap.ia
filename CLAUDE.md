@@ -86,14 +86,42 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   que **ya no existe la excepción de `npm audit`**). `npm audit --audit-level=low`
   → 0 vulnerabilidades, incluyendo desarrollo. Ver
   [docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md).
-- **Batería de pruebas nueva.** `npm test` = **124 pruebas de lógica** (vitest, 8
+- **Batería de pruebas nueva.** `npm test` = **125 pruebas de lógica** (vitest, 8
   ficheros, sin BD). `npm run test:types` = **51 regresiones SQL** sobre
   PostgreSQL embebido (**PGlite**), que ejecuta las 40 migraciones y comprueba
-  RLS sin Docker. `npm run test:integration` = **11 escenarios HTTP** contra
-  Supabase local (Auth/PostgREST/Storage y concurrencia), ejecutados en CI. Los
+  RLS sin Docker. `npm run test:integration` = **14 escenarios HTTP** contra
+  Supabase local (Auth/PostgREST/Storage y concurrencia), ejecutados en CI.
+  Los tres últimos son de 14-sep: endpoints de push de proveedor conocido y
+  entregas sin duplicar, reintentos diferidos que no se reclaman antes de
+  tiempo, y la cola de limpieza al sustituir y al borrar un archivo. **No se
+  ejecutan en este entorno** (no hay Docker); los valida la CI. Los
   antiguos `test:integration:*` por área delegan en esa batería: **no se les
   atribuyen ya los recuentos históricos** (24/24, 40/40, 16/16…) que aparecen
   más abajo.
+
+- **Verificación de producción por HTTP:** `node scripts/verificar-produccion.mjs`
+  (sin credenciales, solo lectura). Comprueba cabeceras y CSP con nonce, que las
+  15 rutas privadas redirigen al acceso sin sesión, los 401 del cron, y los
+  artefactos de la PWA. **48/48 contra producción el 14-sep.** No sustituye a la
+  revisión visual: ahí no hay pantalla, ni sesión, ni teclado.
+- **`offline.html` ya no pasa por el proxy.** Estaba protegida, y como
+  `cache.addAll` rechaza un redirect, una sesión caducada en el momento de
+  instalar el service worker rompía la precarga entera —incluidos los iconos—.
+  Es estática, no lleva datos y trae el 024. Regresión en `src/lib/proxy.test.ts`.
+- **El sembrado ya no genera históricos incoherentes.** `scripts/seed.mjs`
+  siembra `iva_recuperable_pct`, calcula el valor de los bienes con la fórmula
+  de `save_expense` (y no los deja pendientes de revisión), y crea los bonos con
+  su registro de compra y una imputación por sesión ligada a una cita atendida
+  real. Los pagos de citas llevan ya su `appointment_id`. Detalle y la
+  corrección de un error del informe anterior:
+  [docs/DIAGNOSTICO-HISTORICOS.md](docs/DIAGNOSTICO-HISTORICOS.md).
+- **Parámetros fiscales comprobados contra la AEAT (14-sep).** El 5 % y el tope
+  de 2.000 € de gastos de difícil justificación coinciden con la sede de la
+  AEAT. **Siguen marcados como no verificados a propósito:** el motor no modela
+  el 10 % de Ceuta de 2026, y apagar el aviso de «estimación no verificada» es
+  una decisión de persona, no de código. Se cambia con dos `false` → `true` en
+  `src/lib/fiscal/parametros/2026.ts`. El campo `reta` sigue vacío, pero ya no
+  por falta de publicación (Orden PJC/297/2026): es que **ningún código lo lee**.
 
 ## Lo que queda pendiente
 
@@ -135,8 +163,13 @@ overlay iOS, offline real y agregados del histórico de pagos en SQL.
 
 **App móvil (`terap-app`, Expo, `C:\dev\terap-app`):** comparte el mismo backend
 Supabase. La decisión de retirar la envoltura Capacitor de este repo a favor de
-Expo **no se ha ejecutado**: Capacitor 8 sigue en `package.json`. Cualquier cambio
-de esquema, RLS, RPC o configuración de Auth afecta a **dos clientes**.
+Expo **sigue sin ejecutarse**: Capacitor 8 sigue en `package.json`. Cualquier
+cambio de esquema, RLS, RPC o configuración de Auth afecta a **dos clientes**.
+Comparación de lo que hay de verdad en cada lado, con recomendación (retirar
+Capacitor) y plan por fases:
+[docs/DECISION-CLIENTE-NATIVO.md](docs/DECISION-CLIENTE-NATIVO.md). La fase 2
+lleva detrás una pregunta de producto sin responder: **si la PWA conserva o no
+bloqueo al abrir en un dispositivo compartido**.
 
 ## Copias de seguridad
 
@@ -1152,9 +1185,9 @@ tienen recuento propio; delegan en la batería HTTP):
 ```
 npm run lint          # ESLint 9, --max-warnings=0
 npm run typecheck     # tsc --noEmit
-npm test              # vitest: 124 pruebas de lógica pura, sin BD
+npm test              # vitest: 125 pruebas de lógica pura, sin BD
 npm run test:types    # 51 regresiones SQL + tipos, sobre PGlite (40 migraciones)
-npm run test:integration   # 11 escenarios HTTP contra Supabase LOCAL (nunca el remoto)
+npm run test:integration   # 14 escenarios HTTP contra Supabase LOCAL (nunca el remoto)
 npm run build
 npm audit --audit-level=low
 ```
