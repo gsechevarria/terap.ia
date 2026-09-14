@@ -14,7 +14,7 @@ export default async function SolicitudesPage() {
       <header className="mb-6">
         <h1 className="page-title">Solicitudes</h1>
         <p className="mt-1 text-sm text-ink-2">
-          Lo que tus pacientes piden desde su aplicación. Nada entra en tu agenda
+          Lo que sus pacientes piden desde su aplicación. Nada entra en su agenda
           sin que lo aceptes.
         </p>
       </header>

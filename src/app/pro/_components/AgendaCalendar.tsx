@@ -326,7 +326,7 @@ function MonthGrid({
             return (
               <div
                 key={k}
-                className={`min-h-[6.5rem] p-1 ${inMonth ? "bg-canvas" : "bg-panel"}`}
+                className={`min-h-[6.5rem] p-1.5 ${inMonth ? "bg-surface" : "bg-surface-2"}`}
               >
                 <Link
                   href={`/pro/agenda?view=day&date=${k}`}
@@ -861,7 +861,7 @@ function EditModal({
                       setDuration(d);
                       clearConflict();
                     }}
-                    className={`rounded-md border px-2.5 py-1 text-sm font-medium transition-colors duration-150 ${
+                    className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors duration-150 ${
                       active
                         ? "border-accent bg-accent-soft text-accent"
                         : "border-line-strong bg-canvas text-ink-2 hover:bg-wash hover:text-ink"
@@ -877,7 +877,7 @@ function EditModal({
                   setCustomMode(true);
                   clearConflict();
                 }}
-                className={`rounded-md border px-2.5 py-1 text-sm font-medium transition-colors duration-150 ${
+                className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors duration-150 ${
                   customMode
                     ? "border-accent bg-accent-soft text-accent"
                     : "border-line-strong bg-canvas text-ink-2 hover:bg-wash hover:text-ink"
@@ -950,9 +950,9 @@ function EditModal({
         {aviso && (
           <div
             role="status"
-            className="mt-3 flex items-start gap-2 rounded-md border border-info/30 bg-info-soft p-3 text-sm text-info"
+            className="mt-3 flex items-start gap-2 rounded-2xl border border-info/30 bg-info-soft p-3 text-sm text-info"
           >
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} aria-hidden />
             <div>
               <p>{aviso}</p>
               <Link
@@ -966,8 +966,8 @@ function EditModal({
         )}
 
         {conflict && (
-          <div role="alert" className="mt-3 flex items-start gap-2 rounded-md border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
+          <div role="alert" className="mt-3 flex items-start gap-2 rounded-2xl border border-warn/30 bg-warn-soft p-3 text-sm text-warn">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} aria-hidden />
             <p>{conflict}</p>
           </div>
         )}

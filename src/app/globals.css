@@ -1,95 +1,100 @@
 @import "tailwindcss";
 
 /*
- * Sistema visual terap.ia — dirección Notion / Apple.
- * Neutros fríos (zinc), fondo casi blanco (no #FFF), un único acento verde,
- * semánticos desaturados. Jerarquía por tipografía y espacio, no por color ni
- * cajas. Sombra solo funcional (menús/modales). Radios contenidos (máx 12px).
- * Tokens semánticos: el modo oscuro se resuelve aquí (sin `dark:` en las vistas).
+ * Sistema visual terap.ia — "Calma Orgánica & Soft Surfaces".
+ *
+ * Calma clínica, software de autor. Geometría blanda (cápsulas, radios de
+ * 16/24), separación por borde de 1px, elevación casi nula, jerarquía por
+ * tipografía y espacio. Neutros CÁLIDOS, un único acento verde y semánticos
+ * desaturados. Nada de sombras difusas de plantilla.
+ *
+ * Dos reglas de arquitectura que conviene no romper:
+ *
+ *  1. El tema se resuelve AQUÍ, en los tokens, con `light-dark()`. Las vistas
+ *     no llevan `dark:` — son más de cuarenta ficheros y duplicar cada color en
+ *     cada uno es cómo se pudre un sistema visual. La variante `dark:` queda
+ *     disponible (ver `@custom-variant`) para el caso puntual que la necesite.
+ *  2. `light-dark()` mira el `color-scheme` heredado, así que la clase `.dark`
+ *     en <html> fuerza el tema y sin clase se sigue la preferencia del sistema.
+ *     Una sola declaración por token cubre los tres casos.
  */
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  /* Neutros (zinc) */
-  --canvas: #fbfbfa; /* fondo de página (no blanco puro) */
-  --panel: #f4f4f5; /* paneles suaves / sidebar / hover fuerte */
-  --sunken: #ececee; /* fondo hundido / active */
-  --wash: rgba(24, 24, 27, 0.045); /* hover sutil */
-  --wash-2: rgba(24, 24, 27, 0.08); /* active / seleccionado */
-  --line: #e4e4e7; /* separador principal 1px */
-  --line-strong: #d4d4d8; /* borde de control */
-  --ink: #1f1f23; /* texto primario (no negro puro) */
-  --ink-2: #52525b; /* texto secundario */
-  /* Terciario / placeholder. Cumple WCAG AA (4,5:1) sobre los TRES fondos en
-     los que se pinta: canvas 5,33:1 · panel 5,02:1 · sunken 4,68:1. El gris
-     anterior (#a1a1aa) se quedaba en 2,48:1, y este token no es decorativo:
-     pinta las horas del calendario, las fechas de las notas, las etiquetas de
-     la ficha y los placeholders de todos los inputs.
-     Ojo al ajustarlo: `section-label` y `chip` van sobre `--panel`, así que
-     medir solo contra `--canvas` deja el token por debajo del criterio. */
-  --ink-3: #686871;
-  /* Gris antiguo, SOLO para elementos decorativos (separadores, iconos de
-     adorno) que no transmiten información y no están sujetos al criterio. */
-  --ink-faint: #a1a1aa;
+  /* Sin clase se respeta el sistema; `.light` / `.dark` en <html> lo fuerzan. */
+  color-scheme: light dark;
 
-  /* Acento único — verde calmado (marca) */
-  --accent: #0f7b6c;
-  --accent-ink: #ffffff;
-  --accent-soft: #e2efec;
+  /* ---- Superficies (neutros cálidos) ---------------------------------- */
+  --canvas: light-dark(#fbfbfa, #18181b); /* fondo de página, nunca #FFF */
+  --surface: light-dark(#ffffff, #212124); /* tarjetas e islas */
+  --surface-2: light-dark(#f5f2f8, #2a2a2e); /* superficie secundaria / hover */
+  --panel: var(--surface-2); /* alias histórico: sidebar, chips, hundidos */
+  --sunken: light-dark(#efece9, #2a2a2e); /* fondo hundido / active */
+  --wash: light-dark(rgba(31, 31, 35, 0.045), rgba(255, 255, 255, 0.05));
+  --wash-2: light-dark(rgba(31, 31, 35, 0.08), rgba(255, 255, 255, 0.09));
+  --line: light-dark(#e6e6e3, #2e2e33); /* separador 1px */
+  --line-strong: light-dark(#dad9d4, #3a3a40); /* borde de control */
 
-  /* Semánticos desaturados (+ fondos suaves) */
-  --success: #3f8f5b;
-  --success-soft: #e7f0ea;
-  --danger: #b4453d;
-  --danger-soft: #f6e7e5;
-  --danger-solid: #b4453d; /* badge sólido crítico (texto blanco) */
-  --warn: #b5710b;
-  --warn-soft: #f6ecdd;
-  --info: #3c6e99;
-  --info-soft: #e5ecf2;
+  /* ---- Tinta ----------------------------------------------------------- */
+  --ink: light-dark(#1f1f23, #f2f2f0);
+  --ink-2: light-dark(#5a5a63, #a0a0a8);
+  /* Terciario. Cumple AA (4,5:1) sobre las TRES superficies donde se pinta:
+     claro — surface 5,52:1 · canvas 5,33:1 · surface-2 4,98:1;
+     oscuro — surface 5,14:1 · surface-2 4,64:1.
+     No es decorativo: pinta las horas del calendario, las fechas de las notas,
+     las etiquetas de la ficha y los placeholders de todos los inputs. El
+     #71717A de la especificación se queda en 4,06:1 sobre canvas, por debajo
+     del criterio, así que NO se usa. Al ajustarlo hay que medir contra las
+     tres superficies, no solo contra el fondo de página. */
+  --ink-3: light-dark(#686871, #91919a);
+  /* Gris tenue, SOLO decorativo (separadores, iconos de adorno): no transmite
+     información y por eso no está sujeto al criterio de contraste. */
+  --ink-faint: light-dark(#a1a1aa, #6b6b73);
+
+  /* ---- Acento: verde sereno (identidad) -------------------------------- */
+  --accent: light-dark(#0f7b6c, #4f9d8b);
+  --accent-hover: light-dark(#0c6558, #5ead9b);
+  --accent-ink: light-dark(#ffffff, #10130f);
+  --accent-soft: light-dark(#e6f4f1, #1a332e);
+
+  /* ---- Semánticos desaturados ------------------------------------------
+     Texto medido siempre sobre su propio fondo suave, que es donde se usan:
+     danger 5,12:1 · info 4,94:1 · success 4,77:1 · warn 5,42:1. */
+  --danger: light-dark(#b4413c, #f87171);
+  --danger-soft: light-dark(#fdf2f2, #3a1e1e);
+  --danger-solid: light-dark(#b4413c, #c65a52); /* badge crítico, texto blanco */
+  /* El #9A6B1E de la especificación da 4,46:1 sobre #FEF9EE — falla AA por
+     cuatro centésimas. Se oscurece lo justo para cumplirlo. */
+  --warn: light-dark(#8a5e15, #fbbf24);
+  --warn-soft: light-dark(#fef9ee, #3a2e14);
+  --info: light-dark(#3a6ea5, #60a5fa);
+  --info-soft: light-dark(#f0f6fc, #1a283d);
+  --success: light-dark(#2e7d5b, #34d399);
+  --success-soft: light-dark(#f0fdf4, #132e22);
 
   --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
-  --shadow-menu: 0 8px 24px -12px rgba(24, 24, 27, 0.28),
-    0 2px 6px -3px rgba(24, 24, 27, 0.16);
+  /* Elevación solo funcional (menús, modales), nunca decorativa. */
+  --shadow-menu: light-dark(
+    0 8px 24px -12px rgba(31, 31, 35, 0.22),
+    0 12px 32px -14px rgba(0, 0, 0, 0.7)
+  );
 
-  /* Alto del banner de demo permanente (se descuenta a la sidebar fija). */
-  --banner-h: 1.75rem;
+  /* Alto de la franja superior fija (se descuenta a la sidebar). */
+  --banner-h: 2rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #18181b;
-    --panel: #202023;
-    --sunken: #27272a;
-    --wash: rgba(255, 255, 255, 0.05);
-    --wash-2: rgba(255, 255, 255, 0.09);
-    --line: #2c2c30;
-    --line-strong: #3f3f46;
-    --ink: #e7e7ea;
-    --ink-2: #a1a1aa;
-    /* canvas 5,67:1 · panel 5,20:1 · sunken 4,77:1 (antes 3,35:1). */
-    --ink-3: #91919a;
-    --ink-faint: #6b6b73;
-
-    --accent: #4f9d8b;
-    --accent-ink: #10130f;
-    --accent-soft: rgba(79, 157, 139, 0.16);
-
-    --success: #5aa877;
-    --success-soft: rgba(90, 168, 119, 0.16);
-    --danger: #d47a72;
-    --danger-soft: rgba(212, 122, 114, 0.16);
-    --danger-solid: #c65a52;
-    --warn: #d19a4e;
-    --warn-soft: rgba(209, 154, 78, 0.16);
-    --info: #6b9bc4;
-    --info-soft: rgba(107, 155, 196, 0.16);
-
-    --shadow-menu: 0 10px 30px -12px rgba(0, 0, 0, 0.7);
-  }
+.light {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-panel: var(--panel);
   --color-sunken: var(--sunken);
   --color-wash: var(--wash);
@@ -101,6 +106,7 @@
   --color-ink-3: var(--ink-3);
   --color-ink-faint: var(--ink-faint);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
   --color-success: var(--success);
@@ -116,12 +122,15 @@
     system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 
-  /* Radios: inputs 4-6, botones 6, cards 10, modales 12 (máx 12). */
-  --radius-sm: 4px;
-  --radius-DEFAULT: 6px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
-  --radius-xl: 12px;
+  /* Geometría orgánica: controles 12-14, tarjetas 16, islas grandes 24.
+     Las píldoras de estado y los botones de acción van a `rounded-full`. */
+  --radius-sm: 6px;
+  --radius-DEFAULT: 10px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
 }
 
 body {
@@ -135,7 +144,7 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 ::selection {
@@ -153,42 +162,47 @@ body {
 
 @layer components {
   /* ---- Botones ---------------------------------------------------------
-     Se conservan los nombres actuales; btn-ghost = secundario (con borde),
-     btn-subtle = terciario (sin caja). En Tailwind v4 `@apply` no compone
-     clases propias: la base se comparte por grupo de selectores. */
+     Jerarquía por geometría: las acciones (primaria, secundaria, destructiva)
+     son cápsulas; las terciarias no tienen caja. En Tailwind v4 `@apply` no
+     compone clases propias, así que la base se comparte por grupo de
+     selectores en vez de heredarse. */
   .btn,
   .btn-primary,
   .btn-ghost,
   .btn-subtle,
   .btn-danger {
-    @apply inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded px-3 text-sm font-medium whitespace-nowrap transition-colors duration-150 select-none disabled:cursor-not-allowed disabled:opacity-45;
+    @apply inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors duration-150 select-none disabled:cursor-not-allowed disabled:opacity-45;
   }
   .btn-primary {
-    @apply bg-accent text-accent-ink hover:opacity-90;
+    @apply bg-accent text-accent-ink;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover);
   }
   .btn-ghost {
-    @apply border border-line-strong bg-canvas text-ink hover:bg-panel;
+    @apply border border-line-strong bg-surface text-ink hover:bg-surface-2;
   }
   .btn-subtle {
-    @apply text-ink-2 hover:bg-panel hover:text-ink;
+    @apply rounded-lg px-3 text-ink-2 hover:bg-wash hover:text-ink;
   }
   .btn-danger {
     @apply text-danger hover:bg-danger-soft;
   }
   .btn-sm {
-    @apply h-6.5 px-2 text-xs;
+    @apply h-7 px-3 text-xs;
   }
   .btn-lg {
-    @apply h-11 rounded-md px-4.5 text-[15px];
+    @apply h-11 px-5 text-[15px];
   }
 
   /* ---- Campos ----------------------------------------------------------
      `text-base` (16px) es deliberado y no debe bajarse a `text-sm`: iOS hace
-     zoom automático al enfocar un input de menos de 16px, y la forma de
-     evitarlo era `maximumScale: 1`, que bloquea el pinch-zoom e incumple WCAG
-     1.4.4. `LoginForm` ya lo parcheaba suelto con `text-base`. */
+     zoom automático al enfocar un input de menos de 16px, y evitarlo con
+     `maximumScale: 1` bloquea el pinch-zoom e incumple WCAG 1.4.4.
+     El fondo es `canvas` sobre tarjeta `surface`: el control queda
+     ligeramente hundido sin necesidad de sombra. */
   .field {
-    @apply w-full rounded border border-line-strong bg-canvas px-2.5 py-1.5 text-base text-ink transition-colors duration-150 outline-none placeholder:text-ink-3;
+    @apply w-full rounded-xl border border-line-strong bg-canvas px-3.5 py-2 text-base text-ink transition-colors duration-150 outline-none placeholder:text-ink-3;
   }
   .field:focus {
     border-color: var(--accent);
@@ -198,28 +212,37 @@ body {
     @apply mb-1.5 block text-xs font-medium text-ink-2;
   }
 
-  /* ---- Superficies ----------------------------------------------------- */
+  /* ---- Superficies -----------------------------------------------------
+     `card` es la tarjeta corriente; `island` es la agrupación grande que
+     envuelve a varias (radio mayor, para que la anidación se lea). */
   .card {
-    @apply rounded-lg border border-line bg-canvas;
+    @apply rounded-2xl border border-line bg-surface;
+  }
+  .island {
+    @apply rounded-3xl border border-line bg-surface;
   }
 
   /* ---- Tag / chip (etiquetas de contenido, no estado) ------------------ */
   .chip {
-    @apply inline-flex items-center gap-1 rounded-sm bg-panel px-1.5 py-px text-xs font-medium text-ink-2;
+    @apply inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-ink-2;
   }
 
-  /* ---- Estados: punto + etiqueta (dirección A) ------------------------- */
+  /* ---- Estados: punto + etiqueta --------------------------------------
+     El estado NUNCA se expresa solo por color: siempre punto redondo más
+     etiqueta de texto visible. Quien no distingue el verde del rojo sigue
+     leyendo "Requiere atención". */
   .st {
-    @apply inline-flex items-center gap-1.5 text-sm font-medium whitespace-nowrap text-ink;
+    @apply inline-flex items-center gap-2 text-sm font-medium whitespace-nowrap text-ink;
   }
   .st .dot {
-    @apply size-[7px] shrink-0 rounded-full;
+    @apply size-2 shrink-0 rounded-full;
   }
   .st .dot.halo {
-    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 20%, transparent);
   }
   .d-accent {
     background: var(--accent);
+    color: var(--accent);
   }
   .d-success {
     background: var(--success);
@@ -241,10 +264,18 @@ body {
     background: var(--ink-3);
   }
 
-  /* Estado crítico — sólido (reservado a alertas que deben destacar). */
+  /* Estado crítico — píldora sólida, reservada a lo que debe destacar. */
   .st-solid {
-    @apply inline-flex items-center gap-1 rounded-md py-0.5 pr-2 pl-1.5 text-xs font-semibold whitespace-nowrap text-white;
+    @apply inline-flex items-center gap-1.5 rounded-full py-1 pr-3 pl-2.5 text-xs font-semibold whitespace-nowrap text-white;
     background: var(--danger-solid);
+  }
+
+  /* ---- Banda de alerta clínica prioritaria -----------------------------
+     Precede a las listas cuando hay ítems de riesgo. Tono coral desaturado,
+     mensaje sobrio: informa, no alarma. */
+  .alert-clinical {
+    @apply flex flex-wrap items-start gap-3 rounded-2xl border border-line bg-danger-soft p-4 text-sm text-ink;
+    border-color: color-mix(in srgb, var(--danger) 28%, transparent);
   }
 
   /* ---- Encabezados ----------------------------------------------------- */
@@ -262,13 +293,13 @@ body {
 
   /* ---- Tabs ------------------------------------------------------------ */
   .tabs {
-    @apply flex gap-0.5 border-b border-line;
+    @apply flex flex-wrap gap-1;
   }
   .tab {
-    @apply -mb-px cursor-pointer border-b-2 border-transparent px-2.5 py-1.5 text-sm text-ink-2 transition-colors duration-150 hover:text-ink;
+    @apply cursor-pointer rounded-full px-3.5 py-1.5 text-sm text-ink-2 transition-colors duration-150 hover:bg-wash hover:text-ink;
   }
   .tab-active {
-    @apply border-ink font-medium text-ink;
+    @apply bg-accent-soft font-medium text-accent hover:bg-accent-soft;
   }
 
   /* ---- Tablas ---------------------------------------------------------- */
@@ -276,46 +307,46 @@ body {
     @apply w-full border-collapse text-sm;
   }
   .table-base th {
-    @apply border-b border-line px-3 py-2 text-left text-xs font-medium text-ink-3;
+    @apply border-b border-line px-4 py-2.5 text-left text-xs font-medium text-ink-3;
   }
   .table-base td {
-    @apply border-b border-line px-3 py-2.5 align-middle text-ink;
+    @apply border-b border-line px-4 py-3 align-middle text-ink;
   }
 
   /* ---- Modal ----------------------------------------------------------- */
   .modal {
-    @apply w-full overflow-hidden rounded-xl border border-line bg-canvas;
+    @apply w-full overflow-hidden rounded-3xl border border-line bg-surface;
     box-shadow: var(--shadow-menu);
   }
   .modal-header {
-    @apply px-5 pt-4 pb-1 text-[15px] font-semibold text-ink;
+    @apply px-6 pt-5 pb-1 text-[15px] font-semibold text-ink;
   }
   .modal-body {
-    @apply px-5 pb-4 text-sm text-ink-2;
+    @apply px-6 pb-5 text-sm text-ink-2;
   }
   .modal-footer {
-    @apply flex justify-end gap-2 border-t border-line bg-panel px-5 py-3;
+    @apply flex justify-end gap-2 border-t border-line bg-surface-2 px-6 py-4;
   }
 
   /* ---- Toast ----------------------------------------------------------- */
   .toast {
-    @apply flex items-center gap-2.5 rounded-lg border border-line bg-canvas px-3.5 py-3 text-sm text-ink;
+    @apply flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink;
     box-shadow: var(--shadow-menu);
   }
 
   /* ---- Empty state ----------------------------------------------------- */
   .empty {
-    @apply rounded-lg border border-dashed border-line-strong px-5 py-10 text-center text-sm text-ink-2;
+    @apply rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center text-sm text-ink-2;
   }
 
   /* ---- Skeleton -------------------------------------------------------- */
   .skeleton {
-    @apply rounded;
+    @apply rounded-xl;
     background: linear-gradient(
       90deg,
-      var(--panel) 25%,
+      var(--surface-2) 25%,
       var(--sunken) 50%,
-      var(--panel) 75%
+      var(--surface-2) 75%
     );
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.4s ease infinite;

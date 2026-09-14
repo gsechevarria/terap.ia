@@ -41,7 +41,7 @@ export function PatientSearch({ initialValue }: { initialValue: string }) {
     <div className="relative">
       <Search
         className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-ink-3"
-        strokeWidth={2}
+        strokeWidth={1.75}
         aria-hidden
       />
       <input
@@ -60,7 +60,7 @@ export function PatientSearch({ initialValue }: { initialValue: string }) {
           aria-label="Limpiar búsqueda"
           className="absolute right-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-ink-3 hover:bg-wash hover:text-ink"
         >
-          <X className="size-4" strokeWidth={2} />
+          <X className="size-4" strokeWidth={1.75} />
         </button>
       )}
     </div>

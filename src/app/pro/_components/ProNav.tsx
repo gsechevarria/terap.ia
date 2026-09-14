@@ -34,7 +34,7 @@ function Badge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
     <span
-      className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
+      className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-2 py-0.5 text-[11px] leading-none font-semibold text-accent-ink"
       aria-label={`${count} pendiente${count === 1 ? "" : "s"}`}
     >
       {count > 9 ? "9+" : count}
@@ -46,7 +46,7 @@ function Badge({ count }: { count: number }) {
 export function ProNav({ pendingRequests = 0 }: { pendingRequests?: number }) {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-col gap-0.5">
+    <nav className="flex flex-col gap-1">
       {ITEMS.map(({ href, label, Icon }) => {
         const active = isActive(pathname, href);
         return (
@@ -54,13 +54,13 @@ export function ProNav({ pendingRequests = 0 }: { pendingRequests?: number }) {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors duration-150 ${
+            className={`flex items-center gap-3 rounded-full px-3.5 py-2 text-sm transition-colors duration-150 ${
               active
-                ? "bg-wash-2 font-medium text-ink"
+                ? "bg-accent-soft font-medium text-accent"
                 : "text-ink-2 hover:bg-wash hover:text-ink"
             }`}
           >
-            <Icon className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+            <Icon size={16} strokeWidth={1.75} className="shrink-0" aria-hidden />
             {label}
             {href === "/pro/solicitudes" && <Badge count={pendingRequests} />}
           </Link>
@@ -76,7 +76,7 @@ export function ProNavMobile({
 }: { pendingRequests?: number }) {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-0.5 overflow-x-auto">
+    <nav className="flex items-center gap-1 overflow-x-auto">
       {ITEMS.map(({ href, label, Icon }) => {
         const active = isActive(pathname, href);
         return (
@@ -84,13 +84,13 @@ export function ProNavMobile({
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm transition-colors duration-150 ${
+            className={`inline-flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm transition-colors duration-150 ${
               active
-                ? "bg-wash-2 font-medium text-ink"
+                ? "bg-accent-soft font-medium text-accent"
                 : "text-ink-2 hover:bg-wash hover:text-ink"
             }`}
           >
-            <Icon className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+            <Icon size={20} strokeWidth={1.75} className="shrink-0" aria-hidden />
             {label}
             {href === "/pro/solicitudes" && <Badge count={pendingRequests} />}
           </Link>

@@ -26,32 +26,34 @@ export function FlaggedAlerts({
   if (responses.length === 0) return null;
 
   return (
-    <div
-      role="alert"
-      className="mt-4 rounded-md border border-danger/25 bg-danger-soft p-3 text-sm text-danger"
-    >
-      <div className="flex items-start gap-2.5">
-        <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={2} aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="font-medium">
-            {responses.length} respuesta{responses.length > 1 ? "s" : ""} con el
-            ítem de riesgo marcado, sin revisar.
-          </p>
-          <ul className="mt-2 flex flex-col gap-1.5">
+    <div role="alert" className="alert-clinical mt-4">
+      <TriangleAlert
+        size={18}
+        strokeWidth={1.75}
+        aria-hidden
+        className="mt-0.5 shrink-0 text-danger"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold">
+          {responses.length} respuesta{responses.length > 1 ? "s" : ""} con el
+          ítem de riesgo marcado, pendiente
+          {responses.length > 1 ? "s" : ""} de revisar.
+        </p>
+        <ul className="mt-3 flex flex-col gap-2">
             {responses.map((r) => (
               <li
                 key={r.id}
                 className="flex flex-wrap items-center justify-between gap-2"
               >
-                <span className="text-xs">
+                <span className="text-xs text-ink-2">
                   {r.scaleCode} · {formatDateTime(r.submittedAt)}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Link
                     href={`/pro/patients/${patientId}/scales/${r.assignmentId}`}
-                    className="text-xs font-medium underline underline-offset-2"
+                    className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink transition-colors hover:bg-surface-2"
                   >
-                    Ver
+                    Ver respuesta
                   </Link>
                   <button
                     type="button"
@@ -61,16 +63,15 @@ export function FlaggedAlerts({
                         callAction(acknowledgeFlaggedResponseAction, r.id, patientId),
                       )
                     }
-                    className="btn-subtle btn-sm text-danger hover:bg-danger/10 hover:text-danger"
+                    className="btn-subtle btn-sm"
                   >
-                    Visto
+                    Marcar como revisada
                   </button>
                 </span>
               </li>
             ))}
           </ul>
-          {error && <p className="mt-2 text-xs">{error}</p>}
-        </div>
+        {error && <p className="mt-2 text-xs text-danger">{error}</p>}
       </div>
     </div>
   );

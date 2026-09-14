@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { siteUrl } from "@/lib/site-url";
 import { addDaysYMD, formatYMD, parseYMD, todayYMD } from "@/lib/tz";
 import { notFound } from "next/navigation";
@@ -74,51 +75,56 @@ export default async function PatientDetailPage({
 
   return (
     <div className="mx-auto max-w-5xl">
-      <Link href="/pro" className="text-sm text-ink-3 hover:text-ink">
-        ← Pacientes
+      <Link
+        href="/pro"
+        className="inline-flex items-center gap-1.5 text-sm text-ink-3 transition-colors hover:text-ink"
+      >
+        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
+        Pacientes
       </Link>
 
       <FlaggedAlerts patientId={id} responses={flagged} />
 
-      {/* Cabecera */}
-      <div className="mt-3 flex flex-col gap-3 border-b border-line pb-6 sm:flex-row sm:items-start sm:justify-between">
+      {/* Cabecera del expediente, como isla: el dato de identidad se separa del
+          contenido por superficie y no por una línea más. */}
+      <header className="island mt-3 flex flex-col gap-4 p-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 items-start gap-4">
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-panel text-lg font-semibold text-ink-2">
+          <span
+            aria-hidden
+            className="flex size-14 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xl font-semibold text-ink-2"
+          >
             {(patient.full_name ?? "?").charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
               <h1 className="page-title truncate">
                 {patient.full_name ?? "Sin nombre"}
               </h1>
-              {patient.status === "archived" && (
-                <span className="chip">archivado</span>
-              )}
+              <Status tone={patient.status === "archived" ? "neutral" : "success"}>
+                {patient.status === "archived" ? "Archivado" : "En seguimiento"}
+              </Status>
             </div>
             {patient.email && (
-              <p className="mt-0.5 text-sm text-ink-2">{patient.email}</p>
+              <p className="mt-1 text-sm text-ink-2">{patient.email}</p>
             )}
-            <div className="mt-2">
+            <div className="mt-3">
               <TagsEditor patientId={patient.id} tags={patient.tags} />
             </div>
           </div>
         </div>
         <StatusButton patientId={patient.id} status={patient.status} />
-      </div>
+      </header>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_18rem]">
         <div className="min-w-0">
           {/* Pestañas */}
-          <nav className="flex flex-wrap gap-0.5 border-b border-line">
+          <nav className="tabs" aria-label="Secciones del expediente">
             {TABS.map((t) => (
               <Link
                 key={t.key}
                 href={`/pro/patients/${id}?tab=${t.key}`}
-                className={`-mb-px border-b-2 px-2.5 py-1.5 text-sm transition-colors duration-100 ${
-                  tab === t.key
-                    ? "border-ink font-medium text-ink"
-                    : "border-transparent text-ink-2 hover:text-ink"
-                }`}
+                aria-current={tab === t.key ? "page" : undefined}
+                className={`tab${tab === t.key ? " tab-active" : ""}`}
               >
                 {t.label}
               </Link>

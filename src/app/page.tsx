@@ -35,7 +35,7 @@ export default function Home() {
 
 function SiteNav() {
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-canvas/90 backdrop-blur-md">
+    <header className="sticky top-[var(--banner-h)] z-20 border-b border-line bg-canvas/90 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-3">
         <div className="flex items-center gap-6">
           <Wordmark />

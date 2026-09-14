@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { FranjaReglamentaria } from "@/components/FranjaReglamentaria";
 import "./globals.css";
 
 // Nonce por petición: el HTML no puede prerenderizarse ni reutilizarse.
@@ -25,9 +26,6 @@ export const viewport: Viewport = {
   // evita con los 16px de `.field`, no capando el zoom del usuario.
 };
 
-/** Encendido salvo que se apague explícitamente. */
-const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,22 +34,13 @@ export default function RootLayout({
   return (
     <html lang="es" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
-        {/* Banner de demostración: mientras no exista DPA + base jurídica RGPD
-            art. 9, solo se usan datos ficticios.
-
-            Se controla con `NEXT_PUBLIC_DEMO_MODE` y NO borrando código: cuando
-            llegue el primer paciente real bastará con poner la variable a
-            "false" en Vercel, sin tocar el repositorio ni desplegar a ciegas.
-            Por defecto está ENCENDIDO: si alguien despliega sin configurarla,
-            el aviso sigue puesto, que es el lado seguro del error. */}
-        {demoMode && (
-          <div className="flex h-[var(--banner-h)] items-center justify-center gap-1.5 border-b border-line bg-warn-soft px-4 text-center text-xs font-medium text-warn">
-            <span aria-hidden className="text-[8px]">
-              ●
-            </span>
-            Entorno de demostración — datos ficticios
-          </div>
-        )}
+        {/* Franja reglamentaria fija. Se controla con `NEXT_PUBLIC_DEMO_MODE` y
+            NO borrando código: cuando llegue el primer paciente real bastará
+            con poner la variable a "false" en Vercel, sin tocar el repositorio
+            ni desplegar a ciegas. Por defecto está encendido, que es el lado
+            seguro del error. Lo que la franja afirma vive en
+            `src/lib/entorno-clinico.ts`. */}
+        <FranjaReglamentaria />
         {children}
       </body>
     </html>

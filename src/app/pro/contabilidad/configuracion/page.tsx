@@ -122,7 +122,7 @@ export default async function ConfiguracionFiscalPage() {
           </label>
         </div>
 
-        <label className="flex items-start gap-2.5 rounded-md border border-line bg-panel p-3 text-sm">
+        <label className="flex items-start gap-2.5 rounded-2xl border border-line bg-panel p-3 text-sm">
           <input
             type="checkbox"
             name="aplica_retencion_default"
