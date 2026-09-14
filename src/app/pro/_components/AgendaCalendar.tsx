@@ -44,6 +44,12 @@ const HOUR_START = 7;
 const HOUR_END = 21;
 const HOUR_PX = 48;
 const GRID_H = (HOUR_END - HOUR_START) * HOUR_PX;
+/**
+ * Columna de horas. Se encoge con la pantalla en vez de robar sitio fijo a los
+ * días: es lo que permite que las siete columnas quepan sin desplazamiento
+ * horizontal incluso en un móvil. El mínimo es el ancho de "08:00" a 10px.
+ */
+const GUTTER = "clamp(2.5rem, 5vw, 3.5rem)";
 const DURATIONS = [30, 45, 60, 90] as const;
 
 /*
@@ -296,7 +302,8 @@ function MonthGrid({
 
   return (
     <div className="card overflow-x-auto">
-      <div className="min-w-[640px] lg:min-w-0">
+      {/* Sin ancho mínimo: el mes cabe entero a cualquier anchura. */}
+      <div>
         <div className="grid grid-cols-7 border-b border-line">
           {["lun", "mar", "mié", "jue", "vie", "sáb", "dom"].map((d) => (
             <div
@@ -432,14 +439,14 @@ function TimeGrid({
 
   return (
     <div className="card overflow-x-auto">
-      {/* El ancho mínimo solo rige por debajo de `lg`, donde desplazar en
-          horizontal es aceptable. A partir de ahí la rejilla es fluida y cabe
-          entera: la semana no se corta nunca en escritorio. */}
-      <div className={days === 7 ? "min-w-[860px] lg:min-w-0" : "min-w-[420px] sm:min-w-0"}>
+      {/* Sin ancho mínimo a ninguna anchura: el calendario cabe siempre entero y
+          nunca hay que desplazarlo en horizontal. La columna de horas se encoge
+          con la pantalla (`clamp`) para dejar sitio a los días. */}
+      <div>
         {/* Cabecera de días */}
         <div
           className="grid border-b border-line"
-          style={{ gridTemplateColumns: `3.5rem repeat(${days}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `${GUTTER} repeat(${days}, minmax(0, 1fr))` }}
         >
           <div />
           {cols.map((c) => {
@@ -467,7 +474,7 @@ function TimeGrid({
         {/* Cuerpo */}
         <div
           className="grid"
-          style={{ gridTemplateColumns: `3.5rem repeat(${days}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `${GUTTER} repeat(${days}, minmax(0, 1fr))` }}
         >
           {/* Columna de horas */}
           <div className="relative" style={{ height: GRID_H }}>
