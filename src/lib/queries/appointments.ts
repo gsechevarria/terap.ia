@@ -149,18 +149,41 @@ export async function listProfessionalAppointments(filter: {
 
 /** Pacientes activos del profesional (para el selector al crear cita). */
 export async function getPatientsForSelect(): Promise<
-  { id: string; full_name: string | null }[]
+  { id: string; full_name: string | null; bonoDisponible: number }[]
 > {
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
   if (!pro) return [];
-  const { data } = await allRows(supabase
-    .from("patients")
-    .select("id, full_name")
-    .eq("professional_id", pro.id)
-    .eq("status", "active")
-    .order("full_name", { ascending: true }));
-  return data ?? [];
+  const [pacientesRes, bonosRes] = await Promise.all([
+    allRows(supabase
+      .from("patients")
+      .select("id, full_name")
+      .eq("professional_id", pro.id)
+      .eq("status", "active")
+      .order("full_name", { ascending: true })),
+    // Sesiones de bono disponibles por paciente: lo que permite avisar al
+    // crear la cita en vez de al registrar la asistencia, que es cuando el
+    // bono se consume de verdad y ya es tarde para cambiar de idea.
+    allRows(supabase
+      .from("session_packs")
+      .select("patient_id, total_sessions, used_sessions")
+      .eq("professional_id", pro.id)
+      .eq("active", true)),
+  ]);
+
+  const disponiblePorPaciente = new Map<string, number>();
+  for (const b of bonosRes.data ?? []) {
+    const restantes = Math.max(b.total_sessions - b.used_sessions, 0);
+    disponiblePorPaciente.set(
+      b.patient_id,
+      (disponiblePorPaciente.get(b.patient_id) ?? 0) + restantes,
+    );
+  }
+
+  return (pacientesRes.data ?? []).map((p) => ({
+    ...p,
+    bonoDisponible: disponiblePorPaciente.get(p.id) ?? 0,
+  }));
 }
 
 /**

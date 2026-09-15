@@ -56,6 +56,8 @@ async function createAppointmentActionImpl(input: {
   until?: string | null;
   notes?: string;
   force?: boolean;
+  /** El profesional declara que la sesión va a cargo de un bono. */
+  conBono?: boolean;
 }): Promise<CreateAppointmentResult> {
   const { pro } = await requireOwnedPatient(input.patientId);
   const videoLink = checkVideoLink(input.videoLink);
@@ -69,6 +71,30 @@ async function createAppointmentActionImpl(input: {
 
   const supabase = await createClient();
 
+  // El bono se consume al registrar la asistencia, no aquí: es entonces cuando
+  // la sesión ha ocurrido. Lo que sí se puede hacer ahora es NO dejar agendar
+  // contra un bono que no existe, en vez de descubrirlo semanas después con la
+  // cita ya dada y el paciente convencido de que estaba cubierta.
+  let bonoDisponible = 0;
+  if (input.conBono) {
+    const { data: bonos } = await allRows(supabase
+      .from("session_packs")
+      .select("total_sessions, used_sessions")
+      .eq("professional_id", pro.id)
+      .eq("patient_id", input.patientId)
+      .eq("active", true));
+    const disponibles = (bonos ?? []).reduce(
+      (suma, b) => suma + Math.max(b.total_sessions - b.used_sessions, 0),
+      0,
+    );
+    if (disponibles <= 0) {
+      throw new ActionInputError(
+        "Este paciente no tiene ningún bono activo con sesiones disponibles. Venda un bono desde la pestaña Pagos de su ficha, o desmarque la casilla.",
+      );
+    }
+    bonoDisponible = disponibles;
+  }
+
   // Todas las ocurrencias (la principal + las repeticiones).
   const occurrences: { start: Date; end: Date }[] = [{ start, end }];
   if (input.freq !== "none") {
@@ -78,6 +104,14 @@ async function createAppointmentActionImpl(input: {
       if (until && cur.getTime() > until.getTime()) break;
       occurrences.push({ start: cur, end: new Date(cur.getTime() + durationMs) });
     }
+  }
+
+  // Una serie consume una sesión de bono por ocurrencia: agendar diez contra
+  // un bono de cinco es prometer algo que no se puede cumplir.
+  if (input.conBono && occurrences.length > bonoDisponible) {
+    throw new ActionInputError(
+      `El bono tiene ${bonoDisponible} ${bonoDisponible === 1 ? "sesión disponible" : "sesiones disponibles"} y esta serie son ${occurrences.length}. Reduzca la repetición o amplíe el bono.`,
+    );
   }
 
   // Solapes de la serie con lo que ya hay en la agenda.

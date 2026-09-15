@@ -70,7 +70,7 @@ export async function listPatientsWithOverview(
   const ids = patients.map((p) => p.id);
   const nowIso = new Date().toISOString();
 
-  const [tasksRes, completionsRes, alertsRes, apptsRes, moodsRes] =
+  const [tasksRes, completionsRes, alertsRes, apptsRes, moodsRes, scalesRes, pastApptsRes] =
     await Promise.all([
       allRows(supabase.from("tasks").select("id, patient_id").in("patient_id", ids)),
       allRows(supabase
@@ -93,6 +93,21 @@ export async function listPatientsWithOverview(
         .from("mood_entries")
         .select("patient_id, created_at")
         .in("patient_id", ids)),
+      // Responder un cuestionario es actividad del paciente, y hasta ahora no
+      // contaba: solo se miraban las respuestas marcadas y sin revisar, que es
+      // otra cosa. Un paciente que rellenaba el PHQ-9 seguía figurando como
+      // inactivo desde su última tarea.
+      allRows(supabase
+        .from("scale_responses")
+        .select("patient_id, submitted_at")
+        .in("patient_id", ids)),
+      // Y una sesión a la que se acude es LA actividad por excelencia.
+      allRows(supabase
+        .from("appointments")
+        .select("patient_id, starts_at")
+        .in("patient_id", ids)
+        .eq("attendance", "attended")
+        .lte("starts_at", nowIso)),
     ]);
 
   const completedTaskIds = new Set(
@@ -130,6 +145,8 @@ export async function listPatientsWithOverview(
   };
   for (const c of completionsRes.data ?? []) trackActivity(c.patient_id, c.completed_at);
   for (const m of moodsRes.data ?? []) trackActivity(m.patient_id, m.created_at);
+  for (const r of scalesRes.data ?? []) trackActivity(r.patient_id, r.submitted_at);
+  for (const a of pastApptsRes.data ?? []) trackActivity(a.patient_id, a.starts_at);
 
   return patients.map((p) => ({
     ...p,

@@ -88,10 +88,16 @@ async function setPaymentMethodActionImpl(
 ) {
   const { pro } = await requireOwnedPatient(patientId);
 
+  const metodo = method && isPaymentMethod(method) ? method : null;
+
+  // El método arrastra al estado: si consta CÓMO se cobró, es que se cobró.
+  // Sin esto hacían falta dos controles para registrar lo mismo, y quedaban
+  // pagos con método puesto y estado pendiente, que no significa nada. La
+  // fecha de cobro la pone el disparador `preserve_payment_date`, no esto.
   const supabase = await createClient();
   const { error } = await supabase
     .from("payments")
-    .update({ method: method && isPaymentMethod(method) ? method : null })
+    .update({ method: metodo, status: metodo ? "paid" : "pending" })
     .eq("id", paymentId)
     .eq("patient_id", patientId)
     .eq("professional_id", pro.id);
