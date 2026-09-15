@@ -38,7 +38,14 @@ function toConfigDomain(row: ConfiguracionFiscal | null): ConfigFiscal {
 function toIngresoFiscal(row: IngresoFiscalRow): IngresoFiscal | null {
   if (!row.id || !row.fecha) throw new Error("Ingreso incompleto.");
   if (row.fiscal_review_required || row.base_cents == null || row.cuota_iva_cents == null) {
-    throw new Error("Hay cobros pendientes de revisión fiscal. Confirma su tratamiento en Pagos de la ficha del paciente antes de calcular o exportar.");
+    // Ya no hay control en la interfaz para confirmarlos uno a uno: se retiró
+    // de la tabla de pagos. Los cobros nuevos capturan su tratamiento solos a
+    // partir de la configuración fiscal (disparador `payments_capture_fiscal`);
+    // los anteriores a esa configuración se regularizan con el script de
+    // mantenimiento. Si el mensaje aparece con cobros recientes, es que la
+    // configuración declara actividad mixta o retención por defecto, casos que
+    // el disparador no resuelve solo.
+    throw new Error("Hay cobros sin tratamiento fiscal confirmado. Los cobros nuevos lo capturan a partir de su configuración fiscal; los anteriores a ella se regularizan siguiendo docs/DIAGNOSTICO-HISTORICOS.md.");
   }
   return {
     id: row.id,

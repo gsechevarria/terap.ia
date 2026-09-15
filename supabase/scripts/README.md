@@ -48,6 +48,16 @@ Mientras queden filas pendientes, `/pro/contabilidad` y su exportación fallan a
 propósito: las guardas de `src/lib/queries/contabilidad.ts` se niegan a calcular
 con históricos sin confirmar.
 
+## Cuadre del estado de los pagos
+
+`cuadrar-estado-pagos.sql` marca como cobrados los pagos que ya tenían método
+de cobro pero seguían en pendiente. Desde el 15-sep el método manda sobre el
+estado, pero solo al cambiar el desplegable: los que ya estaban puestos no se
+arreglan solos, y volver a elegir el mismo método no dispara nada.
+
+Empieza por el bloque de solo lectura. No toca las imputaciones de bono, cuyo
+estado lo gestiona la liquidación de la cita.
+
 ## Dónde está cada cosa
 
 | Qué | Dónde |
