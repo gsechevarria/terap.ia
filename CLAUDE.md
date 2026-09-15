@@ -22,7 +22,7 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 |---|---|
 | Producción | https://terap.vercel.app |
 | Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin`; todo entra por PR) |
-| Commit en producción | `6a1b36ee4ec15c9b6289c38e9834007a528ce31b` |
+| Commit en producción | `2390ced` (#28, expediente en ZIP). CI de `main` en verde y `verificar-produccion.mjs` 50/50 después del despliegue. |
 | Verificación de producción | `node scripts/verificar-produccion.mjs` → **50/50** sobre el commit desplegado (15-sep). Sin credenciales, solo lectura. |
 | Supabase `levufuoigdlexscpvlgk` | **41 migraciones aplicadas y registradas**; 38 tablas, 1 vista, 28 funciones tipadas. Historial reparado el 15-sep: marca 41. |
 | Rama de esta copia | `main`, al día con `origin/main` |
@@ -86,7 +86,7 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   que **ya no existe la excepción de `npm audit`**). `npm audit --audit-level=low`
   → 0 vulnerabilidades, incluyendo desarrollo. Ver
   [docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md).
-- **Batería de pruebas.** `npm test` = **149 pruebas de lógica** (vitest, 9
+- **Batería de pruebas.** `npm test` = **160 pruebas de lógica** (vitest, 10
   ficheros, sin BD). `npm run test:types` = **51 regresiones SQL** sobre
   PostgreSQL embebido (**PGlite**), que ejecuta las 41 migraciones y comprueba
   RLS sin Docker. `npm run test:integration` = **14 escenarios HTTP** contra
@@ -145,6 +145,21 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   Reglas versionadas por ejercicio y territorio en `src/lib/fiscal/reglas/`, y
   aritmética en céntimos enteros en `dinero.ts`. Detalle:
   [docs/EXPEDIENTE-FISCAL.md](docs/EXPEDIENTE-FISCAL.md).
+- **El expediente se descarga en un ZIP** desde el paso de revisión
+  (`/pro/contabilidad/expediente/[ejercicio]/export`): resumen en PDF, libros en
+  XLSX y CSV, los registros del expediente en `registros/*.csv`, índice,
+  manifiesto, advertencias y la nota para la gestoría. **Todo se lee y se
+  construye en una sola pasada**, así que los tres formatos del mismo archivo
+  cuadran entre sí aunque alguien edite un gasto mientras se descarga. Lo
+  incompleto **no bloquea la descarga**: viaja escrito en el nombre del fichero
+  (`-INCOMPLETO`), en `advertencias.txt` y en el manifiesto — un expediente a
+  medias sigue sirviendo para que el gestor diga qué falta. Escritor de ZIP
+  propio en `src/lib/zip.ts`, ~100 líneas sin comprimir y **sin dependencia
+  nueva**: lo que va dentro ya está comprimido (un XLSX *es* un ZIP) y una
+  librería más sería superficie de `npm audit` permanente. No lleva
+  justificantes ni un solo documento clínico, y dice dentro que no es una
+  declaración, que no sirve para presentar ante la AEAT y que **no implementa
+  ningún formato de importación oficial**.
 - **Contabilidad ya no es todo o nada.** Un solo registro sin tratamiento fiscal
   confirmado tumbaba la sección entera. Ahora los apartados se cuentan, el
   resumen muestra **lo cobrado** y un aviso dice cuántos quedan fuera, con
@@ -202,13 +217,20 @@ origen legítimo de un alta creada bajo el esquema vulnerable) · validación co
 responsables de producto del uso de datos reales, conservación y alcance de las
 estimaciones fiscales.
 
-**Fase 2b del expediente fiscal**, que es lo que convierte el módulo en algo
-que el gestor pueda usar: registro de facturación con rectificativas, anticipos
-y cobros parciales; importación CSV/XLSX con previsualización, mapeo de columnas
-y huella antiduplicado; retenciones y pagos a cuenta con sus certificados;
-checklist personal; y el ZIP con resumen PDF, hojas de Excel, CSV, justificantes
-seleccionados, índice y manifiesto. El esquema ya está aplicado: los siete pasos
-existen y cuatro remiten todavía a la pantalla donde hoy vive ese dato.
+**Lo que falta de la fase 2b del expediente fiscal.** Facturación, retenciones,
+checklist personal y el ZIP ya están (#27 y #28). Quedan dos cosas:
+
+- **Importación CSV/XLSX** con previsualización, mapeo de columnas y huella
+  antiduplicado. La columna `import_hash` y su índice único existen desde la
+  migración; no hay nada que los escriba.
+- **Selección de justificantes.** `expediente_documentos` está en el esquema, con
+  la restricción de bucket que impide meter documentación clínica, pero no hay
+  pantalla para elegir qué adjuntar, así que **el ZIP no lleva ningún adjunto** y
+  lo dice dentro. Cuando exista esa pantalla habrá que decidir además el límite
+  de tamaño: hoy el ZIP se construye entero en memoria.
+
+Los pasos de gastos y bienes siguen remitiendo a `/pro/contabilidad/gastos`, que
+es donde vive ese dato.
 
 **Rediseño de la app del paciente.** El panel del psicólogo está hecho; la app
 del paciente conserva la dirección visual anterior salvo lo que hereda de los
@@ -1248,7 +1270,7 @@ tienen recuento propio; delegan en la batería HTTP):
 ```
 npm run lint          # ESLint 9, --max-warnings=0
 npm run typecheck     # tsc --noEmit
-npm test              # vitest: 149 pruebas de lógica pura, sin BD
+npm test              # vitest: 160 pruebas de lógica pura, sin BD
 npm run test:types    # 51 regresiones SQL + tipos, sobre PGlite (41 migraciones)
 npm run test:integration   # 14 escenarios HTTP contra Supabase LOCAL (nunca el remoto)
 npm run build
