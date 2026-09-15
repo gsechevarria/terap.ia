@@ -1,7 +1,6 @@
 "use client";
 import { callAction } from "@/lib/action-result";
 
-import { PaymentFiscalEditor } from "./PaymentFiscalEditor";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -235,7 +234,6 @@ export function PaymentsPanel({
                     </td>
                     <td className="tabular-nums whitespace-nowrap">
                       {formatCurrency(p.amount_cents, p.currency)}
-                      <PaymentFiscalEditor paymentId={p.id} patientId={patientId} snapshot={p.fiscal_snapshot} />
                       {/* "Sin tarifa configurada" no es lo mismo que "gratis":
                           un 0,00 € a secas parecía una deuda saldada. */}
                       {p.note?.startsWith("Sin tarifa") && (
