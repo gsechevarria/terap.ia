@@ -52,6 +52,13 @@ export type ReglasFiscales = {
   /** Si es false, ningún cálculo de este conjunto debe presentarse como firme. */
   soportado: boolean;
   motivoNoSoportado?: string;
+  /**
+   * El territorio se asume común mientras nadie lo confirme. Se calcula igual
+   * —bloquear todo por una casilla sin marcar no ayuda a nadie— pero el aviso
+   * viaja hasta el expediente y hasta el ZIP, para que un profesional foral o
+   * canario no reciba en silencio reglas que no son suyas.
+   */
+  territorioAsumido: boolean;
 
   /** Porcentaje del pago fraccionado del modelo 130 sobre el rendimiento neto. */
   pagoFraccionadoPct: Regla<number>;
@@ -88,6 +95,7 @@ function sinReglasVerificadas(
     territorio,
     soportado: false,
     motivoNoSoportado: motivo,
+    territorioAsumido: false,
     pagoFraccionadoPct: pendiente(motivo),
     retencionGeneralPct: pendiente(motivo),
     retencionReducidaPct: pendiente(motivo),
@@ -111,6 +119,7 @@ const COMUN_2026: ReglasFiscales = {
   ejercicio: 2026,
   territorio: "comun",
   soportado: true,
+  territorioAsumido: false,
 
   pagoFraccionadoPct: {
     valor: 20,
@@ -185,16 +194,16 @@ const CATALOGO: Record<string, ReglasFiscales> = {
 export function obtenerReglas(
   ejercicio: number,
   territorio: Territorio | null,
+  confirmado = true,
 ): ReglasFiscales {
-  if (!territorio) {
-    return sinReglasVerificadas(
-      ejercicio,
-      "comun",
-      "Falta declarar el territorio fiscal en el perfil.",
-    );
-  }
-  const encontradas = CATALOGO[`${territorio}:${ejercicio}`];
-  if (encontradas) return encontradas;
+  // Sin territorio declarado se asume común, que es el caso de la consulta
+  // privada peninsular, y se marca como asumido en vez de bloquear el módulo.
+  const aplicable: Territorio = territorio ?? "comun";
+  const asumido = !confirmado || territorio === null;
+
+  const encontradas = CATALOGO[`${aplicable}:${ejercicio}`];
+  if (encontradas) return { ...encontradas, territorioAsumido: asumido };
+  territorio = aplicable;
 
   if (territorio !== "comun") {
     return sinReglasVerificadas(
@@ -225,5 +234,10 @@ export function reglasPendientes(reglas: ReglasFiscales): string[] {
   revisar("Tope de difícil justificación", reglas.dificilJustificacionTopeCents);
   revisar("Umbral de exención del modelo 130", reglas.umbralExencion130Pct);
   revisar("Modelo 130 en el primer año de actividad", reglas.exencion130PrimerAnio);
+  if (reglas.territorioAsumido) {
+    pendientes.push(
+      `Territorio fiscal: se ha asumido ${NOMBRE_TERRITORIO[reglas.territorio]} sin confirmar. Si la actividad tributa en régimen foral, en Canarias, Ceuta o Melilla, estos cálculos no le son aplicables.`,
+    );
+  }
   return pendientes;
 }

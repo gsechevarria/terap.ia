@@ -93,7 +93,13 @@ create type public.clase_retencion as enum (
 -- Todo NULL por defecto: no saber no es lo mismo que responder que no.
 
 alter table public.configuracion_fiscal
-  add column territorio public.territorio_fiscal,
+  -- Territorio común por defecto: es el caso de la consulta privada en la
+  -- península y Baleares, y dejarlo en null bloqueaba todo cálculo desde el
+  -- primer día. El valor se ASUME, no consta: `territorio_confirmado` lo
+  -- distingue, y mientras sea false el expediente lo advierte. Así un
+  -- profesional foral o canario no recibe en silencio reglas que no son suyas.
+  add column territorio public.territorio_fiscal not null default 'comun',
+  add column territorio_confirmado boolean not null default false,
   add column comunidad_autonoma text,
   add column criterio_imputacion public.criterio_imputacion,
   -- El criterio de cobros y pagos exige haber ejercido la opción. Se guarda la

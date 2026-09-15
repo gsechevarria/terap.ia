@@ -54,6 +54,14 @@ Canarias, Ceuta y Melilla **se pueden registrar y exportar**, pero sus cálculos
 quedan pendientes. No se aplican las reglas de territorio común a un régimen
 foral, ni el IVA peninsular donde rige IGIC o IPSI.
 
+**Territorio común es el valor por defecto**, porque es el caso de la consulta
+privada peninsular y bloquear el módulo entero por una casilla sin marcar no
+ayuda a nadie. Pero se guarda como *asumido*, no como declarado: mientras
+`territorio_confirmado` sea falso, el expediente y el ZIP arrastran el aviso de
+que si la actividad tributa en régimen foral, en Canarias, Ceuta o Melilla esos
+cálculos no le son aplicables. Asumir común **no alcanza** a un territorio
+declarado distinto: ese sigue sin reglas verificadas.
+
 ---
 
 ## Reglas verificadas hoy
@@ -141,7 +149,7 @@ Gabriel.
 
 1. **Aplicar la migración** `20260915100001_expediente_fiscal.sql`. No la aplica
    el agente.
-2. Declarar **territorio** en el perfil fiscal. Sin él no hay reglas aplicables
-   y todo queda pendiente, que es el comportamiento correcto.
+2. **Confirmar el territorio** en el perfil fiscal. Por defecto se asume común
+   y se calcula, pero con aviso hasta que alguien lo confirme.
 3. Revisar con un asesor las reglas de procedencia heredada antes de dar por
    buenas las cifras que dependen de ellas.

@@ -255,7 +255,8 @@ Row: {
 "updated_at": string;
 "tipo_iva_repercutido": number;
 "prorrata_iva_pct": number | null;
-"territorio": Database["public"]["Enums"]["territorio_fiscal"] | null;
+"territorio": Database["public"]["Enums"]["territorio_fiscal"];
+"territorio_confirmado": boolean;
 "comunidad_autonoma": string | null;
 "criterio_imputacion": Database["public"]["Enums"]["criterio_imputacion"] | null;
 "criterio_evidencia_path": string | null;
@@ -280,7 +281,8 @@ Insert: {
 "updated_at"?: string;
 "tipo_iva_repercutido"?: number;
 "prorrata_iva_pct"?: number | null;
-"territorio"?: Database["public"]["Enums"]["territorio_fiscal"] | null;
+"territorio"?: Database["public"]["Enums"]["territorio_fiscal"];
+"territorio_confirmado"?: boolean;
 "comunidad_autonoma"?: string | null;
 "criterio_imputacion"?: Database["public"]["Enums"]["criterio_imputacion"] | null;
 "criterio_evidencia_path"?: string | null;
@@ -305,7 +307,8 @@ Update: {
 "updated_at"?: string;
 "tipo_iva_repercutido"?: number;
 "prorrata_iva_pct"?: number | null;
-"territorio"?: Database["public"]["Enums"]["territorio_fiscal"] | null;
+"territorio"?: Database["public"]["Enums"]["territorio_fiscal"];
+"territorio_confirmado"?: boolean;
 "comunidad_autonoma"?: string | null;
 "criterio_imputacion"?: Database["public"]["Enums"]["criterio_imputacion"] | null;
 "criterio_evidencia_path"?: string | null;

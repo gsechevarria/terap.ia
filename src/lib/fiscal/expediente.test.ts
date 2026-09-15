@@ -70,8 +70,25 @@ describe("reglas por ejercicio y territorio", () => {
     expect(reglas.dificilJustificacionPct.valor).toBeNull();
   });
 
-  it("sin territorio declarado no calcula nada", () => {
-    expect(obtenerReglas(2026, null).soportado).toBe(false);
+  it("sin territorio declarado asume común y lo marca como asumido", () => {
+    const reglas = obtenerReglas(2026, null);
+    expect(reglas.soportado).toBe(true);
+    expect(reglas.territorio).toBe("comun");
+    expect(reglas.territorioAsumido).toBe(true);
+    // Y el aviso viaja hasta el expediente, no se queda en el tipo.
+    expect(reglasPendientes(reglas).join(" ")).toContain("se ha asumido");
+  });
+
+  it("un territorio confirmado no arrastra el aviso", () => {
+    const reglas = obtenerReglas(2026, "comun", true);
+    expect(reglas.territorioAsumido).toBe(false);
+    expect(reglasPendientes(reglas).join(" ")).not.toContain("se ha asumido");
+  });
+
+  it("asumir común NO alcanza a los forales: siguen sin reglas", () => {
+    const reglas = obtenerReglas(2026, "bizkaia", false);
+    expect(reglas.soportado).toBe(false);
+    expect(reglas.pagoFraccionadoPct.valor).toBeNull();
   });
 
   it("toda regla verificada cita su fuente", () => {
