@@ -285,22 +285,54 @@ function FilaPaciente({ paciente }: { paciente: PatientOverview }) {
           )}
         </div>
       </div>
-      <dl className="flex flex-wrap gap-x-8 gap-y-2 pl-[3.375rem] text-xs sm:pl-0">
-        <Dato label="Tareas pendientes" valor={String(paciente.pendingTasks)} />
-        <Dato label="Próxima cita" valor={formatDateTime(paciente.nextAppointment)} />
-        <Dato label="Última actividad" valor={formatDate(paciente.lastActivity)} />
+      {/*
+        Rejilla de columnas que miden lo mismo en TODAS las filas.
+
+        Cada fila es su propio contenedor, así que el navegador no las cuadra
+        entre sí: el bloque se dimensionaba por su contenido y, al ir pegado a
+        la derecha, la única fila con cita («16 sept, 08:30») era más ancha que
+        las que llevan «—» y arrastraba las tres columnas hacia la izquierda.
+
+        La solución no lleva ni un ancho a ojo: el valor reserva su sitio en
+        `ch`, que es el ancho del carácter de SU PROPIA fuente —y como es
+        monoespaciada, `14ch` es exactamente «16 sept, 08:30»—. La columna se
+        queda entonces en el mayor de la etiqueta y esa reserva, y ambas son
+        idénticas fila a fila, así que la vertical cuadra por construcción y no
+        por acierto. `DD mmm, HH:MM` y `DD mmm YYYY` con «sept», el mes
+        abreviado más largo en español, son el caso peor.
+
+        En móvil la fila se apila, el bloque cae debajo del nombre y no hay nada
+        que cuadrar: ahí sigue fluyendo, que es lo que evita el desbordamiento
+        lateral en pantallas estrechas.
+      */}
+      <dl className="flex flex-wrap gap-x-6 gap-y-2 pl-[3.375rem] text-xs sm:grid sm:shrink-0 sm:grid-cols-[auto_auto_auto] sm:pl-0">
+        <Dato label="Tareas pendientes" valor={String(paciente.pendingTasks)} ancho="w-[3ch]" />
+        <Dato label="Próxima cita" valor={formatDateTime(paciente.nextAppointment)} ancho="w-[14ch]" />
+        <Dato label="Última actividad" valor={formatDate(paciente.lastActivity)} ancho="w-[12ch]" />
       </dl>
     </Link>
   );
 }
 
-function Dato({ label, valor }: { label: string; valor: string }) {
+function Dato({
+  label,
+  valor,
+  ancho,
+}: {
+  label: string;
+  valor: string;
+  /** Sitio que reserva el valor, en `ch` de su propia fuente monoespaciada. */
+  ancho: string;
+}) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-1">
       <dt className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
         {label}
       </dt>
-      <dd className="mono text-ink-2">{valor}</dd>
+      {/* `truncate` es el seguro: si un valor creciera más de lo previsto se
+          recorta en su columna en vez de ensanchar la rejilla y descuadrar la
+          fila entera otra vez. */}
+      <dd className={`mono truncate text-ink-2 ${ancho}`}>{valor}</dd>
     </div>
   );
 }
