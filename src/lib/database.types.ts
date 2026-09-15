@@ -2,6 +2,45 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 export type Database = { __InternalSupabase: { PostgrestVersion: "14.5" }; public: {
 Tables: {
+"actividades_fiscales": {
+Row: {
+"id": string;
+"professional_id": string;
+"epigrafe_iae": string;
+"descripcion": string | null;
+"situacion_iva": string | null;
+"fecha_alta": string | null;
+"fecha_baja": string | null;
+"censal_path": string | null;
+"principal": boolean;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"epigrafe_iae": string;
+"descripcion"?: string | null;
+"situacion_iva"?: string | null;
+"fecha_alta"?: string | null;
+"fecha_baja"?: string | null;
+"censal_path"?: string | null;
+"principal"?: boolean;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"epigrafe_iae"?: string;
+"descripcion"?: string | null;
+"situacion_iva"?: string | null;
+"fecha_alta"?: string | null;
+"fecha_baja"?: string | null;
+"censal_path"?: string | null;
+"principal"?: boolean;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "actividades_fiscales_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
 "agenda_blocks": {
 Row: {
 "id": string;
@@ -167,6 +206,42 @@ Update: {
 };
 Relationships: [{ foreignKeyName: "bienes_gasto_owner_fk"; columns: ["gasto_id","professional_id"]; isOneToOne: false; referencedRelation: "gastos"; referencedColumns: ["id","professional_id"] },{ foreignKeyName: "bienes_inversion_gasto_id_fkey"; columns: ["gasto_id"]; isOneToOne: false; referencedRelation: "gastos"; referencedColumns: ["id"] },{ foreignKeyName: "bienes_inversion_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
+"checklist_personal": {
+Row: {
+"id": string;
+"professional_id": string;
+"ejercicio": number;
+"clave": string;
+"aplica": boolean | null;
+"aportado": boolean;
+"documento_path": string | null;
+"notas": string | null;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"ejercicio": number;
+"clave": string;
+"aplica"?: boolean | null;
+"aportado"?: boolean;
+"documento_path"?: string | null;
+"notas"?: string | null;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"ejercicio"?: number;
+"clave"?: string;
+"aplica"?: boolean | null;
+"aportado"?: boolean;
+"documento_path"?: string | null;
+"notas"?: string | null;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "checklist_personal_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
 "configuracion_fiscal": {
 Row: {
 "id": string;
@@ -180,6 +255,18 @@ Row: {
 "updated_at": string;
 "tipo_iva_repercutido": number;
 "prorrata_iva_pct": number | null;
+"territorio": Database["public"]["Enums"]["territorio_fiscal"] | null;
+"comunidad_autonoma": string | null;
+"criterio_imputacion": Database["public"]["Enums"]["criterio_imputacion"] | null;
+"criterio_evidencia_path": string | null;
+"fecha_baja_actividad": string | null;
+"tiene_empleados": boolean | null;
+"tiene_colaboradores": boolean | null;
+"tiene_alquileres": boolean | null;
+"operaciones_internacionales": boolean | null;
+"tipo_consulta": string | null;
+"vivienda_m2_totales": number | null;
+"vivienda_m2_afectos": number | null;
 };
 Insert: {
 "id"?: string;
@@ -193,6 +280,18 @@ Insert: {
 "updated_at"?: string;
 "tipo_iva_repercutido"?: number;
 "prorrata_iva_pct"?: number | null;
+"territorio"?: Database["public"]["Enums"]["territorio_fiscal"] | null;
+"comunidad_autonoma"?: string | null;
+"criterio_imputacion"?: Database["public"]["Enums"]["criterio_imputacion"] | null;
+"criterio_evidencia_path"?: string | null;
+"fecha_baja_actividad"?: string | null;
+"tiene_empleados"?: boolean | null;
+"tiene_colaboradores"?: boolean | null;
+"tiene_alquileres"?: boolean | null;
+"operaciones_internacionales"?: boolean | null;
+"tipo_consulta"?: string | null;
+"vivienda_m2_totales"?: number | null;
+"vivienda_m2_afectos"?: number | null;
 };
 Update: {
 "id"?: string;
@@ -206,6 +305,18 @@ Update: {
 "updated_at"?: string;
 "tipo_iva_repercutido"?: number;
 "prorrata_iva_pct"?: number | null;
+"territorio"?: Database["public"]["Enums"]["territorio_fiscal"] | null;
+"comunidad_autonoma"?: string | null;
+"criterio_imputacion"?: Database["public"]["Enums"]["criterio_imputacion"] | null;
+"criterio_evidencia_path"?: string | null;
+"fecha_baja_actividad"?: string | null;
+"tiene_empleados"?: boolean | null;
+"tiene_colaboradores"?: boolean | null;
+"tiene_alquileres"?: boolean | null;
+"operaciones_internacionales"?: boolean | null;
+"tipo_consulta"?: string | null;
+"vivienda_m2_totales"?: number | null;
+"vivienda_m2_afectos"?: number | null;
 };
 Relationships: [{ foreignKeyName: "configuracion_fiscal_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
@@ -373,6 +484,207 @@ Update: {
 "updated_at"?: string;
 };
 Relationships: [{ foreignKeyName: "emergency_links_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"expediente_documentos": {
+Row: {
+"id": string;
+"expediente_id": string;
+"bucket": string;
+"path": string;
+"titulo": string | null;
+"referencia_tipo": string | null;
+"referencia_id": string | null;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"expediente_id": string;
+"bucket"?: string;
+"path": string;
+"titulo"?: string | null;
+"referencia_tipo"?: string | null;
+"referencia_id"?: string | null;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"expediente_id"?: string;
+"bucket"?: string;
+"path"?: string;
+"titulo"?: string | null;
+"referencia_tipo"?: string | null;
+"referencia_id"?: string | null;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "expediente_documentos_expediente_id_fkey"; columns: ["expediente_id"]; isOneToOne: false; referencedRelation: "expedientes_fiscales"; referencedColumns: ["id"] }];
+};
+"expedientes_fiscales": {
+Row: {
+"id": string;
+"professional_id": string;
+"ejercicio": number;
+"estado": Database["public"]["Enums"]["estado_expediente"];
+"territorio": Database["public"]["Enums"]["territorio_fiscal"] | null;
+"revisado_por": string | null;
+"revisado_at": string | null;
+"nota_gestor": string | null;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"ejercicio": number;
+"estado"?: Database["public"]["Enums"]["estado_expediente"];
+"territorio"?: Database["public"]["Enums"]["territorio_fiscal"] | null;
+"revisado_por"?: string | null;
+"revisado_at"?: string | null;
+"nota_gestor"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"ejercicio"?: number;
+"estado"?: Database["public"]["Enums"]["estado_expediente"];
+"territorio"?: Database["public"]["Enums"]["territorio_fiscal"] | null;
+"revisado_por"?: string | null;
+"revisado_at"?: string | null;
+"nota_gestor"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "expedientes_fiscales_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"factura_cobros": {
+Row: {
+"id": string;
+"factura_id": string;
+"payment_id": string | null;
+"fecha": string;
+"importe_cents": number;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"factura_id": string;
+"payment_id"?: string | null;
+"fecha": string;
+"importe_cents": number;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"factura_id"?: string;
+"payment_id"?: string | null;
+"fecha"?: string;
+"importe_cents"?: number;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "factura_cobros_factura_id_fkey"; columns: ["factura_id"]; isOneToOne: false; referencedRelation: "facturas"; referencedColumns: ["id"] },{ foreignKeyName: "factura_cobros_payment_id_fkey"; columns: ["payment_id"]; isOneToOne: false; referencedRelation: "payments"; referencedColumns: ["id"] }];
+};
+"facturas": {
+Row: {
+"id": string;
+"professional_id": string;
+"serie": string | null;
+"numero": string | null;
+"tipo": Database["public"]["Enums"]["tipo_factura"];
+"rectifica_a": string | null;
+"fecha_emision": string;
+"fecha_operacion": string | null;
+"ejercicio_imputacion": number | null;
+"criterio_imputacion": Database["public"]["Enums"]["criterio_imputacion"] | null;
+"patient_id": string | null;
+"destinatario_nombre": string | null;
+"destinatario_nif": string | null;
+"destinatario_tipo": Database["public"]["Enums"]["tipo_destinatario"] | null;
+"categoria_servicio": Database["public"]["Enums"]["categoria_servicio"] | null;
+"actividad_id": string | null;
+"base_cents": number;
+"tratamiento_iva": Database["public"]["Enums"]["tratamiento_iva"];
+"tipo_iva": number | null;
+"cuota_iva_cents": number | null;
+"retencion_pct": number | null;
+"retencion_cents": number | null;
+"total_cents": number;
+"documento_path": string | null;
+"origen": string;
+"import_hash": string | null;
+"estado": Database["public"]["Enums"]["estado_registro_fiscal"];
+"motivo_exclusion": string | null;
+"notas": string | null;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"serie"?: string | null;
+"numero"?: string | null;
+"tipo"?: Database["public"]["Enums"]["tipo_factura"];
+"rectifica_a"?: string | null;
+"fecha_emision": string;
+"fecha_operacion"?: string | null;
+"ejercicio_imputacion"?: number | null;
+"criterio_imputacion"?: Database["public"]["Enums"]["criterio_imputacion"] | null;
+"patient_id"?: string | null;
+"destinatario_nombre"?: string | null;
+"destinatario_nif"?: string | null;
+"destinatario_tipo"?: Database["public"]["Enums"]["tipo_destinatario"] | null;
+"categoria_servicio"?: Database["public"]["Enums"]["categoria_servicio"] | null;
+"actividad_id"?: string | null;
+"base_cents": number;
+"tratamiento_iva"?: Database["public"]["Enums"]["tratamiento_iva"];
+"tipo_iva"?: number | null;
+"cuota_iva_cents"?: number | null;
+"retencion_pct"?: number | null;
+"retencion_cents"?: number | null;
+"total_cents": number;
+"documento_path"?: string | null;
+"origen"?: string;
+"import_hash"?: string | null;
+"estado"?: Database["public"]["Enums"]["estado_registro_fiscal"];
+"motivo_exclusion"?: string | null;
+"notas"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"serie"?: string | null;
+"numero"?: string | null;
+"tipo"?: Database["public"]["Enums"]["tipo_factura"];
+"rectifica_a"?: string | null;
+"fecha_emision"?: string;
+"fecha_operacion"?: string | null;
+"ejercicio_imputacion"?: number | null;
+"criterio_imputacion"?: Database["public"]["Enums"]["criterio_imputacion"] | null;
+"patient_id"?: string | null;
+"destinatario_nombre"?: string | null;
+"destinatario_nif"?: string | null;
+"destinatario_tipo"?: Database["public"]["Enums"]["tipo_destinatario"] | null;
+"categoria_servicio"?: Database["public"]["Enums"]["categoria_servicio"] | null;
+"actividad_id"?: string | null;
+"base_cents"?: number;
+"tratamiento_iva"?: Database["public"]["Enums"]["tratamiento_iva"];
+"tipo_iva"?: number | null;
+"cuota_iva_cents"?: number | null;
+"retencion_pct"?: number | null;
+"retencion_cents"?: number | null;
+"total_cents"?: number;
+"documento_path"?: string | null;
+"origen"?: string;
+"import_hash"?: string | null;
+"estado"?: Database["public"]["Enums"]["estado_registro_fiscal"];
+"motivo_exclusion"?: string | null;
+"notas"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "facturas_actividad_id_fkey"; columns: ["actividad_id"]; isOneToOne: false; referencedRelation: "actividades_fiscales"; referencedColumns: ["id"] },{ foreignKeyName: "facturas_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "facturas_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "facturas_rectifica_a_fkey"; columns: ["rectifica_a"]; isOneToOne: false; referencedRelation: "facturas"; referencedColumns: ["id"] }];
 };
 "gastos": {
 Row: {
@@ -893,6 +1205,54 @@ Update: {
 };
 Relationships: [{ foreignKeyName: "resources_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "resources_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
+"retenciones_pagos_cuenta": {
+Row: {
+"id": string;
+"professional_id": string;
+"ejercicio": number;
+"clase": Database["public"]["Enums"]["clase_retencion"];
+"periodo": string | null;
+"modelo": string | null;
+"importe_cents": number;
+"fecha": string | null;
+"justificante_path": string | null;
+"rectifica_a": string | null;
+"estado": Database["public"]["Enums"]["estado_registro_fiscal"];
+"notas": string | null;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"professional_id": string;
+"ejercicio": number;
+"clase": Database["public"]["Enums"]["clase_retencion"];
+"periodo"?: string | null;
+"modelo"?: string | null;
+"importe_cents": number;
+"fecha"?: string | null;
+"justificante_path"?: string | null;
+"rectifica_a"?: string | null;
+"estado"?: Database["public"]["Enums"]["estado_registro_fiscal"];
+"notas"?: string | null;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"professional_id"?: string;
+"ejercicio"?: number;
+"clase"?: Database["public"]["Enums"]["clase_retencion"];
+"periodo"?: string | null;
+"modelo"?: string | null;
+"importe_cents"?: number;
+"fecha"?: string | null;
+"justificante_path"?: string | null;
+"rectifica_a"?: string | null;
+"estado"?: Database["public"]["Enums"]["estado_registro_fiscal"];
+"notas"?: string | null;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "retenciones_pagos_cuenta_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "retenciones_pagos_cuenta_rectifica_a_fkey"; columns: ["rectifica_a"]; isOneToOne: false; referencedRelation: "retenciones_pagos_cuenta"; referencedColumns: ["id"] }];
+};
 "scale_assignments": {
 Row: {
 "id": string;
@@ -1190,11 +1550,11 @@ Functions: {
 "settle_attended_appointment": { Args: {"p_appointment_id": string | null}; Returns: undefined };
 "unsettle_appointment": { Args: {"p_appointment_id": string | null}; Returns: string };
 "valid_push_endpoint": { Args: {"v": string | null}; Returns: boolean };
-}; Enums: {"appointment_request_kind": "new" | "reschedule" | "cancel";"appointment_request_status": "pending" | "accepted" | "declined" | "withdrawn";"appointment_status": "scheduled" | "confirmed" | "cancelled" | "completed";"assignment_type": "one_off" | "recurring";"attendance_status": "pending" | "attended" | "no_show" | "late_cancel";"notification_channel": "push" | "email";"notification_status": "queued" | "sent" | "failed" | "read";"patient_status": "active" | "archived";"payment_status": "pending" | "paid";"recurrence_freq": "none" | "daily" | "weekly" | "biweekly" | "monthly";"resource_kind": "pdf" | "audio" | "link"}; CompositeTypes: Record<never,never>; }; };
+}; Enums: {"appointment_request_kind": "new" | "reschedule" | "cancel";"appointment_request_status": "pending" | "accepted" | "declined" | "withdrawn";"appointment_status": "scheduled" | "confirmed" | "cancelled" | "completed";"assignment_type": "one_off" | "recurring";"attendance_status": "pending" | "attended" | "no_show" | "late_cancel";"categoria_servicio": "asistencia_sanitaria" | "formacion" | "peritaje" | "consultoria" | "seleccion_personal" | "coaching" | "otro";"clase_retencion": "soportada_cliente" | "practicada_colaborador" | "pago_fraccionado_irpf" | "liquidacion_iva";"criterio_imputacion": "devengo" | "cobros_pagos" | "desconocido";"estado_expediente": "borrador" | "pendiente_informacion" | "preparado_revision" | "revisado";"estado_registro_fiscal": "propuesto" | "confirmado" | "pendiente" | "excluido";"notification_channel": "push" | "email";"notification_status": "queued" | "sent" | "failed" | "read";"patient_status": "active" | "archived";"payment_status": "pending" | "paid";"recurrence_freq": "none" | "daily" | "weekly" | "biweekly" | "monthly";"resource_kind": "pdf" | "audio" | "link";"territorio_fiscal": "comun" | "alava" | "bizkaia" | "gipuzkoa" | "navarra" | "canarias" | "ceuta" | "melilla";"tipo_destinatario": "particular" | "clinica" | "aseguradora" | "empresa" | "profesional" | "otro";"tipo_factura": "ordinaria" | "rectificativa" | "anticipo";"tratamiento_iva": "sujeta" | "exenta" | "no_sujeta" | "pendiente"}; CompositeTypes: Record<never,never>; }; };
 type Schema = Database["public"];
 export type Tables<T extends keyof (Schema["Tables"] & Schema["Views"])> = (Schema["Tables"] & Schema["Views"])[T]["Row"];
 export type TablesInsert<T extends keyof Schema["Tables"]> = Schema["Tables"][T]["Insert"];
 export type TablesUpdate<T extends keyof Schema["Tables"]> = Schema["Tables"][T]["Update"];
 export type Enums<T extends keyof Schema["Enums"]> = Schema["Enums"][T];
 export type CompositeTypes = Record<never,never>;
-export const Constants = {"public":{"Enums":{"appointment_request_kind":["new","reschedule","cancel"],"appointment_request_status":["pending","accepted","declined","withdrawn"],"appointment_status":["scheduled","confirmed","cancelled","completed"],"assignment_type":["one_off","recurring"],"attendance_status":["pending","attended","no_show","late_cancel"],"notification_channel":["push","email"],"notification_status":["queued","sent","failed","read"],"patient_status":["active","archived"],"payment_status":["pending","paid"],"recurrence_freq":["none","daily","weekly","biweekly","monthly"],"resource_kind":["pdf","audio","link"]}}} as const;
+export const Constants = {"public":{"Enums":{"appointment_request_kind":["new","reschedule","cancel"],"appointment_request_status":["pending","accepted","declined","withdrawn"],"appointment_status":["scheduled","confirmed","cancelled","completed"],"assignment_type":["one_off","recurring"],"attendance_status":["pending","attended","no_show","late_cancel"],"categoria_servicio":["asistencia_sanitaria","formacion","peritaje","consultoria","seleccion_personal","coaching","otro"],"clase_retencion":["soportada_cliente","practicada_colaborador","pago_fraccionado_irpf","liquidacion_iva"],"criterio_imputacion":["devengo","cobros_pagos","desconocido"],"estado_expediente":["borrador","pendiente_informacion","preparado_revision","revisado"],"estado_registro_fiscal":["propuesto","confirmado","pendiente","excluido"],"notification_channel":["push","email"],"notification_status":["queued","sent","failed","read"],"patient_status":["active","archived"],"payment_status":["pending","paid"],"recurrence_freq":["none","daily","weekly","biweekly","monthly"],"resource_kind":["pdf","audio","link"],"territorio_fiscal":["comun","alava","bizkaia","gipuzkoa","navarra","canarias","ceuta","melilla"],"tipo_destinatario":["particular","clinica","aseguradora","empresa","profesional","otro"],"tipo_factura":["ordinaria","rectificativa","anticipo"],"tratamiento_iva":["sujeta","exenta","no_sujeta","pendiente"]}}} as const;
