@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Download, Settings, TriangleAlert, CalendarClock } from "lucide-react";
+import { Plus, Download, Settings, TriangleAlert, CalendarClock, ListChecks } from "lucide-react";
 import { getFiscalArrays } from "@/lib/queries/contabilidad";
 import { formatEur } from "@/lib/format";
 import {
@@ -27,6 +27,19 @@ export default async function ContabilidadPage() {
   const params = getParams(anio);
 
   const data = await getFiscalArrays(anio);
+
+  // Lo apartado por falta de confirmación fiscal. Se cuenta y se dice; antes
+  // un solo registro sin confirmar tiraba la sección entera y el profesional
+  // no veía ni lo que había cobrado.
+  const totalExcluidos =
+    data.excluidos.ingresos + data.excluidos.gastos + data.excluidos.bienes;
+  const detalleExcluidos = [
+    data.excluidos.ingresos > 0 ? `${data.excluidos.ingresos} de cobros` : null,
+    data.excluidos.gastos > 0 ? `${data.excluidos.gastos} de gastos` : null,
+    data.excluidos.bienes > 0 ? `${data.excluidos.bienes} de bienes` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
   const resumen = calcularResumenAnual(data, anio, params);
   // `calcularResumenAnual` produce siempre los cuatro trimestres, pero el
   // acceso indexado no lo sabe.
@@ -46,18 +59,45 @@ export default async function ContabilidadPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/pro/contabilidad/gastos" className="btn-primary">
-            <Plus className="size-4" aria-hidden /> Registrar gasto
+            <Plus size={16} strokeWidth={1.75} aria-hidden /> Registrar gasto
           </Link>
           <Link href="/pro/contabilidad/exportar" className="btn-ghost">
-            <Download className="size-4" aria-hidden /> Exportar
+            <Download size={16} strokeWidth={1.75} aria-hidden /> Exportar
+          </Link>
+          <Link href="/pro/contabilidad/revision" className="btn-ghost">
+            <ListChecks size={16} strokeWidth={1.75} aria-hidden /> Revisión
           </Link>
           <Link href="/pro/contabilidad/configuracion" className="btn-ghost">
-            <Settings className="size-4" aria-hidden /> Configuración
+            <Settings size={16} strokeWidth={1.75} aria-hidden /> Configuración
           </Link>
         </div>
       </div>
 
       <DescargoFiscal className="mt-4" />
+
+      {totalExcluidos > 0 && (
+        <div className="mt-3 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-2xl border border-warn/30 bg-warn-soft px-4 py-3 text-[13px] text-ink">
+          <TriangleAlert
+            size={16}
+            strokeWidth={1.75}
+            aria-hidden
+            className="mt-0.5 shrink-0 text-warn"
+          />
+          <p className="min-w-0 flex-1">
+            <span className="font-semibold">
+              Las cifras de abajo no incluyen {totalExcluidos}{" "}
+              {totalExcluidos === 1 ? "registro" : "registros"} sin tratamiento
+              fiscal confirmado
+            </span>
+            {detalleExcluidos && <> ({detalleExcluidos})</>}. Se muestra lo
+            cobrado y lo confirmado; lo demás queda apartado hasta que lo revise,
+            no descartado.
+          </p>
+          <Link href="/pro/contabilidad/revision" className="btn-ghost btn-sm shrink-0">
+            Revisar
+          </Link>
+        </div>
+      )}
 
       {!hayParamsExactos(anio) && (
         <p className="mt-3 flex items-start gap-2 rounded-2xl border border-warn-soft bg-warn-soft px-3 py-2 text-xs text-warn">
