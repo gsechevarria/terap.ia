@@ -6,6 +6,7 @@ import {
   esPasoValido,
   getChecklistPersonal,
   getEjerciciosDisponibles,
+  getFacturas,
   getResumenExpediente,
   getRetenciones,
   type PasoClave,
@@ -17,6 +18,7 @@ import { EstadoExpediente } from "@/app/pro/contabilidad/_components/EstadoExped
 import { PerfilFiscalForm } from "@/app/pro/contabilidad/_components/PerfilFiscalForm";
 import { RetencionesPanel } from "@/app/pro/contabilidad/_components/RetencionesPanel";
 import { ChecklistPersonal } from "@/app/pro/contabilidad/_components/ChecklistPersonal";
+import { FacturasPanel } from "@/app/pro/contabilidad/_components/FacturasPanel";
 import { Status, type StatusTone } from "@/components/ui/Status";
 
 const ESTADO_TONO: Record<string, { label: string; tone: StatusTone }> = {
@@ -41,12 +43,13 @@ export default async function ExpedientePage({
 
   const paso: PasoClave = esPasoValido(pasoRaw) ? pasoRaw : "perfil";
 
-  const [resumen, ejercicios, config, retenciones, checklist] = await Promise.all([
+  const [resumen, ejercicios, config, retenciones, checklist, facturas] = await Promise.all([
     getResumenExpediente(ejercicio),
     getEjerciciosDisponibles(),
     getConfiguracionFiscal(),
     getRetenciones(ejercicio),
     getChecklistPersonal(ejercicio),
+    getFacturas(ejercicio),
   ]);
 
   const completos = resumen.pasos.filter((p) => p.completo).length;
@@ -169,16 +172,21 @@ export default async function ExpedientePage({
           )}
 
           {paso === "ingresos" && (
-            <PasoPendiente
-              titulo="Ingresos"
-              descripcion="Los cobros del ejercicio ya alimentan el expediente desde la ficha de cada paciente. El registro de facturación —serie, número, destinatario fiscal, rectificativas y cobros parciales— está en construcción."
-              enlace={{ href: "/pro/contabilidad/revision", texto: "Revisar cobros pendientes" }}
-              dato={`${formatCurrency(resumen.totales.ingresosConfirmadosCents)} confirmados${
-                resumen.totales.ingresosPendientes > 0
-                  ? ` · ${resumen.totales.ingresosPendientes} sin tratamiento fiscal`
-                  : ""
-              }`}
-            />
+            <div className="flex flex-col gap-6">
+              {/* Cobros y facturación son cosas distintas y se ven separadas:
+                  el dinero que entró vive en los cobros; lo emitido, aquí. */}
+              <PasoPendiente
+                titulo="Cobros del ejercicio"
+                descripcion="Lo que ha entrado en caja, derivado de la ficha de cada paciente. No se duplica aquí."
+                enlace={{ href: "/pro/contabilidad/revision", texto: "Revisar cobros pendientes" }}
+                dato={`${formatCurrency(resumen.totales.ingresosConfirmadosCents)} confirmados${
+                  resumen.totales.ingresosPendientes > 0
+                    ? ` · ${resumen.totales.ingresosPendientes} sin tratamiento fiscal`
+                    : ""
+                }`}
+              />
+              <FacturasPanel ejercicio={ejercicio} facturas={facturas} />
+            </div>
           )}
 
           {paso === "gastos" && (
