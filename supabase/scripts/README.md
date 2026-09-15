@@ -5,7 +5,7 @@ parte del historial de migraciones**. Por eso están fuera de
 `supabase/migrations/`: si estuvieran dentro, `supabase db push` intentaría
 aplicarlas como si fueran cambios de esquema.
 
-## `reparar-historial.sql`
+## `reparar-historial.sql` — GENERADO, no editar a mano
 
 Equivale a `supabase migration repair --status applied <version> ...`, para
 cuando no tienes el CLI a mano y trabajas desde el editor SQL del panel.
@@ -15,8 +15,14 @@ actualiza `supabase_migrations.schema_migrations`, así que el CLI la sigue
 viendo pendiente y un `db push` futuro intentaría reejecutarla.
 
 Trae un diagnóstico que compara todas las migraciones del repositorio con lo
-registrado y marca cada una `✅ registrada` / `❌ FALTA`. Ejecuta ese bloque
-primero y repara solo lo que salga en rojo.
+registrado y marca cada una como registrada o en rojo. Ejecuta ese bloque
+primero y repara solo lo que falte.
+
+**Se regenera con `node scripts/gen-reparar-historial.mjs`**, que lee
+`supabase/migrations/` y reescribe el fichero. La versión anterior llevaba la
+lista a mano y se quedó en 26 de 41: su verificación afirmaba «debe salir 26»
+cuando ya había quince migraciones más, así que daba por bueno un historial
+incompleto. Cada vez que se añada una migración, hay que regenerarlo.
 
 ⚠️ **Nunca marques como aplicada una migración que no lo esté**: `db push` la
 saltaría para siempre y el esquema quedaría incompleto sin ningún aviso.
