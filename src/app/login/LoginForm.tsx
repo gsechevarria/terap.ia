@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/errors";
 import { getUserRole, homePathForRole } from "@/lib/auth/roles";
+import { PasswordField } from "@/components/ui/PasswordField";
 
 type Method = "password" | "magic" | "reset";
 type Status = "idle" | "sending" | "sent" | "error";
@@ -163,18 +164,13 @@ export function LoginForm({ invite }: { invite?: string }) {
               className="field py-2 text-base"
             />
           </label>
-          <label className="block">
-            <span className="field-label">Contraseña</span>
-            <input
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="field py-2 text-base"
-            />
-          </label>
+          <PasswordField
+            label="Contraseña"
+            value={password}
+            onChange={setPassword}
+            required
+            autoComplete="current-password"
+          />
 
           {status === "error" && (
             <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
