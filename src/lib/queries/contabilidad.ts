@@ -128,6 +128,66 @@ export async function getBienesInversion(): Promise<BienInversion[]> {
   return data ?? [];
 }
 
+/**
+ * Qué impide calcular el resumen, con nombre y recuento.
+ *
+ * Existe porque el módulo se niega a calcular con históricos sin confirmar y
+ * hasta ahora eso se traducía en una pantalla de error que mandaba al
+ * profesional a buscar registros por su cuenta, sin decirle cuántos eran ni
+ * dónde estaban.
+ */
+export type PendienteRevision = {
+  cobros: { id: string; fecha: string; importeCents: number; paciente: string | null }[];
+  gastos: { id: string; fecha: string; concepto: string | null; totalCents: number }[];
+  bienes: { id: string; descripcion: string | null; gastoId: string | null }[];
+};
+
+export async function getPendientesRevisionFiscal(): Promise<PendienteRevision> {
+  const supabase = await createClient();
+  const pro = await getCurrentProfessional();
+  if (!pro) return { cobros: [], gastos: [], bienes: [] };
+
+  const [cobrosRes, gastosRes, bienesRes] = await Promise.all([
+    allRows(supabase
+      .from("v_ingresos_fiscales")
+      .select("id, fecha, total_cents, nombre_pagador")
+      .eq("professional_id", pro.id)
+      .eq("fiscal_review_required", true)
+      .order("fecha", { ascending: false })),
+    allRows(supabase
+      .from("gastos")
+      .select("id, fecha, concepto, total_cents")
+      .eq("professional_id", pro.id)
+      .is("iva_recuperable_pct", null)
+      .order("fecha", { ascending: false })),
+    allRows(supabase
+      .from("bienes_inversion")
+      .select("id, descripcion, gasto_id")
+      .eq("professional_id", pro.id)
+      .eq("fiscal_review_required", true)),
+  ]);
+
+  return {
+    cobros: (cobrosRes.data ?? []).map((c) => ({
+      id: c.id ?? "",
+      fecha: c.fecha ?? "",
+      importeCents: c.total_cents ?? 0,
+      paciente: c.nombre_pagador,
+    })),
+    gastos: (gastosRes.data ?? []).map((g) => ({
+      id: g.id,
+      fecha: g.fecha,
+      concepto: g.concepto,
+      totalCents: g.total_cents,
+    })),
+    bienes: (bienesRes.data ?? []).map((b) => ({
+      id: b.id,
+      descripcion: b.descripcion,
+      gastoId: b.gasto_id,
+    })),
+  };
+}
+
 // --- Datos del ejercicio para el motor fiscal (euros) -----------------------
 /**
  * Reúne configuración + ingresos (vista) + gastos + bienes de un ejercicio,

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Download, Settings, TriangleAlert, CalendarClock } from "lucide-react";
+import { Plus, Download, Settings, TriangleAlert, CalendarClock, ListChecks } from "lucide-react";
 import { getFiscalArrays } from "@/lib/queries/contabilidad";
 import { formatEur } from "@/lib/format";
 import {
@@ -46,13 +46,16 @@ export default async function ContabilidadPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/pro/contabilidad/gastos" className="btn-primary">
-            <Plus className="size-4" aria-hidden /> Registrar gasto
+            <Plus size={16} strokeWidth={1.75} aria-hidden /> Registrar gasto
           </Link>
           <Link href="/pro/contabilidad/exportar" className="btn-ghost">
-            <Download className="size-4" aria-hidden /> Exportar
+            <Download size={16} strokeWidth={1.75} aria-hidden /> Exportar
+          </Link>
+          <Link href="/pro/contabilidad/revision" className="btn-ghost">
+            <ListChecks size={16} strokeWidth={1.75} aria-hidden /> Revisión
           </Link>
           <Link href="/pro/contabilidad/configuracion" className="btn-ghost">
-            <Settings className="size-4" aria-hidden /> Configuración
+            <Settings size={16} strokeWidth={1.75} aria-hidden /> Configuración
           </Link>
         </div>
       </div>

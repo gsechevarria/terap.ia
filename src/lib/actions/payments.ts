@@ -2,9 +2,9 @@
 import { runAction } from "@/lib/action-server";
 import { ActionInputError } from "@/lib/action-result";
 
-import { revalidatePayments } from "@/lib/revalidate";
+import { revalidateContabilidad, revalidatePayments } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
-import { requireOwnedPatient } from "@/lib/queries/identity";
+import { requireOwnedPatient, requireProfessional } from "@/lib/queries/identity";
 import { DEFAULT_SESSION_TYPE } from "@/lib/queries/payments";
 import { isPaymentMethod } from "@/lib/payment-methods";
 
@@ -163,6 +163,39 @@ export async function setPaymentStatusAction(...args: Parameters<typeof setPayme
 export async function deletePaymentAction(...args: Parameters<typeof deletePaymentActionImpl>) { return runAction(() => deletePaymentActionImpl(...args)); }
 
 export async function setPaymentFiscalAction(...args: Parameters<typeof setPaymentFiscalActionImpl>) { return runAction(() => setPaymentFiscalActionImpl(...args)); }
+
+/**
+ * Confirma el tratamiento fiscal de un cobro desde la revisión de Contabilidad,
+ * donde no se parte de la ficha de un paciente.
+ *
+ * No pide `patientId` porque no hay uno a mano, y no lo necesita: la RPC
+ * `set_payment_fiscal` es SECURITY DEFINER y filtra por
+ * `current_professional_id()`, así que un pago ajeno responde "no disponible"
+ * aunque se conozca su UUID.
+ */
+async function confirmarCobroFiscalActionImpl(
+  paymentId: string,
+  tipo: "exenta" | "sujeta",
+  iva: number,
+  retencionEuros: number,
+) {
+  await requireProfessional();
+  if (!Number.isInteger(iva) || iva < 0 || iva > 100 || !Number.isFinite(retencionEuros) || retencionEuros < 0) {
+    throw new ActionInputError("Datos fiscales no válidos.");
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_payment_fiscal", {
+    p_id: paymentId,
+    p_tipo: tipo,
+    p_iva: iva,
+    p_retencion_cents: eurosToCents(retencionEuros),
+  });
+  if (error) throw new Error(error.message);
+  revalidateContabilidad();
+  revalidatePayments();
+}
+
+export async function confirmarCobroFiscalAction(...args: Parameters<typeof confirmarCobroFiscalActionImpl>) { return runAction(() => confirmarCobroFiscalActionImpl(...args)); }
 
 export async function setPackActiveAction(patientId: string, packId: string, active: boolean) {
   return runAction(async () => {
