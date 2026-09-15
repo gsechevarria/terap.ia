@@ -3,6 +3,7 @@ import { runAction } from "@/lib/action-server";
 import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePaciente } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnedPatient } from "@/lib/queries/identity";
 
@@ -27,6 +28,7 @@ async function createTaskActionImpl(input: {
   if (error) throw new Error(error.message);
 
   revalidatePath(`/pro/patients/${input.patientId}`);
+  revalidatePaciente();
 }
 
 async function updateTaskActionImpl(input: {
@@ -54,6 +56,7 @@ async function updateTaskActionImpl(input: {
   if (error) throw new Error(error.message);
   if (!data) throw new ActionInputError("Tarea no encontrada.");
   revalidatePath(`/pro/patients/${input.patientId}`);
+  revalidatePaciente();
 }
 
 async function deleteTaskActionImpl(taskId: string, patientId: string) {
@@ -69,6 +72,7 @@ async function deleteTaskActionImpl(taskId: string, patientId: string) {
   if (error) throw new Error(error.message);
   if (!data) throw new ActionInputError("Tarea no encontrada.");
   revalidatePath(`/pro/patients/${patientId}`);
+  revalidatePaciente();
 }
 
 export async function createTaskAction(...args: Parameters<typeof createTaskActionImpl>) { return runAction(() => createTaskActionImpl(...args)); }

@@ -4,7 +4,6 @@ import { CalendarPlus, ChevronRight, Video } from "lucide-react";
 import { getCurrentPatient } from "@/lib/queries/identity";
 import { getTasksForPatient } from "@/lib/queries/tasks";
 import { getUpcomingAppointments } from "@/lib/queries/patient-detail";
-import { getMyActiveAssignments } from "@/lib/queries/scales";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { getMyRequests } from "@/lib/queries/appointment-requests";
 import { formatCurrency, formatDate, formatTime } from "@/lib/format";
@@ -37,10 +36,9 @@ export default async function PatientHome() {
     );
   }
 
-  const [tasks, appts, scales, pay, mood, requests] = await Promise.all([
+  const [tasks, appts, pay, mood, requests] = await Promise.all([
     getTasksForPatient(patient.id),
     getUpcomingAppointments(patient.id),
-    getMyActiveAssignments(),
     getMyPaymentSummary(),
     getMyMoodToday(),
     getMyRequests(),
@@ -119,30 +117,6 @@ export default async function PatientHome() {
 
       <MoodLogger today={mood} />
 
-      {scales.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="section-label">Cuestionarios</h2>
-          {scales.map((s) => (
-            <Link
-              key={s.id}
-              href={`/app/scales/${s.id}`}
-              className="card row-hover flex items-center gap-3 p-4"
-            >
-              <div>
-                <span className="text-sm font-medium">{s.code}</span>
-                <span className="chip ml-2">
-                  {s.assignmentType === "recurring" ? "recurrente" : "puntual"}
-                </span>
-              </div>
-              <ChevronRight
-                className="ml-auto size-4 text-ink-3"
-                strokeWidth={2}
-                aria-hidden
-              />
-            </Link>
-          ))}
-        </section>
-      )}
 
       <PatientTasks tasks={tasks} today={today} />
 

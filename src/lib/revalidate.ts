@@ -14,6 +14,24 @@ import { revalidatePath } from "next/cache";
  * `agenda:${proId}`), etiquetando las queries correspondientes.
  */
 
+/**
+ * Pantallas del PACIENTE que dependen de lo que escribe el profesional.
+ *
+ * Existían solo en `revalidateRequests`, y esa asimetría dejaba al paciente
+ * mirando datos viejos: crear una tarea o una cita refrescaba las siete rutas
+ * del profesional y ninguna de las suyas. Toda escritura que el paciente deba
+ * ver pasa por aquí.
+ *
+ * No lleva `patientId`: las rutas del paciente no lo llevan en la URL —cada uno
+ * ve lo suyo por sesión—, así que se invalidan por ruta.
+ */
+export function revalidatePaciente(): void {
+  revalidatePath("/app");
+  revalidatePath("/app/appointments");
+  revalidatePath("/app/payments");
+  revalidatePath("/app/resources");
+}
+
 /** Un pago creado, modificado o borrado. */
 export function revalidatePayments(patientId?: string): void {
   revalidatePath("/pro/pagos");
@@ -23,6 +41,8 @@ export function revalidatePayments(patientId?: string): void {
   // estimación del modelo 130 del dashboard de contabilidad.
   revalidatePath("/pro/contabilidad");
   if (patientId) revalidatePath(`/pro/patients/${patientId}`);
+  // El paciente ve su deuda y su bono restante.
+  revalidatePaciente();
 }
 
 /** Un gasto, un bien de inversión o la configuración fiscal. */
@@ -40,6 +60,8 @@ export function revalidateAgenda(patientId?: string): void {
   revalidatePath("/pro/agenda/citas");
   revalidatePath("/pro/solicitudes");
   if (patientId) revalidatePath(`/pro/patients/${patientId}`);
+  // Una cita nueva es, sobre todo, algo que el paciente tiene que ver.
+  revalidatePaciente();
 }
 
 /**
@@ -49,6 +71,5 @@ export function revalidateAgenda(patientId?: string): void {
 export function revalidateRequests(): void {
   revalidatePath("/pro", "layout"); // el contador del menú vive en el layout
   revalidatePath("/pro/solicitudes");
-  revalidatePath("/app");
-  revalidatePath("/app/appointments");
+  revalidatePaciente();
 }
