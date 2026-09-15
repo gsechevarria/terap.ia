@@ -14,6 +14,7 @@ import {
 import { getConfiguracionFiscal } from "@/lib/queries/contabilidad";
 import { formatCurrency } from "@/lib/format";
 import { DescargoFiscal } from "@/app/pro/contabilidad/_components/DescargoFiscal";
+import { DescargaExpediente } from "@/app/pro/contabilidad/_components/DescargaExpediente";
 import { EstadoExpediente } from "@/app/pro/contabilidad/_components/EstadoExpediente";
 import { PerfilFiscalForm } from "@/app/pro/contabilidad/_components/PerfilFiscalForm";
 import { RetencionesPanel } from "@/app/pro/contabilidad/_components/RetencionesPanel";
@@ -53,6 +54,11 @@ export default async function ExpedientePage({
   ]);
 
   const completos = resumen.pasos.filter((p) => p.completo).length;
+  // "Revisado" es el propio paso de revisión: incluirlo lo haría incompleto
+  // siempre, hasta el segundo justo antes de marcarlo.
+  const pasosIncompletos = resumen.pasos.filter(
+    (p) => !p.completo && p.clave !== "revision",
+  );
   const estado = resumen.expediente?.estado ?? "borrador";
   const estadoInfo = ESTADO_TONO[estado] ?? ESTADO_TONO.borrador!;
 
@@ -270,7 +276,17 @@ export default async function ExpedientePage({
                 revisadoAt={resumen.expediente?.revisado_at ?? null}
                 notaGestor={resumen.expediente?.nota_gestor ?? null}
                 existe={resumen.expediente !== null}
-                pasosIncompletos={resumen.pasos.filter((p) => !p.completo && p.clave !== "revision")}
+                pasosIncompletos={pasosIncompletos}
+              />
+
+              {/* La descarga va al final: se ofrece cuando ya se ha visto qué
+                  falta, no antes de mirarlo. */}
+              <DescargaExpediente
+                ejercicio={ejercicio}
+                pasosIncompletos={pasosIncompletos}
+                registrosApartados={
+                  resumen.totales.ingresosPendientes + resumen.totales.gastosPendientes
+                }
               />
             </div>
           )}
