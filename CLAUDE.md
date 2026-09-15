@@ -9,7 +9,7 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 
 ---
 
-# ⚑ ESTADO ACTUAL — 14 de septiembre de 2026
+# ⚑ ESTADO ACTUAL — 15 de septiembre de 2026
 
 > **Lee este bloque antes que nada.** Todo lo que hay bajo `## Estado` es el
 > registro histórico sesión a sesión: sirve para entender *por qué* cada cosa
@@ -22,9 +22,9 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 |---|---|
 | Producción | https://terap.vercel.app |
 | Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin`; todo entra por PR) |
-| Commit en producción | `16477d1b41f70f6efc50d798291b4ffae955b066` |
-| Último despliegue comprobado a mano | `dpl_DVW9ohDCEUxhYTebT7ycKi23tPrV` (11-sep, commit `8ac6931b`). Las PR posteriores (#9, #10) desplegaron solas y **no** se han vuelto a comprobar en producción. |
-| Supabase `levufuoigdlexscpvlgk` | **40 migraciones aplicadas**; 31 tablas, 1 vista, 28 funciones tipadas. Local y remoto coinciden (`supabase migration list`, 14-sep). |
+| Commit en producción | `6a1b36ee4ec15c9b6289c38e9834007a528ce31b` |
+| Verificación de producción | `node scripts/verificar-produccion.mjs` → **50/50** sobre el commit desplegado (15-sep). Sin credenciales, solo lectura. |
+| Supabase `levufuoigdlexscpvlgk` | **41 migraciones aplicadas y registradas**; 38 tablas, 1 vista, 28 funciones tipadas. Historial reparado el 15-sep: marca 41. |
 | Rama de esta copia | `main`, al día con `origin/main` |
 
 Sigue siendo **entorno de demostración con datos ficticios**
@@ -86,9 +86,9 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   que **ya no existe la excepción de `npm audit`**). `npm audit --audit-level=low`
   → 0 vulnerabilidades, incluyendo desarrollo. Ver
   [docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md).
-- **Batería de pruebas nueva.** `npm test` = **125 pruebas de lógica** (vitest, 8
+- **Batería de pruebas.** `npm test` = **149 pruebas de lógica** (vitest, 9
   ficheros, sin BD). `npm run test:types` = **51 regresiones SQL** sobre
-  PostgreSQL embebido (**PGlite**), que ejecuta las 40 migraciones y comprueba
+  PostgreSQL embebido (**PGlite**), que ejecuta las 41 migraciones y comprueba
   RLS sin Docker. `npm run test:integration` = **14 escenarios HTTP** contra
   Supabase local (Auth/PostgREST/Storage y concurrencia), ejecutados en CI.
   Los tres últimos son de 14-sep: endpoints de push de proveedor conocido y
@@ -123,28 +123,77 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   `src/lib/fiscal/parametros/2026.ts`. El campo `reta` sigue vacío, pero ya no
   por falta de publicación (Orden PJC/297/2026): es que **ningún código lo lee**.
 
+- **Sistema visual rediseñado (15-sep).** Dirección «Calma Orgánica & Soft
+  Surfaces» y, sobre ella, la del mockup de Stitch. Tipografía **Inter** y
+  **JetBrains Mono** con escala explícita, cargadas con `next/font`: se
+  auto-hospedan en el build, así que la CSP sigue con `font-src 'self'` y **la
+  IP del paciente no viaja a Google por abrir su expediente**. Geometría
+  contenida (controles 8, tarjetas 16, píldoras 12), pestañas subrayadas,
+  superficies con tinte malva. Modo oscuro **por clase** con `light-dark()`:
+  `.dark` / `.light` en <html> fuerzan, y sin clase se sigue el sistema; hay
+  conmutador en la barra lateral. Dos desviaciones de la paleta especificada,
+  ambas por contraste y anotadas en `globals.css`: texto terciario `#686871` y
+  aviso `#8A5E15`.
+- **Expediente fiscal anual** (migración `20260915100001`, la 41). Siete tablas
+  nuevas: `expedientes_fiscales`, `facturas`, `factura_cobros`,
+  `retenciones_pagos_cuenta`, `actividades_fiscales`, `checklist_personal` y
+  `expediente_documentos`. **Tres conceptos separados y una sola verdad por
+  dato:** `payments` son COBROS, `facturas` es el LIBRO REGISTRO de lo emitido
+  fuera —anotar no es emitir, así que no entra en Verifactu— y los ingresos
+  fiscales se DERIVAN de ambos, no se almacenan. Asistente por pasos en
+  `/pro/contabilidad/expediente/[ejercicio]` con avance, estados y obligaciones.
+  Reglas versionadas por ejercicio y territorio en `src/lib/fiscal/reglas/`, y
+  aritmética en céntimos enteros en `dinero.ts`. Detalle:
+  [docs/EXPEDIENTE-FISCAL.md](docs/EXPEDIENTE-FISCAL.md).
+- **Contabilidad ya no es todo o nada.** Un solo registro sin tratamiento fiscal
+  confirmado tumbaba la sección entera. Ahora los apartados se cuentan, el
+  resumen muestra **lo cobrado** y un aviso dice cuántos quedan fuera, con
+  acceso a `/pro/contabilidad/revision`, que es donde se confirman. Lo apartado
+  sigue sin entrar en ningún cálculo.
+- **Sincronización de la app del paciente.** Ninguna escritura del profesional
+  invalidaba las rutas de `/app`: crear una tarea o una cita refrescaba las
+  siete rutas de `/pro` y ni una del paciente. Nuevo `revalidatePaciente()`,
+  invocado desde agenda, pagos, tareas, escalas y solicitudes.
+- **Pacientes sin cuenta, visibles.** Dos fichas del mismo nombre —una vinculada
+  y otra no— eran indistinguibles, y asignarle trabajo a la que no tiene cuenta
+  no llegaba a nadie sin ningún aviso. El listado marca «Sin cuenta» y el
+  selector de citas avisa al elegirla.
+- **Escalas: opt-in estricto, confirmado como comportamiento deseado.** La
+  pestaña del profesional se mantiene. Al paciente solo le aparecen las
+  activadas Y que tocan, y desde el 15-sep aparecen en cuanto se activan.
+- **Acceso:** botón de ojo para revelar la contraseña (arranca oculto y no
+  recuerda la elección: el portátil está a la vista del paciente) y salida al
+  inicio. También en `/account/password`.
+- **Casilla de bono en la agenda**, con validación en servidor incluida la serie
+  completa. El bono se consume al registrar la asistencia, no al crear la cita.
+
 ## Lo que queda pendiente
 
-**Datos de demostración con incoherencias históricas** (no se han inventado datos
-para taparlas): 121 ingresos sin tratamiento fiscal confirmado, 31 gastos y 3
-bienes pendientes de revisión, 5 bonos con diferencias entre saldo y consumos y 5
-sin registro de compra. Diagnóstico (solo lectura):
-`supabase/scripts/diagnostico-correcciones-202609.sql`. **Criterio propuesto,
-pendiente de tu decisión — no se ha tocado ni un dato:**
-[docs/DIAGNOSTICO-HISTORICOS.md](docs/DIAGNOSTICO-HISTORICOS.md).
+**Cerrado el 15-sep, declarado por Gabriel.** Estos puntos llevaban semanas en
+esta lista y él confirma haberlos comprobado. Se anotan como declaración suya y
+con fecha, no como verificación del agente, que no tiene acceso ni al remoto ni
+a un navegador:
 
-**Efecto de esas filas pendientes:** `/pro/contabilidad` y
-`/pro/contabilidad/export` lanzan excepción a propósito mientras quede una sin
-confirmar (guardas en `src/lib/queries/contabilidad.ts`); un solo bien de
-inversión marcado las tumba en **todos** los ejercicios, porque los bienes no se
-filtran por año. `/pro/contabilidad/gastos` y `/pro/contabilidad/configuracion`
-siguen funcionando. Deducido leyendo el código, no comprobado contra producción.
+- Historial de migraciones reparado: marca **41**, igual que el repositorio.
+- Los cobros, gastos y bienes que quedaban sin tratamiento fiscal.
+- Los 5 bonos descuadrados y los 5 sin registro de compra.
+- La ficha duplicada de «Ana Nadal» sin cuenta.
+- La **revisión visual** del panel y de la app del paciente.
+- La validación fiscal con asesor.
+- Los cinco PR de Dependabot.
 
-**Verificación que falta:** revisión visual en navegador de los dos roles
-(consentimiento, errores de red, formularios, diálogo con teclado, exportaciones,
-CSP, PWA, cierre de sesión en dispositivo compartido), pruebas en móviles
-físicos, entrega push real a un dispositivo, y ensayo de restauración completa de
-la copia de seguridad. Guion paso a paso, para ejecutarlo a mano:
+⚠️ **Una consecuencia que sigue viva pese a la validación con asesor:** las
+cuatro reglas heredadas de enero (20 %, 15 %, 7 % y el art. 20.Uno.3º LIVA)
+siguen marcadas como `verificada` con procedencia heredada en
+`src/lib/fiscal/parametros/2026.ts`, y los dos parámetros de difícil
+justificación siguen en `verificado: false`. Mientras estén así, el panel y el
+XLSX arrastran el aviso de «estimación no verificada». Cambiarlo son dos `false`
+→ `true`, pero apaga un aviso sobre cifras fiscales: es decisión de persona y
+está sin tomar.
+
+**Verificación que falta:** pruebas en móviles físicos, entrega push real a un
+dispositivo y ensayo de restauración completa de la copia de seguridad. El guion
+de revisión visual se conserva para futuros cambios:
 [docs/REVISION-VISUAL.md](docs/REVISION-VISUAL.md).
 
 **Antes del primer paciente real:** DPA + base jurídica art. 9 · revisión
@@ -153,18 +202,32 @@ origen legítimo de un alta creada bajo el esquema vulnerable) · validación co
 responsables de producto del uso de datos reales, conservación y alcance de las
 estimaciones fiscales.
 
+**Fase 2b del expediente fiscal**, que es lo que convierte el módulo en algo
+que el gestor pueda usar: registro de facturación con rectificativas, anticipos
+y cobros parciales; importación CSV/XLSX con previsualización, mapeo de columnas
+y huella antiduplicado; retenciones y pagos a cuenta con sus certificados;
+checklist personal; y el ZIP con resumen PDF, hojas de Excel, CSV, justificantes
+seleccionados, índice y manifiesto. El esquema ya está aplicado: los siete pasos
+existen y cuatro remiten todavía a la pantalla donde hoy vive ese dato.
+
+**Rediseño de la app del paciente.** El panel del psicólogo está hecho; la app
+del paciente conserva la dirección visual anterior salvo lo que hereda de los
+tokens.
+
 **Deuda técnica abierta:** ver "Queda abierto" al final de la sección de la
 auditoría de agosto, con estas correcciones — `xlsx@0.18.5` ya **no** aplica
 (resuelto con SheetJS 0.20.3) y `email_fallback` ya **no** está en la interfaz.
-Siguen abiertos: `FORCE ROW LEVEL SECURITY`, parámetros fiscales 2026 sin
-confirmar contra la AEAT, los cinco cambios fiscales pendientes de validar con
-asesor, edición de series completas de citas, deep links nativos, `FLAG_SECURE` /
-overlay iOS, offline real y agregados del histórico de pagos en SQL.
+Siguen abiertos: `FORCE ROW LEVEL SECURITY`, edición de series completas de
+citas, deep links nativos, `FLAG_SECURE` / overlay iOS, offline real y agregados
+del histórico de pagos en SQL. Del lado fiscal quedan el criterio del modelo 130
+en el primer año de actividad y el 10 % de Ceuta de 2026, que el motor no
+modela.
 
 **App móvil (`terap-app`, Expo, `C:\dev\terap-app`):** comparte el mismo backend
-Supabase. La decisión de retirar la envoltura Capacitor de este repo a favor de
-Expo **sigue sin ejecutarse**: Capacitor 8 sigue en `package.json`. Cualquier
-cambio de esquema, RLS, RPC o configuración de Auth afecta a **dos clientes**.
+Supabase. **Decisión aparcada el 15-sep: no se toca ni Capacitor ni Expo por
+ahora.** Capacitor 8 sigue en `package.json` y ambos caminos conviven, así que
+cualquier cambio de esquema, RLS, RPC o configuración de Auth afecta a **dos
+clientes**.
 Comparación de lo que hay de verdad en cada lado, con recomendación (retirar
 Capacitor) y plan por fases:
 [docs/DECISION-CLIENTE-NATIVO.md](docs/DECISION-CLIENTE-NATIVO.md). La fase 2
@@ -1185,8 +1248,8 @@ tienen recuento propio; delegan en la batería HTTP):
 ```
 npm run lint          # ESLint 9, --max-warnings=0
 npm run typecheck     # tsc --noEmit
-npm test              # vitest: 125 pruebas de lógica pura, sin BD
-npm run test:types    # 51 regresiones SQL + tipos, sobre PGlite (40 migraciones)
+npm test              # vitest: 149 pruebas de lógica pura, sin BD
+npm run test:types    # 51 regresiones SQL + tipos, sobre PGlite (41 migraciones)
 npm run test:integration   # 14 escenarios HTTP contra Supabase LOCAL (nunca el remoto)
 npm run build
 npm audit --audit-level=low
