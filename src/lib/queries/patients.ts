@@ -11,6 +11,14 @@ export type PatientOverview = Pick<
   openAlerts: number;
   nextAppointment: string | null;
   lastActivity: string | null;
+  /**
+   * Si la ficha está vinculada a una cuenta de la aplicación del paciente.
+   *
+   * Se muestra porque sin ello dos fichas del mismo nombre son indistinguibles
+   * en pantalla, y asignarle una tarea a la que no tiene cuenta es trabajo que
+   * no llega a nadie, sin ningún aviso.
+   */
+  tieneCuenta: boolean;
 };
 
 export type PatientListFilters = {
@@ -42,7 +50,7 @@ export async function listPatientsWithOverview(
 
   let query = supabase
     .from("patients")
-    .select("id, full_name, email, status, tags")
+    .select("id, full_name, email, status, tags, user_id")
     .eq("professional_id", pro.id);
 
   if (filters.status && filters.status !== "all") {
@@ -148,8 +156,9 @@ export async function listPatientsWithOverview(
   for (const r of scalesRes.data ?? []) trackActivity(r.patient_id, r.submitted_at);
   for (const a of pastApptsRes.data ?? []) trackActivity(a.patient_id, a.starts_at);
 
-  return patients.map((p) => ({
+  return patients.map(({ user_id, ...p }) => ({
     ...p,
+    tieneCuenta: user_id !== null,
     pendingTasks: pendingByPatient.get(p.id) ?? 0,
     openAlerts: alertsByPatient.get(p.id) ?? 0,
     nextAppointment: nextApptByPatient.get(p.id) ?? null,

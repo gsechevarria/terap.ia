@@ -149,7 +149,7 @@ export async function listProfessionalAppointments(filter: {
 
 /** Pacientes activos del profesional (para el selector al crear cita). */
 export async function getPatientsForSelect(): Promise<
-  { id: string; full_name: string | null; bonoDisponible: number }[]
+  { id: string; full_name: string | null; bonoDisponible: number; tieneCuenta: boolean }[]
 > {
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
@@ -157,7 +157,7 @@ export async function getPatientsForSelect(): Promise<
   const [pacientesRes, bonosRes] = await Promise.all([
     allRows(supabase
       .from("patients")
-      .select("id, full_name")
+      .select("id, full_name, user_id")
       .eq("professional_id", pro.id)
       .eq("status", "active")
       .order("full_name", { ascending: true })),
@@ -180,8 +180,10 @@ export async function getPatientsForSelect(): Promise<
     );
   }
 
-  return (pacientesRes.data ?? []).map((p) => ({
+  return (pacientesRes.data ?? []).map(({ user_id, ...p }) => ({
     ...p,
+    // Sin cuenta, la cita no le llega a ninguna parte: no hay app donde verla.
+    tieneCuenta: user_id !== null,
     bonoDisponible: disponiblePorPaciente.get(p.id) ?? 0,
   }));
 }
