@@ -11,8 +11,9 @@ import {
   getDocuments,
   getRecentMoodEntries,
   getScaleAssignments,
-  getUpcomingAppointments,
+  getPatientAppointments,
 } from "@/lib/queries/patient-detail";
+import type { Appointment } from "@/lib/types";
 import { getScaleCatalog, getUnacknowledgedFlagged } from "@/lib/queries/scales";
 import { getPatientPaymentDetail } from "@/lib/queries/payments";
 import { getProfessionalResources } from "@/lib/queries/wellbeing";
@@ -41,6 +42,7 @@ const TABS = [
   { key: "diario", label: "Diario" },
   { key: "recursos", label: "Recursos" },
   { key: "documentos", label: "Documentos" },
+  { key: "invitacion", label: "Invitación" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -117,8 +119,8 @@ export default async function PatientDetailPage({
         <StatusButton patientId={patient.id} status={patient.status} />
       </header>
 
-      <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        <div className="min-w-0 lg:col-span-8">
+      <div className="mt-6">
+        <div className="min-w-0">
           {/* Pestañas */}
           <nav className="tabs" aria-label="Secciones del expediente">
             {TABS.map((t) => (
@@ -166,16 +168,17 @@ export default async function PatientDetailPage({
             {tab === "diario" && <DiaryTab patientId={id} />}
             {tab === "recursos" && <ResourcesTab patientId={id} />}
             {tab === "documentos" && <DocumentsTab patientId={id} />}
+            {tab === "invitacion" && (
+              <div className="max-w-xl">
+                <InvitePanel
+                  patientId={id}
+                  baseUrl={baseUrl}
+                  activeExpiresAt={invitation?.expires_at}
+                />
+              </div>
+            )}
           </div>
         </div>
-
-        <aside className="flex flex-col gap-6 lg:col-span-4">
-          <InvitePanel
-            patientId={id}
-            baseUrl={baseUrl}
-            activeExpiresAt={invitation?.expires_at}
-          />
-        </aside>
       </div>
     </div>
   );
@@ -202,42 +205,78 @@ const APPT_STATUS: Record<string, { label: string; tone: StatusTone }> = {
   completed: { label: "completada", tone: "neutral" },
 };
 
-async function AppointmentsTab({ patientId }: { patientId: string }) {
-  const appts = await getUpcomingAppointments(patientId);
+/** En una cita pasada lo que importa es si se acudió, no si estaba confirmada. */
+const ASISTENCIA: Record<string, { label: string; tone: StatusTone }> = {
+  attended: { label: "acudió", tone: "success" },
+  no_show: { label: "no acudió", tone: "danger" },
+  late_cancel: { label: "canceló tarde", tone: "warn" },
+  pending: { label: "sin registrar", tone: "neutral" },
+};
+
+function FilaCita({ cita, pasada }: { cita: Appointment; pasada: boolean }) {
+  const estado = pasada
+    ? (ASISTENCIA[cita.attendance] ?? { label: cita.attendance, tone: "neutral" as const })
+    : (APPT_STATUS[cita.status] ?? { label: cita.status, tone: "neutral" as const });
   return (
-    <div>
-      <Link
-        href={`/pro/agenda?patient=${patientId}`}
-        className="btn-primary mb-4"
-      >
+    <li className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+      <span className="text-[13px]">{formatDateTime(cita.starts_at)}</span>
+      <div className="flex items-center gap-3">
+        {pasada && cita.status === "cancelled" ? (
+          <Status tone="neutral">cancelada</Status>
+        ) : (
+          <Status tone={estado.tone}>{estado.label}</Status>
+        )}
+        <a
+          href={`/appointments/${cita.id}/ics`}
+          className="text-[11px] text-ink-3 underline underline-offset-2 hover:text-ink"
+        >
+          .ics
+        </a>
+      </div>
+    </li>
+  );
+}
+
+async function AppointmentsTab({ patientId }: { patientId: string }) {
+  const { proximas, pasadas } = await getPatientAppointments(patientId);
+  return (
+    <div className="flex flex-col gap-7">
+      <Link href={`/pro/agenda?patient=${patientId}`} className="btn-primary self-start">
         Nueva cita en la agenda
       </Link>
-      {appts.length === 0 ? (
-        <p className="text-sm text-ink-2">Sin próximas citas.</p>
-      ) : (
-        <ul className="card divide-y divide-line">
-          {appts.map((a) => {
-            const st = APPT_STATUS[a.status] ?? { label: a.status, tone: "neutral" as const };
-            return (
-              <li
-                key={a.id}
-                className="flex items-center justify-between px-4 py-3"
-              >
-                <span className="text-sm">{formatDateTime(a.starts_at)}</span>
-                <div className="flex items-center gap-3">
-                  <Status tone={st.tone}>{st.label}</Status>
-                  <a
-                    href={`/appointments/${a.id}/ics`}
-                    className="text-xs text-ink-3 underline underline-offset-2 hover:text-ink"
-                  >
-                    .ics
-                  </a>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+
+      <section>
+        <h3 className="section-label mb-2.5">Próximas citas</h3>
+        {proximas.length === 0 ? (
+          <p className="text-[13px] text-ink-2">Sin próximas citas.</p>
+        ) : (
+          <ul className="card divide-y divide-line">
+            {proximas.map((a) => (
+              <FilaCita key={a.id} cita={a} pasada={false} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h3 className="section-label mb-2.5">
+          Historial de sesiones
+          {pasadas.length > 0 && (
+            <span className="mono ml-2 font-normal normal-case">
+              {pasadas.length}
+            </span>
+          )}
+        </h3>
+        {pasadas.length === 0 ? (
+          <p className="text-[13px] text-ink-2">Todavía no hay citas pasadas.</p>
+        ) : (
+          <ul className="card divide-y divide-line">
+            {pasadas.map((a) => (
+              <FilaCita key={a.id} cita={a} pasada />
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

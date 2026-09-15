@@ -83,6 +83,39 @@ export async function getUpcomingAppointments(
   return data ?? [];
 }
 
+/**
+ * Historial de citas del paciente: próximas y pasadas, en una sola consulta.
+ *
+ * Las pasadas incluyen las canceladas y las que no se atendieron, porque el
+ * historial de una ficha clínica no es solo lo que salió bien: una ausencia
+ * repetida es información. Se recortan a las últimas `limite` para no traer
+ * años enteros a una pestaña.
+ */
+export async function getPatientAppointments(
+  patientId: string,
+  limite = 50,
+): Promise<{ proximas: Appointment[]; pasadas: Appointment[] }> {
+  const supabase = await createClient();
+  const ahora = new Date().toISOString();
+  const [proximasRes, pasadasRes] = await Promise.all([
+    allRows(supabase
+      .from("appointments")
+      .select("*")
+      .eq("patient_id", patientId)
+      .gt("starts_at", ahora)
+      .in("status", ["scheduled", "confirmed"])
+      .order("starts_at", { ascending: true })),
+    allRows(supabase
+      .from("appointments")
+      .select("*")
+      .eq("patient_id", patientId)
+      .lte("starts_at", ahora)
+      .order("starts_at", { ascending: false })
+      .limit(limite)),
+  ]);
+  return { proximas: proximasRes.data ?? [], pasadas: pasadasRes.data ?? [] };
+}
+
 export type PaymentsSummary = {
   payments: Payment[];
   debtCents: number;
