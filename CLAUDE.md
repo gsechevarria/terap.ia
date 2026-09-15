@@ -22,7 +22,7 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 |---|---|
 | Producción | https://terap.vercel.app |
 | Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin`; todo entra por PR) |
-| Commit en producción | `2390ced` (#28, expediente en ZIP). CI de `main` en verde y `verificar-produccion.mjs` 50/50 después del despliegue. |
+| Commit en producción | `eeaa149` (#31, landing nueva). CI de `main` en verde y `verificar-produccion.mjs` 50/50 después del despliegue. |
 | Verificación de producción | `node scripts/verificar-produccion.mjs` → **50/50** sobre el commit desplegado (15-sep). Sin credenciales, solo lectura. |
 | Supabase `levufuoigdlexscpvlgk` | **41 migraciones aplicadas y registradas**; 38 tablas, 1 vista, 28 funciones tipadas. Historial reparado el 15-sep: marca 41. |
 | Rama de esta copia | `main`, al día con `origin/main` |
@@ -145,6 +145,34 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   Reglas versionadas por ejercicio y territorio en `src/lib/fiscal/reglas/`, y
   aritmética en céntimos enteros en `dinero.ts`. Detalle:
   [docs/EXPEDIENTE-FISCAL.md](docs/EXPEDIENTE-FISCAL.md).
+- **Portada nueva (15-sep).** Landing aprobada aparte, integrada como `/`.
+  Vive aislada del resto en las **dos direcciones**, y la segunda es la que no
+  se ve venir:
+  · Su CSS traía selectores desnudos —`html`, `body`, `*`, `a`, `button`,
+    `footer`, `h2`— que habrían alcanzado a cualquier pantalla del panel: Next
+    conserva el CSS ya cargado al navegar por cliente, así que bastaba con
+    entrar por la portada e ir a `/login`. Los 357 selectores cuelgan ahora de
+    **`.lp-terap`**, y `html` pasa a `:root:has(.lp-terap)`, que deja de
+    aplicarse solo en cuanto la portada sale del documento.
+  · **El preflight de Tailwind contaminaba la landing.** El diseño se dibujó sin
+    ese reinicio y deja varios `<p>` con el margen por defecto del navegador; se
+    devuelven con `revert` dentro de `.lp-terap`, envuelto en `:where()` para no
+    competir con el diseño.
+  Manrope y Lora se auto-hospedan con `next/font`: el `@import` a Google Fonts
+  se habría **bloqueado** por la CSP (`font-src 'self'`) y la portada habría
+  caído a la tipografía de respaldo sin avisar. Se declaran en la portada, no en
+  el layout raíz.
+  La conversión del CSS la hace `scripts/adaptar-landing.mjs`, versionado para
+  rehacerla cuando llegue una entrega nueva; **no corre en el build**, y
+  `src/app/_landing/landing.css` no se edita a mano.
+  Los CTA van a **`/login`**: tal como venían, apuntaban a `terap.vercel.app` y
+  desde el propio dominio devolvían a la portada. No hay ruta de registro a la
+  que enlazar.
+  Las imágenes van con `<img>` y **no** con `next/image`, que reescribiría el
+  fichero: la entrega pide conservar la captura sin conversión con pérdida.
+  La captura del panel **no es la del paquete**: aquella mostraba un correo
+  personal legible en la sesión. La publicada se hizo con la cuenta de
+  demostración. El paquete de entrega (`terap-landing/`) está en `.gitignore`.
 - **El expediente se descarga en un ZIP** desde el paso de revisión
   (`/pro/contabilidad/expediente/[ejercicio]/export`): resumen en PDF, libros en
   XLSX y CSV, los registros del expediente en `registros/*.csv`, índice,
@@ -1293,8 +1321,12 @@ npm audit --audit-level=low
   (#0F7B6C claro / #4F9D8B oscuro). Tipografía 100% de sistema (sin Geist).
   Nota Tailwind v4: `@apply` no compone clases propias — la base de los
   botones se comparte por grupo de selectores.
-- Landing `/` rediseñada: hero + maqueta CSS del panel (`AppWindow`) + grid de
-  funcionalidades + principios + cierre. Sin JS de cliente.
+- **Portada `/` (15-sep):** landing aprobada por el usuario, entregada aparte
+  como página estática y transcrita a JSX en `src/app/page.tsx`. Sustituye a la
+  anterior (hero + maqueta `AppWindow` + grid de funcionalidades), que ya no
+  existe. **No sigue los tokens del resto de la aplicación**: trae su propia
+  paleta, su propia geometría y sus propias tipografías, y así debe quedarse.
+  Detalle y reglas de mantenimiento en el bloque de ESTADO ACTUAL.
 - **Agenda con calendario (jul 2026):** `/pro/agenda` = calendario con vistas
   **día/semana/mes** (query params `?view=&date=`, navegación ‹ Hoy › por
   links server-rendered; ventana temporal resuelta en `src/lib/agenda-window.ts`,
