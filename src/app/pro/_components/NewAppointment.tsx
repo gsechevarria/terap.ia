@@ -17,7 +17,7 @@ export function NewAppointment({
   patients,
   defaultPatientId,
 }: {
-  patients: { id: string; full_name: string | null }[];
+  patients: { id: string; full_name: string | null; bonoDisponible: number }[];
   defaultPatientId?: string;
 }) {
   const router = useRouter();
@@ -33,6 +33,14 @@ export function NewAppointment({
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState("");
+  const [conBono, setConBono] = useState(false);
+
+  // Sesiones de bono del paciente seleccionado, para decirlo antes de intentar
+  // guardar en vez de después. El servidor lo vuelve a comprobar: esto es
+  // información, no la barrera.
+  const seleccionado = patientId || patients[0]?.id || "";
+  const bonoDisponible =
+    patients.find((p) => p.id === seleccionado)?.bonoDisponible ?? 0;
 
   const minutes = customMode ? Math.max(5, parseInt(customMin, 10) || 0) : duration;
 
@@ -82,6 +90,7 @@ export function NewAppointment({
           until: untilISO,
           notes,
           force,
+          conBono,
         });
         if (!res.ok) {
           setConflict(res.conflict);
@@ -93,6 +102,7 @@ export function NewAppointment({
         setCustomMin("60");
         setVideoLink("");
         setNotes("");
+        setConBono(false);
         setFreq("none");
         setUntil("");
         setConflict("");
@@ -124,6 +134,28 @@ export function NewAppointment({
             ))}
           </select>
         </label>
+
+        {/* Cargar la sesión a un bono. El descuento ocurre al registrar la
+            asistencia, que es cuando la sesión se ha celebrado; marcarlo aquí
+            sirve para que el servidor no deje agendar contra un bono que no
+            existe, o que no da para toda la serie. */}
+        <div className="rounded-lg border border-line bg-surface-2 p-2.5">
+          <label className="flex items-center gap-2.5 text-[13px] font-medium text-ink">
+            <input
+              type="checkbox"
+              checked={conBono}
+              onChange={(e) => setConBono(e.target.checked)}
+              aria-describedby="bono-disponibilidad"
+              className="size-4 shrink-0 accent-[var(--accent)]"
+            />
+            Cargar la sesión a su bono
+          </label>
+          <p id="bono-disponibilidad" className="mt-1 pl-6.5 text-[11px] text-ink-2">
+            {bonoDisponible > 0
+              ? `Le quedan ${bonoDisponible} ${bonoDisponible === 1 ? "sesión" : "sesiones"}. Se descuenta al registrar la asistencia.`
+              : "Sin bono activo con sesiones disponibles."}
+          </p>
+        </div>
 
         <label className="block">
           <span className="field-label">Fecha y hora de la sesión</span>
