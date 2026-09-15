@@ -55,6 +55,19 @@ const eslintConfig = defineConfig([
     rules: { "@typescript-eslint/no-non-null-assertion": "off" },
   },
 
+  // La portada usa `<img>` y no `next/image` A PROPÓSITO.
+  //
+  // El optimizador de Next reescribe el fichero para servirlo, y la entrega de
+  // la landing pide expresamente conservar la captura del producto sin recorte
+  // ni conversión con pérdida. Las tres fotografías se sirven igual para que
+  // el criterio sea uno solo en toda la página. Son cuatro imágenes estáticas
+  // en una portada sin sesión: lo que la regla previene —descargas enormes en
+  // listados dinámicos— aquí no aplica.
+  {
+    files: ["src/app/page.tsx", "src/app/_landing/**/*.tsx"],
+    rules: { "@next/next/no-img-element": "off" },
+  },
+
   globalIgnores([
     ".next/**",
     "out/**",
