@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/errors";
 import { getUserRole, homePathForRole } from "@/lib/auth/roles";
+import { PasswordField } from "@/components/ui/PasswordField";
 
 export function PasswordForm() {
   const [password, setPassword] = useState("");
@@ -41,31 +42,25 @@ export function PasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
-      <label className="block">
-        <span className="field-label">Nueva contraseña</span>
-        <input
-          type="password"
-          required
-          minLength={12}
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Mínimo 12 caracteres"
-          className="field py-2 text-base"
-        />
-      </label>
-      <label className="block">
-        <span className="field-label">Repite la contraseña</span>
-        <input
-          type="password"
-          required
-          minLength={12}
-          autoComplete="new-password"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          className="field py-2 text-base"
-        />
-      </label>
+      <PasswordField
+        label="Nueva contraseña"
+        value={password}
+        onChange={setPassword}
+        required
+        minLength={12}
+        autoComplete="new-password"
+        placeholder="Mínimo 12 caracteres"
+        ayuda="Mínimo 12 caracteres."
+      />
+      <PasswordField
+        label="Repita la contraseña"
+        value={confirm}
+        onChange={setConfirm}
+        required
+        minLength={12}
+        autoComplete="new-password"
+        placeholder="Repita la contraseña"
+      />
 
       {error && (
         <p className="rounded bg-danger-soft p-3 text-sm text-danger">{error}</p>
