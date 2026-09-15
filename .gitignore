@@ -52,3 +52,9 @@ next-env.d.ts
 /supabase-local.json
 
 Claude outputs/
+
+# Paquete de entrega de la landing. Se integra en el repositorio, no se
+# versiona: trae un vercel.json propio que NO debe sobrescribir el de la app y
+# la captura original con un correo personal visible. Lo publicable ya vive en
+# public/landing-terap/ y src/app/_landing/.
+/terap-landing/
