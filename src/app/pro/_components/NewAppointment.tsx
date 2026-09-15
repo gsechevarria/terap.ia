@@ -17,7 +17,12 @@ export function NewAppointment({
   patients,
   defaultPatientId,
 }: {
-  patients: { id: string; full_name: string | null; bonoDisponible: number }[];
+  patients: {
+    id: string;
+    full_name: string | null;
+    bonoDisponible: number;
+    tieneCuenta: boolean;
+  }[];
   defaultPatientId?: string;
 }) {
   const router = useRouter();
@@ -39,8 +44,9 @@ export function NewAppointment({
   // guardar en vez de después. El servidor lo vuelve a comprobar: esto es
   // información, no la barrera.
   const seleccionado = patientId || patients[0]?.id || "";
-  const bonoDisponible =
-    patients.find((p) => p.id === seleccionado)?.bonoDisponible ?? 0;
+  const pacienteSeleccionado = patients.find((p) => p.id === seleccionado);
+  const bonoDisponible = pacienteSeleccionado?.bonoDisponible ?? 0;
+  const sinCuenta = pacienteSeleccionado ? !pacienteSeleccionado.tieneCuenta : false;
 
   const minutes = customMode ? Math.max(5, parseInt(customMin, 10) || 0) : duration;
 
@@ -130,10 +136,21 @@ export function NewAppointment({
             {patients.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.full_name ?? "Sin nombre"}
+                {/* Dos fichas del mismo nombre, una vinculada y otra no, eran
+                    indistinguibles aquí: la cita se daba a la que nadie ve. */}
+                {p.tieneCuenta ? "" : " — sin cuenta"}
               </option>
             ))}
           </select>
         </label>
+
+        {sinCuenta && (
+          <p className="rounded-lg bg-warn-soft px-3 py-2 text-[12px] text-warn">
+            Este paciente no tiene cuenta en la aplicación: la cita quedará en su
+            agenda, pero él no la verá ni recibirá aviso. Genérele una invitación
+            desde su ficha si quiere que la reciba.
+          </p>
+        )}
 
         {/* Cargar la sesión a un bono. El descuento ocurre al registrar la
             asistencia, que es cuando la sesión se ha celebrado; marcarlo aquí

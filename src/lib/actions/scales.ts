@@ -3,6 +3,7 @@ import { runAction } from "@/lib/action-server";
 import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePaciente } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnedPatient } from "@/lib/queries/identity";
 
@@ -28,6 +29,8 @@ async function createScaleAssignmentActionImpl(input: {
   if (error) throw new Error(error.message);
 
   revalidatePath(`/pro/patients/${input.patientId}`);
+  // Activar una escala es, para el paciente, un cuestionario que le aparece.
+  revalidatePaciente();
 }
 
 /** Activa o desactiva una asignación (sin borrar el histórico de respuestas). */
@@ -48,6 +51,7 @@ async function setScaleAssignmentActiveActionImpl(
   if (error) throw new Error(error.message);
   if (!data) throw new ActionInputError("Escala no encontrada.");
   revalidatePath(`/pro/patients/${patientId}`);
+  revalidatePaciente();
 }
 
 export async function createScaleAssignmentAction(...args: Parameters<typeof createScaleAssignmentActionImpl>) { return runAction(() => createScaleAssignmentActionImpl(...args)); }

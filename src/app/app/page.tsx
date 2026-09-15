@@ -1,6 +1,6 @@
 import { getMyMoodToday } from "@/lib/queries/wellbeing";
 import Link from "next/link";
-import { CalendarPlus, ChevronRight, Video } from "lucide-react";
+import { CalendarPlus, ChevronRight, ClipboardList, Video } from "lucide-react";
 import { getCurrentPatient } from "@/lib/queries/identity";
 import { getTasksForPatient } from "@/lib/queries/tasks";
 import { getUpcomingAppointments } from "@/lib/queries/patient-detail";
@@ -37,9 +37,11 @@ export default async function PatientHome() {
     );
   }
 
-  const [tasks, appts, scales, pay, mood, requests] = await Promise.all([
+  const [tasks, appts, escalas, pay, mood, requests] = await Promise.all([
     getTasksForPatient(patient.id),
     getUpcomingAppointments(patient.id),
+    // Opt-in estricto: solo las que el profesional ha activado Y tocan ahora.
+    // Sin activación no llega nada, que es el comportamiento acordado.
     getMyActiveAssignments(),
     getMyPaymentSummary(),
     getMyMoodToday(),
@@ -117,32 +119,51 @@ export default async function PatientHome() {
         )}
       </section>
 
-      <MoodLogger today={mood} />
-
-      {scales.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="section-label">Cuestionarios</h2>
-          {scales.map((s) => (
+      {/* Cuestionario pendiente. Va antes que las tareas porque lo pide el
+          profesional y suele tener fecha; el resto puede esperar.
+          Se enuncia como una petición, sin adelantar resultado ni
+          interpretación: el paciente no ve puntuación ni severidad. */}
+      {escalas.length > 0 && (
+        <section aria-labelledby="cuestionarios-titulo" className="flex flex-col gap-2">
+          <h2 id="cuestionarios-titulo" className="section-label">
+            {escalas.length === 1
+              ? "Tienes un cuestionario pendiente"
+              : `Tienes ${escalas.length} cuestionarios pendientes`}
+          </h2>
+          {escalas.map((e) => (
             <Link
-              key={s.id}
-              href={`/app/scales/${s.id}`}
+              key={e.id}
+              href={`/app/scales/${e.id}`}
               className="card row-hover flex items-center gap-3 p-4"
             >
-              <div>
-                <span className="text-sm font-medium">{s.code}</span>
-                <span className="chip ml-2">
-                  {s.assignmentType === "recurring" ? "recurrente" : "puntual"}
-                </span>
-              </div>
-              <ChevronRight
-                className="ml-auto size-4 text-ink-3"
-                strokeWidth={2}
+              <ClipboardList
+                size={20}
+                strokeWidth={1.75}
                 aria-hidden
+                className="shrink-0 text-accent"
+              />
+              <span className="min-w-0">
+                <span className="block text-body-lg font-medium text-ink">
+                  {e.name}
+                </span>
+                <span className="block text-[12px] text-ink-2">
+                  Te lo ha pedido tu profesional
+                  {e.assignmentType === "recurring" ? " · se repite" : ""}
+                </span>
+              </span>
+              <ChevronRight
+                size={18}
+                strokeWidth={1.75}
+                aria-hidden
+                className="ml-auto shrink-0 text-ink-3"
               />
             </Link>
           ))}
         </section>
       )}
+
+      <MoodLogger today={mood} />
+
 
       <PatientTasks tasks={tasks} today={today} />
 

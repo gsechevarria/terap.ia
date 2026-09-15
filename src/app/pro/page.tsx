@@ -267,6 +267,12 @@ function FilaPaciente({ paciente }: { paciente: PatientOverview }) {
                 {archivado ? "Archivado" : "En seguimiento"}
               </Status>
             )}
+            {/* Sin cuenta, nada de lo que se le asigne le llega. Se dice aquí
+                porque dos fichas con el mismo nombre —una vinculada y otra
+                no— eran indistinguibles, y elegir la equivocada no avisaba. */}
+            {!paciente.tieneCuenta && (
+              <Status tone="warn">Sin cuenta</Status>
+            )}
           </div>
           {paciente.tags.length > 0 && (
             <ul className="mt-2 flex flex-wrap gap-1.5">
