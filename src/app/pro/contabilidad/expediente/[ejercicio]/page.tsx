@@ -4,8 +4,10 @@ import { ArrowLeft, Check, CircleAlert } from "lucide-react";
 import {
   PASOS,
   esPasoValido,
+  getChecklistPersonal,
   getEjerciciosDisponibles,
   getResumenExpediente,
+  getRetenciones,
   type PasoClave,
 } from "@/lib/queries/expediente";
 import { getConfiguracionFiscal } from "@/lib/queries/contabilidad";
@@ -13,6 +15,8 @@ import { formatCurrency } from "@/lib/format";
 import { DescargoFiscal } from "@/app/pro/contabilidad/_components/DescargoFiscal";
 import { EstadoExpediente } from "@/app/pro/contabilidad/_components/EstadoExpediente";
 import { PerfilFiscalForm } from "@/app/pro/contabilidad/_components/PerfilFiscalForm";
+import { RetencionesPanel } from "@/app/pro/contabilidad/_components/RetencionesPanel";
+import { ChecklistPersonal } from "@/app/pro/contabilidad/_components/ChecklistPersonal";
 import { Status, type StatusTone } from "@/components/ui/Status";
 
 const ESTADO_TONO: Record<string, { label: string; tone: StatusTone }> = {
@@ -37,10 +41,12 @@ export default async function ExpedientePage({
 
   const paso: PasoClave = esPasoValido(pasoRaw) ? pasoRaw : "perfil";
 
-  const [resumen, ejercicios, config] = await Promise.all([
+  const [resumen, ejercicios, config, retenciones, checklist] = await Promise.all([
     getResumenExpediente(ejercicio),
     getEjerciciosDisponibles(),
     getConfiguracionFiscal(),
+    getRetenciones(ejercicio),
+    getChecklistPersonal(ejercicio),
   ]);
 
   const completos = resumen.pasos.filter((p) => p.completo).length;
@@ -197,18 +203,11 @@ export default async function ExpedientePage({
           )}
 
           {paso === "retenciones" && (
-            <PasoPendiente
-              titulo="Retenciones y pagos a cuenta"
-              descripcion="Registro de retenciones soportadas, practicadas a terceros, pagos fraccionados y liquidaciones de IVA, con sus certificados. En construcción."
-              dato={`Soportadas ${formatCurrency(resumen.totales.retencionesSoportadasCents)} · pagos fraccionados ${formatCurrency(resumen.totales.pagosFraccionadosCents)}`}
-            />
+            <RetencionesPanel ejercicio={ejercicio} retenciones={retenciones} />
           )}
 
           {paso === "personal" && (
-            <PasoPendiente
-              titulo="Documentación personal"
-              descripcion="Checklist opcional de lo que el gestor suele pedir para la renta personal: situación familiar, inmuebles, otras rentas, planes de pensiones. Separado de la contabilidad de la actividad. En construcción."
-            />
+            <ChecklistPersonal ejercicio={ejercicio} respuestas={checklist} />
           )}
 
           {paso === "revision" && (
