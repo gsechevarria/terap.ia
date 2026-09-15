@@ -153,20 +153,22 @@ export default function Home() {
           <div className="real-product">
             <div className="screen-header">
               <span>TERAP / TU ESPACIO DE TRABAJO</span>
-              <a href="/landing-terap/captura-pendiente.svg" target="_blank" rel="noopener">
+              <a href="/landing-terap/interfaz.png" target="_blank" rel="noopener">
                 Ver a tamaño completo ↗
               </a>
             </div>
-            {/* PENDIENTE: sustituir `captura-pendiente.svg` por la recaptura con
-                la cuenta de demostración. La captura del paquete mostraba un
-                correo personal real en la sesión, así que no se publica. Al
-                llegar la nueva, esto es cambiar el `src` y borrar el SVG. */}
+            {/* Captura del panel real, sin recortar ni recomprimir. No es la
+                del paquete de entrega: aquella mostraba el correo personal de
+                la sesión, legible, y esto es una página pública. Esta se hizo
+                con la cuenta de demostración y no enseña ninguna cuenta.
+                Las medidas son las suyas de verdad, para que el hueco quede
+                reservado y la composición no salte al cargar. */}
             <img
-              src="/landing-terap/captura-pendiente.svg"
+              src="/landing-terap/interfaz.png"
               alt="Interfaz original de Terap: pacientes, expedientes en seguimiento, etiquetas, tareas pendientes, próxima cita y última actividad"
               loading="lazy"
-              width={1882}
-              height={983}
+              width={1685}
+              height={927}
             />
             <div className="screen-caption">
               <span>Así es Terap por dentro.</span>
