@@ -53,6 +53,13 @@ export type ResumenExpediente = {
   pasos: EstadoPaso[];
   obligaciones: Obligacion[];
   reglasSoportadas: boolean;
+  /**
+   * Territorio con el que se han aplicado las reglas. Sale de
+   * `configuracion_fiscal`, no de `expedientes_fiscales`: hay una sola
+   * respuesta a "dónde tributa esta consulta" y duplicarla abriría la puerta a
+   * que el asistente y la exportación usaran reglas distintas.
+   */
+  territorio: Territorio;
   territorioAsumido: boolean;
   totales: {
     ingresosConfirmadosCents: Centimos;
@@ -152,6 +159,7 @@ export async function getResumenExpediente(
     pasos: PASOS.map((p) => ({ ...p, completo: false, faltan: ["Sin sesión"] })),
     obligaciones: [],
     reglasSoportadas: false,
+    territorio: "comun",
     territorioAsumido: true,
     totales: {
       ingresosConfirmadosCents: 0,
@@ -295,6 +303,7 @@ export async function getResumenExpediente(
     pasos,
     obligaciones: evaluarObligaciones(datosObligaciones),
     reglasSoportadas: reglas.soportado,
+    territorio: reglas.territorio,
     territorioAsumido: reglas.territorioAsumido,
     totales: {
       ingresosConfirmadosCents: sumar(...cobrosConfirmados.map((c) => c.base_cents ?? 0)),
