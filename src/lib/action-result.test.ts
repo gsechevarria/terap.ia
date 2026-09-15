@@ -32,7 +32,8 @@ it("el IVA confirmado del gasto prevalece sobre cambios de configuración", () =
 it("los libros exportan la retención confirmada y la última fracción de amortización", () => {
   const data: FiscalArrays = { config: CONFIG_FISCAL_DEFAULT, ingresos: [{ id: "1", fecha: "2026-01-01", total: 121, base: 100, cuotaIva: 21,
     tipoOperacion: "sujeta", retencionAplicable: true, retencion: 7, nombrePagador: "Ficticio" }], gastos: [],
-    bienes: [{ id: "2", descripcion: "Equipo", fechaAdquisicion: "2022-07-01", valorAdquisicion: 1000, porcentajeAmortizacion: 25, aniosAmortizacion: 4 }] };
+    bienes: [{ id: "2", descripcion: "Equipo", fechaAdquisicion: "2022-07-01", valorAdquisicion: 1000, porcentajeAmortizacion: 25, aniosAmortizacion: 4 }],
+    excluidos: { ingresos: 0, gastos: 0, bienes: 0 } };
   expect(libroIngresos(data, { ejercicio: 2026 }, getParams(2026)).rows[0]?.[8]).toBe(7);
   expect(libroBienesInversion(data, { ejercicio: 2026 }).rows).toHaveLength(1);
 });

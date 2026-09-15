@@ -35,17 +35,20 @@ function toConfigDomain(row: ConfiguracionFiscal | null): ConfigFiscal {
   };
 }
 
+/*
+ * Los registros sin tratamiento fiscal confirmado se APARTAN, no rompen el
+ * módulo.
+ *
+ * Antes lanzaban excepción y la sección entera se caía: un solo cobro histórico
+ * sin confirmar y el profesional no veía ni lo que había cobrado. Esconder todo
+ * para no mostrar una estimación incompleta es peor que mostrar lo cierto y
+ * decir qué queda fuera, que es lo que se hace ahora.
+ */
 function toIngresoFiscal(row: IngresoFiscalRow): IngresoFiscal | null {
-  if (!row.id || !row.fecha) throw new Error("Ingreso incompleto.");
+  if (!row.id || !row.fecha) return null;
   if (row.fiscal_review_required || row.base_cents == null || row.cuota_iva_cents == null) {
-    // Ya no hay control en la interfaz para confirmarlos uno a uno: se retiró
-    // de la tabla de pagos. Los cobros nuevos capturan su tratamiento solos a
-    // partir de la configuración fiscal (disparador `payments_capture_fiscal`);
-    // los anteriores a esa configuración se regularizan con el script de
-    // mantenimiento. Si el mensaje aparece con cobros recientes, es que la
-    // configuración declara actividad mixta o retención por defecto, casos que
-    // el disparador no resuelve solo.
-    throw new Error("Hay cobros sin tratamiento fiscal confirmado. Los cobros nuevos lo capturan a partir de su configuración fiscal; los anteriores a ella se regularizan siguiendo docs/DIAGNOSTICO-HISTORICOS.md.");
+    // Se aparta: entra en el recuento de pendientes, no en la estimación.
+    return null;
   }
   return {
     id: row.id,
@@ -60,8 +63,8 @@ function toIngresoFiscal(row: IngresoFiscalRow): IngresoFiscal | null {
   };
 }
 
-function toGastoFiscal(g: Gasto): GastoFiscal {
-  if (g.iva_recuperable_pct == null) throw new Error("Revisa el IVA recuperable de los gastos históricos antes de calcular o exportar.");
+function toGastoFiscal(g: Gasto): GastoFiscal | null {
+  if (g.iva_recuperable_pct == null) return null;
   return {
     id: g.id,
     fecha: g.fecha,
@@ -79,8 +82,8 @@ function toGastoFiscal(g: Gasto): GastoFiscal {
   };
 }
 
-function toBienFiscal(b: BienInversion): BienInversionFiscal {
-  if (b.fiscal_review_required) throw new Error("Revisa el gasto de origen de los bienes históricos antes de calcular o exportar.");
+function toBienFiscal(b: BienInversion): BienInversionFiscal | null {
+  if (b.fiscal_review_required) return null;
   return {
     id: b.id,
     descripcion: b.descripcion,
@@ -198,7 +201,13 @@ export async function getFiscalArrays(ejercicio: number): Promise<FiscalArrays> 
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
   if (!pro) {
-    return { config: CONFIG_FISCAL_DEFAULT, ingresos: [], gastos: [], bienes: [] };
+    return {
+      config: CONFIG_FISCAL_DEFAULT,
+      ingresos: [],
+      gastos: [],
+      bienes: [],
+      excluidos: { ingresos: 0, gastos: 0, bienes: 0 },
+    };
   }
   const from = `${ejercicio}-01-01`;
   const to = `${ejercicio + 1}-01-01`;
@@ -224,12 +233,31 @@ export async function getFiscalArrays(ejercicio: number): Promise<FiscalArrays> 
     allRows(supabase.from("bienes_inversion").select("*").eq("professional_id", pro.id)),
   ]);
 
+  const ingresosCrudos = ingRes.data ?? [];
+  const gastosCrudos = gasRes.data ?? [];
+  const bienesCrudos = bienRes.data ?? [];
+
+  const ingresos = ingresosCrudos
+    .map(toIngresoFiscal)
+    .filter((x): x is IngresoFiscal => x != null);
+  const gastos = gastosCrudos
+    .map(toGastoFiscal)
+    .filter((x): x is GastoFiscal => x != null);
+  const bienes = bienesCrudos
+    .map(toBienFiscal)
+    .filter((x): x is BienInversionFiscal => x != null);
+
   return {
     config: toConfigDomain(cfgRes.data ?? null),
-    ingresos: (ingRes.data ?? [])
-      .map(toIngresoFiscal)
-      .filter((x): x is IngresoFiscal => x != null),
-    gastos: (gasRes.data ?? []).map(toGastoFiscal),
-    bienes: (bienRes.data ?? []).map(toBienFiscal),
+    ingresos,
+    gastos,
+    bienes,
+    // Lo apartado, por separado y contado: la estimación se calcula sin ello y
+    // hay que poder decirlo en pantalla y en la exportación.
+    excluidos: {
+      ingresos: ingresosCrudos.length - ingresos.length,
+      gastos: gastosCrudos.length - gastos.length,
+      bienes: bienesCrudos.length - bienes.length,
+    },
   };
 }

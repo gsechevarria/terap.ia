@@ -135,6 +135,14 @@ export interface FiscalArrays {
   ingresos: IngresoFiscal[];
   gastos: GastoFiscal[];
   bienes: BienInversionFiscal[];
+  /**
+   * Registros apartados por no tener tratamiento fiscal confirmado, contados
+   * por tipo. NO entran en ningún cálculo: existen para poder decir en pantalla
+   * y en la exportación que la estimación se ha hecho sin ellos. Antes esto no
+   * hacía falta porque un solo registro sin confirmar tiraba la sección entera,
+   * que era peor remedio que la enfermedad.
+   */
+  excluidos: { ingresos: number; gastos: number; bienes: number };
 }
 
 // --- Resultados del motor ---------------------------------------------------
