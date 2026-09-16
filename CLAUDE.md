@@ -260,9 +260,22 @@ checklist personal y el ZIP ya están (#27 y #28). Quedan dos cosas:
 Los pasos de gastos y bienes siguen remitiendo a `/pro/contabilidad/gastos`, que
 es donde vive ese dato.
 
-**Rediseño de la app del paciente.** El panel del psicólogo está hecho; la app
-del paciente conserva la dirección visual anterior salvo lo que hereda de los
-tokens.
+**Rediseño de la app del paciente — hecho, en rama, pendiente de tu revisión.**
+Rama `feat/app-paciente-diseno-movil-v2`, **sin fusionar**. Integra la entrega
+`terap-mobile-v2` (dirección móvil 02): armazón de 100 dvh con cabecera y
+navegación estables, Inicio · Citas · Diario rediseñadas y, por decisión del
+16-sep, también Recursos, Más, Pagos, Notificaciones, Pedir cita y Cuestionario.
+El CSS vive aislado en `src/app/app/_ui/patient.css` con los 279 selectores
+colgando de **`.tp-app`** —y una prueba que falla si alguien vuelve a colar uno
+suelto—, porque la entrega traía `body`, `button` y `svg` desnudos y habría
+repintado el panel del profesional, igual que pasó con la portada. Dos
+desviaciones anotadas: **once colores subidos a AA** (la paleta entregada daba
+2,4:1 en metadatos de 10-13 px) y **modo oscuro**, que la entrega no trae y aquí
+reasigna los tokens a los de `globals.css` en vez de forzar el blanco de noche.
+`preview.js` no se integra: cada uno de sus avisos de diseño va contra el
+servicio real con carga, vacío, error y éxito. Nada del backend cambia.
+Detalle: [docs/DISENO-APP-PACIENTE-2026-09.md](docs/DISENO-APP-PACIENTE-2026-09.md).
+**Falta dispositivo físico**: teclado real, área segura y PWA instalada.
 
 **Deuda técnica abierta:** ver "Queda abierto" al final de la sección de la
 auditoría de agosto, con estas correcciones — `xlsx@0.18.5` ya **no** aplica

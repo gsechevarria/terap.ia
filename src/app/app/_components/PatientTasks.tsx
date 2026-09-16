@@ -1,147 +1,267 @@
 "use client";
-import { callAction } from "@/lib/action-result";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ListTodo,
+  X,
+} from "lucide-react";
+import { callAction } from "@/lib/action-result";
 import { completeTaskAction } from "@/lib/actions/patient-tasks";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { useAction } from "@/lib/use-action";
-import { Status } from "@/components/ui/Status";
 import type { TaskWithCompletion } from "@/lib/queries/tasks";
 
 /**
- * `today` llega resuelto desde el server component (`todayYMD()` en la zona del
- * profesional). Antes se calculaba con `new Date()` durante el render de este
- * componente cliente, que también se renderiza en servidor: en UTC salía otro
- * día, la etiqueta "vencida"/"para hoy" era incorrecta y rompía la hidratación.
+ * Tareas del paciente: lista en la pantalla, detalle en un panel inferior.
+ *
+ * El panel es un `<dialog>` nativo, así que Escape, el atrapado de foco y el
+ * fondo inerte los da el navegador y no hay que reimplementarlos.
+ *
+ * `hoy` llega resuelto desde el server component (en hora española). Antes se
+ * calculaba con `new Date()` durante el render de este componente —que también
+ * se renderiza en servidor—: en UTC salía otro día, la etiqueta "vencida" era
+ * incorrecta y rompía la hidratación.
  */
 export function PatientTasks({
   tasks,
-  today,
+  hoy,
 }: {
   tasks: TaskWithCompletion[];
-  today: string;
+  hoy: string;
 }) {
-  const pending = tasks.filter((t) => !t.completed);
-  const done = tasks.filter((t) => t.completed);
+  const pendientes = tasks.filter((t) => !t.completed);
+  const hechas = tasks.filter((t) => t.completed);
+  const [abierta, setAbierta] = useState<TaskWithCompletion | null>(null);
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold">Tus tareas</h2>
-      {pending.length === 0 ? (
-        <p className="text-sm text-ink-2">No tienes tareas pendientes.</p>
+    <section className="tp-task-section" aria-labelledby="tp-tareas">
+      <div className="tp-section-heading">
+        <h2 className="tp-h2" id="tp-tareas">
+          Para esta semana
+        </h2>
+        {pendientes.length > 0 && (
+          <span className="tp-count">
+            {pendientes.length} {pendientes.length === 1 ? "tarea" : "tareas"}
+          </span>
+        )}
+      </div>
+
+      {pendientes.length === 0 ? (
+        <p className="tp-section-desc">
+          {hechas.length > 0
+            ? "No te queda ninguna tarea pendiente."
+            : "Tu profesional aún no te ha propuesto ninguna tarea."}
+        </p>
       ) : (
-        pending.map((t) => (
-          <PendingTask key={t.id} task={t} today={today} />
-        ))
+        <div className="tp-task-list">
+          {pendientes.map((t, i) => (
+            <FilaTarea
+              key={t.id}
+              task={t}
+              hoy={hoy}
+              tono={i % 2 === 0 ? "tp-tile-blue" : "tp-tile-peach"}
+              onAbrir={() => setAbierta(t)}
+            />
+          ))}
+        </div>
       )}
 
-      {done.length > 0 && (
-        <details className="mt-1">
-          <summary className="cursor-pointer text-sm text-ink-3 hover:text-ink">
-            Completadas ({done.length})
+      {hechas.length > 0 && (
+        <details className="tp-disclosure">
+          <summary>
+            <ChevronDown size={15} strokeWidth={1.8} aria-hidden />
+            Completadas ({hechas.length})
           </summary>
-          <ul className="card mt-2 divide-y divide-line">
-            {done.map((t) => (
-              <li key={t.id} className="px-4 py-3 text-sm text-ink-2">
-                <span className="line-through">{t.title}</span>
-                {t.lastCompletion && (
-                  <span className="ml-2 text-xs text-ink-3">
-                    {formatDateTime(t.lastCompletion.completed_at)}
-                  </span>
-                )}
-                {t.lastCompletion?.response_text && (
-                  <p className="mt-1">“{t.lastCompletion.response_text}”</p>
-                )}
-              </li>
+          <div className="tp-task-list">
+            {hechas.map((t) => (
+              <div className="tp-row" key={t.id}>
+                <span className="tp-tile-icon tp-tile-blue">
+                  <Check size={21} strokeWidth={1.8} aria-hidden />
+                </span>
+                <span className="tp-row-text">
+                  <strong>{t.title}</strong>
+                  {t.lastCompletion && (
+                    <small>{formatDateTime(t.lastCompletion.completed_at)}</small>
+                  )}
+                  {t.lastCompletion?.response_text && (
+                    <small>“{t.lastCompletion.response_text}”</small>
+                  )}
+                  <span className="tp-badge-done">Hecha</span>
+                </span>
+              </div>
             ))}
-          </ul>
+          </div>
         </details>
       )}
+
+      <PanelTarea
+        task={abierta}
+        hoy={hoy}
+        onCerrar={() => setAbierta(null)}
+      />
     </section>
   );
 }
 
 /** Ambas fechas son 'YYYY-MM-DD', así que se comparan como texto. */
-function isDueSoon(
+function vencimiento(
   due: string | null,
-  today: string,
-): "today" | "overdue" | null {
+  hoy: string,
+): "hoy" | "vencida" | null {
   if (!due) return null;
-  if (due < today) return "overdue";
-  if (due === today) return "today";
+  if (due < hoy) return "vencida";
+  if (due === hoy) return "hoy";
   return null;
 }
 
-function PendingTask({
+function FilaTarea({
   task,
-  today,
+  hoy,
+  tono,
+  onAbrir,
 }: {
   task: TaskWithCompletion;
-  today: string;
+  hoy: string;
+  tono: string;
+  onAbrir: () => void;
 }) {
-  const [showText, setShowText] = useState(false);
-  const [text, setText] = useState("");
-  const { run, pending, error } = useAction();
-  const due = isDueSoon(task.due_date, today);
-
-  function complete() {
-    run(() => callAction(completeTaskAction, task.id, text));
-  }
+  const estado = vencimiento(task.due_date, hoy);
 
   return (
-    <div className="card p-4">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium">{task.title}</span>
-        {due === "today" && <Status tone="info">para hoy</Status>}
-        {due === "overdue" && (
-          <Status tone="warn" halo>
-            vencida
-          </Status>
-        )}
-      </div>
-      {task.description && (
-        <p className="mt-1 text-sm whitespace-pre-wrap text-ink-2">
-          {task.description}
-        </p>
-      )}
-      {task.due_date && (
-        <p className="mt-1 text-xs text-ink-3">
-          Fecha límite: {formatDate(task.due_date)}
-        </p>
-      )}
+    <button type="button" className="tp-row" onClick={onAbrir}>
+      <span className={`tp-tile-icon ${tono}`}>
+        <ListTodo size={22} strokeWidth={1.6} aria-hidden />
+      </span>
+      <span className="tp-row-text">
+        <strong>{task.title}</strong>
+        {task.due_date && <small>Fecha prevista · {formatDate(task.due_date)}</small>}
+        {estado === "vencida" && <span className="tp-badge-late">Fecha pasada</span>}
+        {estado === "hoy" && <span className="tp-badge-done">Para hoy</span>}
+      </span>
+      <ChevronRight size={17} strokeWidth={1.8} aria-hidden className="tp-chevron" />
+    </button>
+  );
+}
 
-      {showText && (
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={2}
-          placeholder="Escribe algo si quieres (opcional)…"
-          aria-label="Nota sobre la tarea (opcional)"
-          className="field mt-3"
-        />
+/**
+ * Panel inferior con el detalle real de la tarea y la única acción que el
+ * paciente puede hacer sobre ella. La maqueta enseñaba aquí un aviso de
+ * diseño; esto ejecuta `completeTaskAction` y no cierra hasta que el servidor
+ * confirma.
+ */
+function PanelTarea({
+  task,
+  hoy,
+  onCerrar,
+}: {
+  task: TaskWithCompletion | null;
+  hoy: string;
+  onCerrar: () => void;
+}) {
+  const dialogo = useRef<HTMLDialogElement>(null);
+  const [nota, setNota] = useState("");
+  const { run, pending, error, clearError } = useAction();
+
+  useEffect(() => {
+    const nodo = dialogo.current;
+    if (!nodo) return;
+    if (task && !nodo.open) {
+      setNota("");
+      clearError();
+      nodo.showModal();
+    } else if (!task && nodo.open) {
+      nodo.close();
+    }
+  }, [task, clearError]);
+
+  function completar() {
+    if (!task) return;
+    run(() => callAction(completeTaskAction, task.id, nota), onCerrar);
+  }
+
+  const estado = task ? vencimiento(task.due_date, hoy) : null;
+
+  return (
+    <dialog
+      ref={dialogo}
+      className="tp-sheet"
+      aria-labelledby="tp-sheet-title"
+      onClose={onCerrar}
+      onCancel={onCerrar}
+    >
+      <span className="tp-sheet-handle" aria-hidden />
+      <button
+        type="button"
+        className="tp-sheet-close"
+        onClick={onCerrar}
+        aria-label="Cerrar"
+      >
+        <X size={22} strokeWidth={1.8} aria-hidden />
+      </button>
+
+      {task && (
+        <>
+          <p className="tp-sheet-eyebrow">Tu tarea</p>
+          <h2 className="tp-sheet-title" id="tp-sheet-title">
+            {task.title}
+          </h2>
+
+          {(task.due_date || estado) && (
+            <div className="tp-sheet-meta">
+              {task.due_date && (
+                <span className="tp-status tp-status-muted">
+                  Fecha prevista · {formatDate(task.due_date)}
+                </span>
+              )}
+              {estado === "vencida" && (
+                <span className="tp-badge-late">Fecha pasada</span>
+              )}
+              {estado === "hoy" && <span className="tp-badge-done">Para hoy</span>}
+            </div>
+          )}
+
+          {task.description && <p className="tp-sheet-body">{task.description}</p>}
+
+          <label className="tp-label" htmlFor="tp-task-note">
+            ¿Cómo te ha ido?
+            <span>Opcional</span>
+          </label>
+          <textarea
+            id="tp-task-note"
+            className="tp-textarea"
+            rows={3}
+            maxLength={2000}
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+            placeholder="Puedes contarle algo a tu profesional."
+          />
+
+          {error && <p className="tp-inline-error tp-space-top">{error}</p>}
+
+          <div className="tp-sheet-actions">
+            <button
+              type="button"
+              className="tp-primary tp-wide"
+              onClick={completar}
+              disabled={pending}
+            >
+              {pending ? "Guardando…" : "Marcar como hecha"}
+              {!pending && <Check size={19} strokeWidth={2} aria-hidden />}
+            </button>
+            <button
+              type="button"
+              className="tp-secondary tp-wide"
+              onClick={onCerrar}
+              disabled={pending}
+            >
+              Ahora no
+            </button>
+          </div>
+        </>
       )}
-
-      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
-
-      <div className="mt-3 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={complete}
-          disabled={pending}
-          className="btn-primary"
-        >
-          {pending ? "…" : "Marcar hecha"}
-        </button>
-        {!showText && (
-          <button
-            type="button"
-            onClick={() => setShowText(true)}
-            className="btn-subtle"
-          >
-            Añadir nota
-          </button>
-        )}
-      </div>
-    </div>
+    </dialog>
   );
 }

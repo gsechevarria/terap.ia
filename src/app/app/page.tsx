@@ -1,39 +1,49 @@
-import { getMyMoodToday } from "@/lib/queries/wellbeing";
 import Link from "next/link";
-import { CalendarPlus, ChevronRight, ClipboardList, Video } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarPlus,
+  ChevronRight,
+  Clock,
+  CreditCard,
+  FileText,
+  Video,
+} from "lucide-react";
+import { getMyMoodToday } from "@/lib/queries/wellbeing";
 import { getCurrentPatient } from "@/lib/queries/identity";
 import { getTasksForPatient } from "@/lib/queries/tasks";
 import { getUpcomingAppointments } from "@/lib/queries/patient-detail";
 import { getMyActiveAssignments } from "@/lib/queries/scales";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { getMyRequests } from "@/lib/queries/appointment-requests";
-import { formatCurrency, formatDate, formatTime } from "@/lib/format";
-import { addDaysYMD, formatYMD, parseYMD, todayYMD, ymdInTZ } from "@/lib/tz";
+import { formatCurrency, formatTime } from "@/lib/format";
+import { addDaysYMD, formatYMD, parseYMD, todayYMD } from "@/lib/tz";
 import { safeExternalUrl } from "@/lib/url";
-import { Status } from "@/components/ui/Status";
+import {
+  diaDelMes,
+  etiquetaDia,
+  fechaLargaYMD,
+  mesLargo,
+} from "@/app/app/_ui/fechas";
 import { PatientTasks } from "@/app/app/_components/PatientTasks";
-import { MoodLogger } from "@/app/app/_components/MoodLogger";
-
-/** "Hoy" / "Mañana" / la fecha. Todo resuelto en hora española, en servidor. */
-function dayLabel(iso: string, today: string, tomorrow: string): string {
-  const day = ymdInTZ(new Date(iso));
-  if (day === today) return "Hoy";
-  if (day === tomorrow) return "Mañana";
-  return formatDate(iso);
-}
+import { MoodCheckin } from "@/app/app/_components/MoodCheckin";
 
 export default async function PatientHome() {
   const patient = await getCurrentPatient();
 
   if (!patient) {
     return (
-      <div className="mx-auto max-w-md text-center">
-        <h1 className="page-title">Hola</h1>
-        <p className="mt-4 rounded-lg border border-dashed border-line p-5 text-sm text-ink-2">
+      <>
+        <div className="tp-page-heading">
+          <p className="tp-overline">Tu espacio</p>
+          <div>
+            <h1 className="tp-h1">Hola</h1>
+          </div>
+        </div>
+        <p className="tp-empty">
           Todavía no estás vinculado a un profesional. Abre el enlace de
           invitación que te hayan enviado para darte de alta.
         </p>
-      </div>
+      </>
     );
   }
 
@@ -48,145 +58,153 @@ export default async function PatientHome() {
     getMyRequests(),
   ]);
 
-  const nextAppt = appts[0] ?? null;
-  const firstName = patient.full_name?.split(" ")[0] ?? "";
-  const today = todayYMD();
-  const tomorrow = formatYMD(addDaysYMD(parseYMD(today), 1));
-  const video = safeExternalUrl(nextAppt?.video_link);
+  const proxima = appts[0] ?? null;
+  const nombre = patient.full_name?.split(" ")[0] ?? "";
+  const inicial = (nombre || patient.full_name || "?").charAt(0).toUpperCase();
+  const hoy = todayYMD();
+  const manana = formatYMD(addDaysYMD(parseYMD(hoy), 1));
+  const video = safeExternalUrl(proxima?.video_link);
+  const enEspera = requests.pending.length;
 
   return (
-    <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="page-title">Hola{firstName ? `, ${firstName}` : ""}</h1>
-      </header>
+    <>
+      <div className="tp-greeting">
+        <div>
+          <p className="tp-overline">{fechaLargaYMD(hoy)}</p>
+          <h1 className="tp-h1">Hola{nombre ? `, ${nombre}` : ""}</h1>
+        </div>
+        {/* No hay pantalla de perfil: el destino real más cercano es "Más",
+            que es donde viven cuenta, pagos y ayuda urgente. */}
+        <Link href="/app/more" className="tp-profile" aria-label="Más opciones">
+          <span aria-hidden>{inicial}</span>
+        </Link>
+      </div>
 
-      {/* Próxima cita: lo primero que quiere saber cualquiera al abrir esto. */}
-      <section>
-        <h2 className="section-label mb-2">Próxima cita</h2>
-        {nextAppt ? (
-          <div className="card p-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-lg font-semibold">
-                {dayLabel(nextAppt.starts_at, today, tomorrow)}
-              </span>
-              <span className="text-lg text-ink-2">
-                {formatTime(nextAppt.starts_at)}
-              </span>
-              {nextAppt.status === "confirmed" ? (
-                <span className="ml-auto">
-                  <Status tone="accent">confirmada</Status>
-                </span>
-              ) : (
-                <span className="ml-auto">
-                  <Status tone="info">por confirmar</Status>
-                </span>
-              )}
+      {/* Próxima sesión. Fecha y hora antes que nada: es lo que se viene a
+          mirar al abrir la aplicación. */}
+      {proxima ? (
+        <article className="tp-session">
+          <div className="tp-session-header">
+            <span className="tp-session-label">Próxima sesión</span>
+            <span className="tp-status-inverse">
+              {proxima.status === "confirmed" ? "Confirmada" : "Por confirmar"}
+            </span>
+          </div>
+          <div className="tp-session-main">
+            <div className="tp-date-block">
+              <strong>{diaDelMes(proxima.starts_at)}</strong>
+              <span>{mesLargo(proxima.starts_at)}</span>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {video && (
-                <a
-                  href={video}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary btn-sm"
-                >
-                  <Video className="size-3.5" strokeWidth={2} aria-hidden />
-                  Entrar a la videollamada
-                </a>
-              )}
-              <Link href="/app/appointments" className="btn-subtle btn-sm">
-                Ver mis citas
-              </Link>
+            <div className="tp-session-info">
+              <h2>
+                {etiquetaDia(proxima.starts_at, hoy, manana)},{" "}
+                {formatTime(proxima.starts_at)}
+              </h2>
+              <p>Con tu profesional</p>
+              {video && <span>Tienes enlace de videollamada.</span>}
             </div>
           </div>
-        ) : (
-          <div className="card flex flex-col items-start gap-3 p-4">
-            <p className="text-sm text-ink-2">
-              No tienes ninguna cita programada.
-            </p>
-            <Link href="/app/appointments/new" className="btn-primary btn-sm">
-              <CalendarPlus className="size-3.5" strokeWidth={2} aria-hidden />
-              Pedir cita
-            </Link>
-          </div>
-        )}
-
-        {requests.pending.length > 0 && (
-          <p className="mt-2 text-xs text-ink-3">
-            Tienes {requests.pending.length} solicitud
-            {requests.pending.length === 1 ? "" : "es"} esperando respuesta.
-          </p>
-        )}
-      </section>
-
-      {/* Cuestionario pendiente. Va antes que las tareas porque lo pide el
-          profesional y suele tener fecha; el resto puede esperar.
-          Se enuncia como una petición, sin adelantar resultado ni
-          interpretación: el paciente no ve puntuación ni severidad. */}
-      {escalas.length > 0 && (
-        <section aria-labelledby="cuestionarios-titulo" className="flex flex-col gap-2">
-          <h2 id="cuestionarios-titulo" className="section-label">
-            {escalas.length === 1
-              ? "Tienes un cuestionario pendiente"
-              : `Tienes ${escalas.length} cuestionarios pendientes`}
-          </h2>
-          {escalas.map((e) => (
-            <Link
-              key={e.id}
-              href={`/app/scales/${e.id}`}
-              className="card row-hover flex items-center gap-3 p-4"
+          {video ? (
+            <a
+              className="tp-session-cta"
+              href={video}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <ClipboardList
-                size={20}
-                strokeWidth={1.75}
-                aria-hidden
-                className="shrink-0 text-accent"
-              />
-              <span className="min-w-0">
-                <span className="block text-body-lg font-medium text-ink">
-                  {e.name}
-                </span>
-                <span className="block text-[12px] text-ink-2">
-                  Te lo ha pedido tu profesional
-                  {e.assignmentType === "recurring" ? " · se repite" : ""}
-                </span>
-              </span>
-              <ChevronRight
-                size={18}
-                strokeWidth={1.75}
-                aria-hidden
-                className="ml-auto shrink-0 text-ink-3"
-              />
+              <span>Entrar a la videollamada</span>
+              <Video size={20} strokeWidth={1.7} aria-hidden />
+            </a>
+          ) : (
+            <Link className="tp-session-cta" href="/app/appointments">
+              <span>Revisar mi cita</span>
+              <ArrowRight size={20} strokeWidth={1.7} aria-hidden />
             </Link>
-          ))}
+          )}
+        </article>
+      ) : (
+        <div className="tp-session-empty">
+          <p>
+            No tienes ninguna cita programada. Puedes pedirle una a tu
+            profesional cuando te venga bien.
+          </p>
+          <Link href="/app/appointments/new" className="tp-primary tp-wide">
+            <CalendarPlus size={19} strokeWidth={1.8} aria-hidden />
+            Pedir cita
+          </Link>
+        </div>
+      )}
+
+      {enEspera > 0 && (
+        <Link href="/app/appointments" className="tp-request-notice">
+          <Clock size={16} strokeWidth={1.7} aria-hidden />
+          <span>
+            {enEspera === 1
+              ? "Tienes una solicitud en espera"
+              : `Tienes ${enEspera} solicitudes en espera`}
+          </span>
+          <ChevronRight size={15} strokeWidth={1.8} aria-hidden />
+        </Link>
+      )}
+
+      <MoodCheckin hoy={mood} />
+
+      <PatientTasks tasks={tasks} hoy={hoy} />
+
+      {/* Cuestionarios. Se enuncian como una petición del profesional: el
+          paciente no ve puntuación ni severidad, ni aquí ni al responder. */}
+      {escalas.length > 0 && (
+        <section className="tp-question-section" aria-labelledby="tp-cuestionarios">
+          <div className="tp-section-heading">
+            <h2 className="tp-h2" id="tp-cuestionarios">
+              Antes de tu sesión
+            </h2>
+            <span>
+              {escalas.length} {escalas.length === 1 ? "pendiente" : "pendientes"}
+            </span>
+          </div>
+          <p className="tp-section-desc">
+            Cuestionarios que te ha pedido tu profesional.
+          </p>
+          <div className="tp-question-grid">
+            {escalas.map((e) => (
+              <Link key={e.id} href={`/app/scales/${e.id}`}>
+                <FileText size={22} strokeWidth={1.6} aria-hidden />
+                <strong>{e.code}</strong>
+                <span className="tp-q-name">{e.name}</span>
+                <span className="tp-q-go">
+                  Responder
+                  <ArrowRight size={16} strokeWidth={1.8} aria-hidden />
+                </span>
+              </Link>
+            ))}
+          </div>
         </section>
       )}
 
-      <MoodLogger today={mood} />
-
-
-      <PatientTasks tasks={tasks} today={today} />
-
+      {/* La entrega no dibuja los pagos en el inicio, pero esconder una deuda
+          viva detrás de dos toques sería una regresión funcional, así que se
+          conserva como fila discreta y solo cuando hay algo que decir. */}
       {(pay.debtCents > 0 || pay.packRemaining > 0) && (
-        <Link
-          href="/app/payments"
-          className="card row-hover flex items-center gap-3 p-4"
-        >
-          <span className="section-label">Pagos</span>
-          <span className="ml-auto text-sm">
-            {pay.debtCents > 0 && (
-              <span className="font-medium text-warn">
-                {formatCurrency(pay.debtCents)} pendiente
-              </span>
-            )}
-            {pay.debtCents > 0 && pay.packRemaining > 0 && " · "}
-            {pay.packRemaining > 0 && (
-              <span className="text-ink-2">bono: {pay.packRemaining}</span>
-            )}
-          </span>
-          <ChevronRight className="size-4 text-ink-3" strokeWidth={2} aria-hidden />
-        </Link>
+        <div className="tp-card tp-space-top">
+          <Link href="/app/payments" className="tp-list-row">
+            <CreditCard size={18} strokeWidth={1.7} aria-hidden />
+            <span className="tp-list-label">Pagos</span>
+            <span className="tp-list-hint">
+              {pay.debtCents > 0 && `${formatCurrency(pay.debtCents)} pendiente`}
+              {pay.debtCents > 0 && pay.packRemaining > 0 && " · "}
+              {pay.packRemaining > 0 && `bono: ${pay.packRemaining}`}
+            </span>
+            <ChevronRight
+              size={17}
+              strokeWidth={1.8}
+              aria-hidden
+              className="tp-chevron"
+            />
+          </Link>
+        </div>
       )}
-    </div>
+
+      <p className="tp-end-note">Tu espacio entre sesiones.</p>
+    </>
   );
 }

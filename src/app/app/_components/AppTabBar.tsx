@@ -5,18 +5,18 @@ import { usePathname } from "next/navigation";
 import {
   House,
   CalendarDays,
-  HeartPulse,
+  NotebookText,
   BookOpen,
-  Menu,
+  MoreHorizontal,
   type LucideIcon,
 } from "lucide-react";
 
 const TABS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "/app", label: "Inicio", Icon: House },
   { href: "/app/appointments", label: "Citas", Icon: CalendarDays },
-  { href: "/app/diary", label: "Diario", Icon: HeartPulse },
+  { href: "/app/diary", label: "Diario", Icon: NotebookText },
   { href: "/app/resources", label: "Recursos", Icon: BookOpen },
-  { href: "/app/more", label: "Más", Icon: Menu },
+  { href: "/app/more", label: "Más", Icon: MoreHorizontal },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -25,42 +25,36 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 /**
- * Barra de pestañas inferior, el patrón que espera cualquiera que abra esto en
- * el móvil. Fija abajo y respetando el área segura de iOS (la franja del
- * indicador de inicio), que si no se come la fila de iconos.
+ * Navegación inferior: el patrón que espera cualquiera que abra esto en un
+ * teléfono. Estable (no desplaza con el contenido) y respetando el área segura
+ * de iOS, que si no se come la fila de iconos.
+ *
+ * El estado activo no depende solo del color: cambia el relleno del icono, el
+ * peso de la etiqueta y lleva `aria-current="page"`, que es además el selector
+ * del que cuelga el estilo.
  */
 export function AppTabBar() {
   const pathname = usePathname();
 
   return (
-    <nav
-      aria-label="Secciones"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-panel/95 backdrop-blur-sm"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
-      <ul className="mx-auto flex w-full max-w-md items-stretch">
+    <nav className="tp-nav" aria-label="Secciones">
+      <div className="tp-nav-inner">
         {TABS.map(({ href, label, Icon }) => {
           const active = isActive(pathname, href);
           return (
-            <li key={href} className="flex-1">
-              <Link
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 px-1 py-2 text-[11px] transition-colors duration-150 ${
-                  active ? "text-accent" : "text-ink-3 hover:text-ink-2"
-                }`}
-              >
-                <Icon
-                  className="size-5"
-                  strokeWidth={active ? 2.25 : 1.75}
-                  aria-hidden
-                />
-                <span className={active ? "font-medium" : ""}>{label}</span>
-              </Link>
-            </li>
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+            >
+              <span className="tp-nav-icon">
+                <Icon size={21} strokeWidth={active ? 1.9 : 1.6} aria-hidden />
+              </span>
+              <b>{label}</b>
+            </Link>
           );
         })}
-      </ul>
+      </div>
     </nav>
   );
 }
