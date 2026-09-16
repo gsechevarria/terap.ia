@@ -27,6 +27,17 @@ export default async function LoginPage({
         <Brandmark height={120} />
       </Link>
       <LoginForm invite={invite} />
+
+      {/* Las otras dos entradas, para quien llegue aquí sin cuenta. El alta de
+          pacientes NO se ofrece: no existe, y `/acceso/paciente` lo explica. */}
+      {!invite && (
+        <p className="text-center text-sm text-ink-2">
+          ¿Eres profesional y aún no tienes cuenta?{" "}
+          <Link href="/registro" className="font-medium text-accent hover:underline">
+            Crear mi consulta
+          </Link>
+        </p>
+      )}
     </main>
   );
 }

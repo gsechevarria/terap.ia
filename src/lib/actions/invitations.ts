@@ -6,43 +6,108 @@ import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOwnedPatient } from "@/lib/queries/identity";
+import { enviarCorreo } from "@/lib/email/enviar";
+import { invitacionPaciente } from "@/lib/email/plantillas";
+import { urlDeInvitacionPaciente } from "@/lib/urls";
+
+export type ResultadoInvitacion = {
+  /** Enlace en claro. Se devuelve UNA vez; en base de datos solo vive su hash. */
+  url: string;
+  expiresAt: string;
+  destinatario: string;
+  /** Qué ha pasado con el correo. No se afirma entrega al destinatario. */
+  correo: "sent" | "failed" | "no_provider";
+};
 
 /**
- * Genera una invitación (token de un solo uso) para el paciente. El token en
- * claro (256 bits) se genera aquí y se devuelve UNA vez para construir el
- * enlace; en BD solo se guarda su SHA-256 (ver 20260725100001). No hay forma de
- * recuperar el enlace más tarde: si se pierde, se regenera.
+ * Emite la invitación de acceso de un paciente y manda el correo.
  *
- * `requireOwnedPatient` es la corrección de seguridad: antes bastaba con estar
- * autenticado como profesional cualquiera y pasar el UUID de un paciente ajeno.
- * La política `invitations_all_by_professional` solo validaba
- * `professional_id` —el del propio atacante, luego siempre pasaba— y la FK solo
- * exige que la fila exista. Con el token en claro en la respuesta, se canjeaba
- * desde otra cuenta y `accept_invitation` reasignaba `patients.user_id`: el
- * paciente legítimo perdía el acceso a su ficha.
+ * El token son 256 bits de `randomBytes`; en base de datos se guarda solo su
+ * SHA-256 (`issue_invitation`), así que un volcado no permite canjear nada. El
+ * claro se devuelve una vez para construir el enlace y para poder entregarlo a
+ * mano si el correo no ha salido.
+ *
+ * Reemitir REVOCA las invitaciones anteriores que siguieran vivas; de eso se
+ * encarga la RPC, en la misma transacción.
  */
 async function createInvitationActionImpl(
   patientId: string,
-): Promise<{ token: string; expiresAt: string }> {
+  emailOverride?: string,
+): Promise<ResultadoInvitacion> {
   const { patient } = await requireOwnedPatient(patientId);
 
-  // `accept_invitation` exige que el correo de la invitación coincida con el de
-  // la cuenta que la canjea, así que sin correo la invitación sería inservible.
-  if (!patient.email) {
+  const destino = (emailOverride ?? patient.email ?? "").trim();
+  if (!destino) {
     throw new ActionInputError(
-      "Añade el correo del paciente en su ficha antes de invitarle: la invitación solo puede aceptarla esa dirección.",
+      "Añade el correo del paciente antes de invitarle: solo esa dirección puede aceptar la invitación.",
     );
+  }
+  // Comprobación mínima de forma. La de verdad la hace el proveedor al enviar;
+  // aquí solo se evita gastar una invitación en algo que no es un correo.
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(destino)) {
+    throw new ActionInputError("Ese correo no parece válido.");
   }
 
   const supabase = await createClient();
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
 
-  const { data, error } = await supabase.rpc("issue_invitation", { p_patient_id: patient.id, p_token_hash: tokenHash });
+  const { data, error } = await supabase.rpc("issue_invitation", {
+    p_patient_id: patient.id,
+    p_token_hash: tokenHash,
+    p_email: destino,
+  });
   if (error) throw new Error(error.message);
 
+  const fila = Array.isArray(data) ? data[0] : null;
+  if (!fila) throw new Error("No se ha podido emitir la invitación.");
+
+  const url = urlDeInvitacionPaciente(token);
+
+  // El nombre del centro sale de la vista previa, que es lo mismo que verá el
+  // paciente. Si no se pudiera leer, el correo no se manda a medias.
+  const { data: previa } = await supabase.rpc("invitation_preview", { p_token: token });
+  const organizacion = (Array.isArray(previa) ? previa[0]?.organization_name : null) ?? "Tu profesional";
+
+  const plantilla = invitacionPaciente({
+    organizacion,
+    url,
+    expiraEn: fila.expires_at,
+  });
+
+  const envio = await enviarCorreo({
+    para: fila.recipient,
+    asunto: plantilla.asunto,
+    html: plantilla.html,
+    texto: plantilla.texto,
+    plantilla: "invitacion_paciente",
+    sujeto: { tipo: "invitation", id: fila.invitation_id },
+    // Sin nada del expediente: ni nombre del paciente, ni tareas, ni citas.
+    payload: { organizacion, expires_at: fila.expires_at },
+  });
+
   revalidatePath(`/pro/patients/${patientId}`);
-  return { token, expiresAt: data };
+  return {
+    url,
+    expiresAt: fila.expires_at,
+    destinatario: fila.recipient,
+    correo: envio.estado,
+  };
 }
 
-export async function createInvitationAction(...args: Parameters<typeof createInvitationActionImpl>) { return runAction(() => createInvitationActionImpl(...args)); }
+/** Revoca una invitación aún pendiente. El enlace deja de servir al instante. */
+async function revokeInvitationActionImpl(invitationId: string, patientId: string) {
+  await requireOwnedPatient(patientId);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("revoke_invitation", { p_id: invitationId });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/pro/patients/${patientId}`);
+}
+
+export async function createInvitationAction(...args: Parameters<typeof createInvitationActionImpl>) {
+  return runAction(() => createInvitationActionImpl(...args));
+}
+
+export async function revokeInvitationAction(...args: Parameters<typeof revokeInvitationActionImpl>) {
+  return runAction(() => revokeInvitationActionImpl(...args));
+}

@@ -5,6 +5,7 @@ import { ActionInputError } from "@/lib/action-result";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getContextoPropio } from "@/lib/queries/contexts";
 import { getCurrentProfessional, requireOwnedPatient } from "@/lib/queries/identity";
 import type { PatientStatus } from "@/lib/types";
 
@@ -34,6 +35,17 @@ async function createPatientActionImpl(formData: FormData) {
   const pro = await getCurrentProfessional();
   if (!pro) redirect("/login");
 
+  // La organización viaja EXPLÍCITA aunque un disparador la derivaría igual:
+  // así la política `patients_insert_by_professional` puede comprobarla contra
+  // las membresías del llamante, que es lo que impide dar de alta un expediente
+  // en un centro al que no perteneces.
+  const contexto = await getContextoPropio();
+  if (!contexto?.organization_id) {
+    throw new ActionInputError(
+      "Tu cuenta no está asociada a ninguna consulta u organización activa.",
+    );
+  }
+
   const fullName = String(formData.get("full_name") ?? "").trim();
   const tags = parseTags(String(formData.get("tags") ?? ""));
   if (!fullName) throw new ActionInputError("El nombre es obligatorio.");
@@ -47,6 +59,7 @@ async function createPatientActionImpl(formData: FormData) {
     .from("patients")
     .insert({
       professional_id: pro.id,
+      organization_id: contexto.organization_id,
       full_name: fullName,
       email: optionalText(formData, "email"),
       tags,

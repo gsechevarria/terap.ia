@@ -167,6 +167,39 @@ Update: {
 };
 Relationships: [{ foreignKeyName: "appointments_parent_appointment_id_fkey"; columns: ["parent_appointment_id"]; isOneToOne: false; referencedRelation: "appointments"; referencedColumns: ["id"] },{ foreignKeyName: "appointments_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "appointments_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
+"audit_log": {
+Row: {
+"id": number;
+"occurred_at": string;
+"actor_user_id": string | null;
+"organization_id": string | null;
+"action": string;
+"subject_type": string | null;
+"subject_id": string | null;
+"metadata": Json;
+};
+Insert: {
+"id": number;
+"occurred_at"?: string;
+"actor_user_id"?: string | null;
+"organization_id"?: string | null;
+"action": string;
+"subject_type"?: string | null;
+"subject_id"?: string | null;
+"metadata"?: Json;
+};
+Update: {
+"id"?: number;
+"occurred_at"?: string;
+"actor_user_id"?: string | null;
+"organization_id"?: string | null;
+"action"?: string;
+"subject_type"?: string | null;
+"subject_id"?: string | null;
+"metadata"?: Json;
+};
+Relationships: [];
+};
 "bienes_inversion": {
 Row: {
 "id": string;
@@ -451,6 +484,54 @@ Update: {
 "shared_with_patient"?: boolean;
 };
 Relationships: [{ foreignKeyName: "documents_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "documents_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"email_deliveries": {
+Row: {
+"id": string;
+"to_email": string;
+"template": string;
+"subject_type": string | null;
+"subject_id": string | null;
+"organization_id": string | null;
+"status": Database["public"]["Enums"]["email_delivery_status"];
+"provider_id": string | null;
+"error": string | null;
+"attempts": number;
+"payload": Json;
+"created_at": string;
+"sent_at": string | null;
+};
+Insert: {
+"id"?: string;
+"to_email": string;
+"template": string;
+"subject_type"?: string | null;
+"subject_id"?: string | null;
+"organization_id"?: string | null;
+"status"?: Database["public"]["Enums"]["email_delivery_status"];
+"provider_id"?: string | null;
+"error"?: string | null;
+"attempts"?: number;
+"payload"?: Json;
+"created_at"?: string;
+"sent_at"?: string | null;
+};
+Update: {
+"id"?: string;
+"to_email"?: string;
+"template"?: string;
+"subject_type"?: string | null;
+"subject_id"?: string | null;
+"organization_id"?: string | null;
+"status"?: Database["public"]["Enums"]["email_delivery_status"];
+"provider_id"?: string | null;
+"error"?: string | null;
+"attempts"?: number;
+"payload"?: Json;
+"created_at"?: string;
+"sent_at"?: string | null;
+};
+Relationships: [{ foreignKeyName: "email_deliveries_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] }];
 };
 "emergency_links": {
 Row: {
@@ -759,6 +840,10 @@ Row: {
 "accepted_at": string | null;
 "created_at": string;
 "token_hash": string;
+"organization_id": string;
+"invited_by": string | null;
+"revoked_at": string | null;
+"kind": Database["public"]["Enums"]["invite_target"];
 };
 Insert: {
 "id"?: string;
@@ -769,6 +854,10 @@ Insert: {
 "accepted_at"?: string | null;
 "created_at"?: string;
 "token_hash": string;
+"organization_id": string;
+"invited_by"?: string | null;
+"revoked_at"?: string | null;
+"kind"?: Database["public"]["Enums"]["invite_target"];
 };
 Update: {
 "id"?: string;
@@ -779,8 +868,12 @@ Update: {
 "accepted_at"?: string | null;
 "created_at"?: string;
 "token_hash"?: string;
+"organization_id"?: string;
+"invited_by"?: string | null;
+"revoked_at"?: string | null;
+"kind"?: Database["public"]["Enums"]["invite_target"];
 };
-Relationships: [{ foreignKeyName: "invitations_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "invitations_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+Relationships: [{ foreignKeyName: "invitations_invited_by_fkey"; columns: ["invited_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "invitations_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },{ foreignKeyName: "invitations_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "invitations_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
 "mood_entries": {
 Row: {
@@ -923,6 +1016,138 @@ Update: {
 };
 Relationships: [{ foreignKeyName: "notifications_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "notifications_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
+"organization_access": {
+Row: {
+"organization_id": string;
+"status": Database["public"]["Enums"]["org_access_status"];
+"granted_by": string | null;
+"granted_at": string | null;
+"expires_at": string | null;
+"note": string | null;
+"stripe_customer_id": string | null;
+"stripe_subscription_id": string | null;
+"updated_at": string;
+};
+Insert: {
+"organization_id": string;
+"status"?: Database["public"]["Enums"]["org_access_status"];
+"granted_by"?: string | null;
+"granted_at"?: string | null;
+"expires_at"?: string | null;
+"note"?: string | null;
+"stripe_customer_id"?: string | null;
+"stripe_subscription_id"?: string | null;
+"updated_at"?: string;
+};
+Update: {
+"organization_id"?: string;
+"status"?: Database["public"]["Enums"]["org_access_status"];
+"granted_by"?: string | null;
+"granted_at"?: string | null;
+"expires_at"?: string | null;
+"note"?: string | null;
+"stripe_customer_id"?: string | null;
+"stripe_subscription_id"?: string | null;
+"updated_at"?: string;
+};
+Relationships: [{ foreignKeyName: "organization_access_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] }];
+};
+"organization_members": {
+Row: {
+"id": string;
+"organization_id": string;
+"professional_id": string;
+"role": Database["public"]["Enums"]["org_member_role"];
+"status": Database["public"]["Enums"]["member_status"];
+"can_invite_patients": boolean;
+"invited_by": string | null;
+"created_at": string;
+"revoked_at": string | null;
+};
+Insert: {
+"id"?: string;
+"organization_id": string;
+"professional_id": string;
+"role"?: Database["public"]["Enums"]["org_member_role"];
+"status"?: Database["public"]["Enums"]["member_status"];
+"can_invite_patients"?: boolean;
+"invited_by"?: string | null;
+"created_at"?: string;
+"revoked_at"?: string | null;
+};
+Update: {
+"id"?: string;
+"organization_id"?: string;
+"professional_id"?: string;
+"role"?: Database["public"]["Enums"]["org_member_role"];
+"status"?: Database["public"]["Enums"]["member_status"];
+"can_invite_patients"?: boolean;
+"invited_by"?: string | null;
+"created_at"?: string;
+"revoked_at"?: string | null;
+};
+Relationships: [{ foreignKeyName: "organization_members_invited_by_fkey"; columns: ["invited_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "organization_members_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },{ foreignKeyName: "organization_members_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"organizations": {
+Row: {
+"id": string;
+"name": string;
+"kind": Database["public"]["Enums"]["organization_kind"];
+"created_by": string | null;
+"created_at": string;
+"updated_at": string;
+};
+Insert: {
+"id"?: string;
+"name": string;
+"kind"?: Database["public"]["Enums"]["organization_kind"];
+"created_by"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Update: {
+"id"?: string;
+"name"?: string;
+"kind"?: Database["public"]["Enums"]["organization_kind"];
+"created_by"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+};
+Relationships: [];
+};
+"patient_assignments": {
+Row: {
+"id": string;
+"patient_id": string;
+"professional_id": string;
+"organization_id": string;
+"role": Database["public"]["Enums"]["assignment_role"];
+"created_by": string | null;
+"created_at": string;
+"revoked_at": string | null;
+};
+Insert: {
+"id"?: string;
+"patient_id": string;
+"professional_id": string;
+"organization_id": string;
+"role"?: Database["public"]["Enums"]["assignment_role"];
+"created_by"?: string | null;
+"created_at"?: string;
+"revoked_at"?: string | null;
+};
+Update: {
+"id"?: string;
+"patient_id"?: string;
+"professional_id"?: string;
+"organization_id"?: string;
+"role"?: Database["public"]["Enums"]["assignment_role"];
+"created_by"?: string | null;
+"created_at"?: string;
+"revoked_at"?: string | null;
+};
+Relationships: [{ foreignKeyName: "patient_assignments_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "patient_assignments_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },{ foreignKeyName: "patient_assignments_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "patient_assignments_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
 "patient_notes": {
 Row: {
 "id": string;
@@ -963,6 +1188,7 @@ Row: {
 "address": string | null;
 "profession": string | null;
 "emergency_contact": string | null;
+"organization_id": string;
 };
 Insert: {
 "id"?: string;
@@ -979,6 +1205,7 @@ Insert: {
 "address"?: string | null;
 "profession"?: string | null;
 "emergency_contact"?: string | null;
+"organization_id": string;
 };
 Update: {
 "id"?: string;
@@ -995,8 +1222,9 @@ Update: {
 "address"?: string | null;
 "profession"?: string | null;
 "emergency_contact"?: string | null;
+"organization_id"?: string;
 };
-Relationships: [{ foreignKeyName: "patients_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+Relationships: [{ foreignKeyName: "patients_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },{ foreignKeyName: "patients_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
 "payment_settings": {
 Row: {
@@ -1115,6 +1343,69 @@ Update: {
 };
 Relationships: [{ foreignKeyName: "pending_uploads_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "pending_uploads_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
+"platform_admins": {
+Row: {
+"user_id": string;
+"note": string | null;
+"created_at": string;
+};
+Insert: {
+"user_id": string;
+"note"?: string | null;
+"created_at"?: string;
+};
+Update: {
+"user_id"?: string;
+"note"?: string | null;
+"created_at"?: string;
+};
+Relationships: [];
+};
+"professional_invitations": {
+Row: {
+"id": string;
+"organization_id": string;
+"email": string;
+"token_hash": string;
+"role": Database["public"]["Enums"]["org_member_role"];
+"can_invite_patients": boolean;
+"invited_by": string;
+"expires_at": string;
+"accepted_at": string | null;
+"accepted_by": string | null;
+"revoked_at": string | null;
+"created_at": string;
+};
+Insert: {
+"id"?: string;
+"organization_id": string;
+"email": string;
+"token_hash": string;
+"role"?: Database["public"]["Enums"]["org_member_role"];
+"can_invite_patients"?: boolean;
+"invited_by": string;
+"expires_at"?: string;
+"accepted_at"?: string | null;
+"accepted_by"?: string | null;
+"revoked_at"?: string | null;
+"created_at"?: string;
+};
+Update: {
+"id"?: string;
+"organization_id"?: string;
+"email"?: string;
+"token_hash"?: string;
+"role"?: Database["public"]["Enums"]["org_member_role"];
+"can_invite_patients"?: boolean;
+"invited_by"?: string;
+"expires_at"?: string;
+"accepted_at"?: string | null;
+"accepted_by"?: string | null;
+"revoked_at"?: string | null;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "professional_invitations_accepted_by_fkey"; columns: ["accepted_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "professional_invitations_invited_by_fkey"; columns: ["invited_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "professional_invitations_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] }];
+};
 "professionals": {
 Row: {
 "id": string;
@@ -1124,6 +1415,14 @@ Row: {
 "created_at": string;
 "updated_at": string;
 "deleted_at": string | null;
+"verification_status": Database["public"]["Enums"]["verification_status"];
+"colegio": string | null;
+"numero_colegiado": string | null;
+"practice_kind": Database["public"]["Enums"]["organization_kind"] | null;
+"verification_note": string | null;
+"verification_reviewed_by": string | null;
+"verification_reviewed_at": string | null;
+"onboarding_completed_at": string | null;
 };
 Insert: {
 "id"?: string;
@@ -1133,6 +1432,14 @@ Insert: {
 "created_at"?: string;
 "updated_at"?: string;
 "deleted_at"?: string | null;
+"verification_status"?: Database["public"]["Enums"]["verification_status"];
+"colegio"?: string | null;
+"numero_colegiado"?: string | null;
+"practice_kind"?: Database["public"]["Enums"]["organization_kind"] | null;
+"verification_note"?: string | null;
+"verification_reviewed_by"?: string | null;
+"verification_reviewed_at"?: string | null;
+"onboarding_completed_at"?: string | null;
 };
 Update: {
 "id"?: string;
@@ -1142,6 +1449,14 @@ Update: {
 "created_at"?: string;
 "updated_at"?: string;
 "deleted_at"?: string | null;
+"verification_status"?: Database["public"]["Enums"]["verification_status"];
+"colegio"?: string | null;
+"numero_colegiado"?: string | null;
+"practice_kind"?: Database["public"]["Enums"]["organization_kind"] | null;
+"verification_note"?: string | null;
+"verification_reviewed_by"?: string | null;
+"verification_reviewed_at"?: string | null;
+"onboarding_completed_at"?: string | null;
 };
 Relationships: [];
 };
@@ -1526,38 +1841,63 @@ Relationships: [];
 };
 Functions: {
 "accept_invitation": { Args: {"p_token": string | null}; Returns: string };
+"accept_professional_invitation": { Args: {"p_token": string | null}; Returns: string };
+"admin_review_professional": { Args: {"p_professional_id": string | null;"p_status": Database["public"]["Enums"]["verification_status"] | null;"p_note"?: string | null}; Returns: undefined };
+"admin_set_org_access": { Args: {"p_org": string | null;"p_status": Database["public"]["Enums"]["org_access_status"] | null;"p_expires_at"?: string | null;"p_note"?: string | null}; Returns: undefined };
+"assign_patient": { Args: {"p_patient_id": string | null;"p_professional_id": string | null}; Returns: undefined };
+"can_invite_patients": { Args: {"p_org": string | null}; Returns: boolean };
+"can_manage_org": { Args: {"p_org": string | null}; Returns: boolean };
 "change_appointment": { Args: {"p_id": string | null;"p_attendance"?: string | null;"p_action"?: string | null}; Returns: string };
 "claim_notifications": { Args: {"p_token": string | null;"p_limit"?: number | null}; Returns: (Database["public"]["Tables"]["notifications"]["Row"])[] };
 "complete_onboarding": { Args: {"p_token": string | null;"p_template_id": string | null;"p_content_hash": string | null}; Returns: string };
 "complete_patient_task": { Args: {"p_id": string | null;"p_response"?: string | null}; Returns: string };
 "create_session_pack": { Args: {"p_patient_id": string | null;"p_total_sessions": number | null;"p_price_cents": number | null;"p_request_id": string | null}; Returns: string };
+"current_clinical_patient_ids": { Args: Record<PropertyKey, never>; Returns: (string)[] };
+"current_org_ids": { Args: Record<PropertyKey, never>; Returns: (string)[] };
 "current_patient_id": { Args: Record<PropertyKey, never>; Returns: string };
+"current_patient_ids": { Args: Record<PropertyKey, never>; Returns: (string)[] };
+"current_patient_org_ids": { Args: Record<PropertyKey, never>; Returns: (string)[] };
 "current_patient_professional_id": { Args: Record<PropertyKey, never>; Returns: string };
+"current_patient_professional_ids": { Args: Record<PropertyKey, never>; Returns: (string)[] };
 "current_professional_id": { Args: Record<PropertyKey, never>; Returns: string };
 "delete_expense": { Args: {"p_id": string | null}; Returns: string };
 "ensure_consent_template": { Args: {"p_professional_id": string | null}; Returns: undefined };
 "get_onboarding_consent": { Args: {"p_token"?: string | null}; Returns: Json };
+"has_consent_for_record": { Args: {"p_patient_id": string | null}; Returns: boolean };
 "has_current_consent": { Args: Record<PropertyKey, never>; Returns: boolean };
-"invitation_preview": { Args: {"p_token": string | null}; Returns: ({"valid": boolean;"professional_name": string;"expires_at": string})[] };
-"issue_invitation": { Args: {"p_patient_id": string | null;"p_token_hash": string | null}; Returns: string };
+"invitation_preview": { Args: {"p_token": string | null}; Returns: ({"valid": boolean;"professional_name": string;"expires_at": string;"organization_name": string;"email": string})[] };
+"is_org_member": { Args: {"p_org": string | null}; Returns: boolean };
+"is_platform_admin": { Args: Record<PropertyKey, never>; Returns: boolean };
+"issue_invitation": { Args: {"p_patient_id": string | null;"p_token_hash": string | null;"p_email"?: string | null;"p_ttl_hours"?: number | null}; Returns: ({"invitation_id": string;"expires_at": string;"recipient": string})[] };
+"issue_professional_invitation": { Args: {"p_org": string | null;"p_email": string | null;"p_token_hash": string | null;"p_role"?: Database["public"]["Enums"]["org_member_role"] | null;"p_can_invite"?: boolean | null;"p_ttl_hours"?: number | null}; Returns: string };
 "mark_notification_read": { Args: {"p_id": string | null}; Returns: undefined };
+"my_professional_context": { Args: Record<PropertyKey, never>; Returns: Json };
 "patient_accept_consent": { Args: Record<PropertyKey, never>; Returns: string };
 "patient_request_appointment": { Args: {"p_kind": string | null;"p_preferred_start"?: string | null;"p_alt_start"?: string | null;"p_duration_min"?: number | null;"p_note"?: string | null;"p_appointment_id"?: string | null}; Returns: string };
 "patient_respond_appointment": { Args: {"p_appointment_id": string | null;"p_action": string | null}; Returns: undefined };
 "patient_withdraw_request": { Args: {"p_id": string | null}; Returns: undefined };
+"professional_invitation_preview": { Args: {"p_token": string | null}; Returns: ({"organization_name": string;"role": Database["public"]["Enums"]["org_member_role"];"expires_at": string;"email": string})[] };
+"professional_is_operational": { Args: Record<PropertyKey, never>; Returns: boolean };
 "professional_owns_patient": { Args: {"p_patient_id": string | null}; Returns: boolean };
 "queue_appointment_reminders": { Args: Record<PropertyKey, never>; Returns: number };
+"register_professional": { Args: {"p_full_name": string | null;"p_practice_kind": Database["public"]["Enums"]["organization_kind"] | null;"p_org_name"?: string | null;"p_colegio"?: string | null;"p_numero_colegiado"?: string | null}; Returns: string };
 "resolve_appointment_request": { Args: {"p_id": string | null;"p_action": string | null;"p_start"?: string | null;"p_end"?: string | null;"p_note"?: string | null}; Returns: string };
+"revoke_invitation": { Args: {"p_id": string | null}; Returns: undefined };
+"revoke_member": { Args: {"p_member_id": string | null}; Returns: undefined };
+"revoke_professional_invitation": { Args: {"p_id": string | null}; Returns: undefined };
 "save_expense": { Args: {"p_id": string | null;"p_data": Json | null;"p_replace_receipt"?: boolean | null}; Returns: string };
+"set_member_permissions": { Args: {"p_member_id": string | null;"p_role": Database["public"]["Enums"]["org_member_role"] | null;"p_can_invite": boolean | null}; Returns: undefined };
 "set_payment_fiscal": { Args: {"p_id": string | null;"p_tipo": string | null;"p_iva": number | null;"p_retencion_cents": number | null}; Returns: undefined };
 "settle_attended_appointment": { Args: {"p_appointment_id": string | null}; Returns: undefined };
+"unassign_patient": { Args: {"p_patient_id": string | null;"p_professional_id": string | null}; Returns: undefined };
 "unsettle_appointment": { Args: {"p_appointment_id": string | null}; Returns: string };
 "valid_push_endpoint": { Args: {"v": string | null}; Returns: boolean };
-}; Enums: {"appointment_request_kind": "new" | "reschedule" | "cancel";"appointment_request_status": "pending" | "accepted" | "declined" | "withdrawn";"appointment_status": "scheduled" | "confirmed" | "cancelled" | "completed";"assignment_type": "one_off" | "recurring";"attendance_status": "pending" | "attended" | "no_show" | "late_cancel";"categoria_servicio": "asistencia_sanitaria" | "formacion" | "peritaje" | "consultoria" | "seleccion_personal" | "coaching" | "otro";"clase_retencion": "soportada_cliente" | "practicada_colaborador" | "pago_fraccionado_irpf" | "liquidacion_iva";"criterio_imputacion": "devengo" | "cobros_pagos" | "desconocido";"estado_expediente": "borrador" | "pendiente_informacion" | "preparado_revision" | "revisado";"estado_registro_fiscal": "propuesto" | "confirmado" | "pendiente" | "excluido";"notification_channel": "push" | "email";"notification_status": "queued" | "sent" | "failed" | "read";"patient_status": "active" | "archived";"payment_status": "pending" | "paid";"recurrence_freq": "none" | "daily" | "weekly" | "biweekly" | "monthly";"resource_kind": "pdf" | "audio" | "link";"territorio_fiscal": "comun" | "alava" | "bizkaia" | "gipuzkoa" | "navarra" | "canarias" | "ceuta" | "melilla";"tipo_destinatario": "particular" | "clinica" | "aseguradora" | "empresa" | "profesional" | "otro";"tipo_factura": "ordinaria" | "rectificativa" | "anticipo";"tratamiento_iva": "sujeta" | "exenta" | "no_sujeta" | "pendiente"}; CompositeTypes: Record<never,never>; }; };
+"write_audit": { Args: {"p_action": string | null;"p_subject_type": string | null;"p_subject_id": string | null;"p_org"?: string | null;"p_metadata"?: Json | null}; Returns: undefined };
+}; Enums: {"appointment_request_kind": "new" | "reschedule" | "cancel";"appointment_request_status": "pending" | "accepted" | "declined" | "withdrawn";"appointment_status": "scheduled" | "confirmed" | "cancelled" | "completed";"assignment_role": "primary" | "collaborator";"assignment_type": "one_off" | "recurring";"attendance_status": "pending" | "attended" | "no_show" | "late_cancel";"categoria_servicio": "asistencia_sanitaria" | "formacion" | "peritaje" | "consultoria" | "seleccion_personal" | "coaching" | "otro";"clase_retencion": "soportada_cliente" | "practicada_colaborador" | "pago_fraccionado_irpf" | "liquidacion_iva";"criterio_imputacion": "devengo" | "cobros_pagos" | "desconocido";"email_delivery_status": "pending" | "sent" | "failed" | "no_provider";"estado_expediente": "borrador" | "pendiente_informacion" | "preparado_revision" | "revisado";"estado_registro_fiscal": "propuesto" | "confirmado" | "pendiente" | "excluido";"invite_target": "patient_access" | "org_membership";"member_status": "active" | "revoked";"notification_channel": "push" | "email";"notification_status": "queued" | "sent" | "failed" | "read";"org_access_status": "pending" | "beta" | "suspended";"org_member_role": "owner" | "admin" | "member";"organization_kind": "solo" | "center";"patient_status": "active" | "archived";"payment_status": "pending" | "paid";"recurrence_freq": "none" | "daily" | "weekly" | "biweekly" | "monthly";"resource_kind": "pdf" | "audio" | "link";"territorio_fiscal": "comun" | "alava" | "bizkaia" | "gipuzkoa" | "navarra" | "canarias" | "ceuta" | "melilla";"tipo_destinatario": "particular" | "clinica" | "aseguradora" | "empresa" | "profesional" | "otro";"tipo_factura": "ordinaria" | "rectificativa" | "anticipo";"tratamiento_iva": "sujeta" | "exenta" | "no_sujeta" | "pendiente";"verification_status": "pending" | "approved" | "rejected" | "provisional"}; CompositeTypes: Record<never,never>; }; };
 type Schema = Database["public"];
 export type Tables<T extends keyof (Schema["Tables"] & Schema["Views"])> = (Schema["Tables"] & Schema["Views"])[T]["Row"];
 export type TablesInsert<T extends keyof Schema["Tables"]> = Schema["Tables"][T]["Insert"];
 export type TablesUpdate<T extends keyof Schema["Tables"]> = Schema["Tables"][T]["Update"];
 export type Enums<T extends keyof Schema["Enums"]> = Schema["Enums"][T];
 export type CompositeTypes = Record<never,never>;
-export const Constants = {"public":{"Enums":{"appointment_request_kind":["new","reschedule","cancel"],"appointment_request_status":["pending","accepted","declined","withdrawn"],"appointment_status":["scheduled","confirmed","cancelled","completed"],"assignment_type":["one_off","recurring"],"attendance_status":["pending","attended","no_show","late_cancel"],"categoria_servicio":["asistencia_sanitaria","formacion","peritaje","consultoria","seleccion_personal","coaching","otro"],"clase_retencion":["soportada_cliente","practicada_colaborador","pago_fraccionado_irpf","liquidacion_iva"],"criterio_imputacion":["devengo","cobros_pagos","desconocido"],"estado_expediente":["borrador","pendiente_informacion","preparado_revision","revisado"],"estado_registro_fiscal":["propuesto","confirmado","pendiente","excluido"],"notification_channel":["push","email"],"notification_status":["queued","sent","failed","read"],"patient_status":["active","archived"],"payment_status":["pending","paid"],"recurrence_freq":["none","daily","weekly","biweekly","monthly"],"resource_kind":["pdf","audio","link"],"territorio_fiscal":["comun","alava","bizkaia","gipuzkoa","navarra","canarias","ceuta","melilla"],"tipo_destinatario":["particular","clinica","aseguradora","empresa","profesional","otro"],"tipo_factura":["ordinaria","rectificativa","anticipo"],"tratamiento_iva":["sujeta","exenta","no_sujeta","pendiente"]}}} as const;
+export const Constants = {"public":{"Enums":{"appointment_request_kind":["new","reschedule","cancel"],"appointment_request_status":["pending","accepted","declined","withdrawn"],"appointment_status":["scheduled","confirmed","cancelled","completed"],"assignment_role":["primary","collaborator"],"assignment_type":["one_off","recurring"],"attendance_status":["pending","attended","no_show","late_cancel"],"categoria_servicio":["asistencia_sanitaria","formacion","peritaje","consultoria","seleccion_personal","coaching","otro"],"clase_retencion":["soportada_cliente","practicada_colaborador","pago_fraccionado_irpf","liquidacion_iva"],"criterio_imputacion":["devengo","cobros_pagos","desconocido"],"email_delivery_status":["pending","sent","failed","no_provider"],"estado_expediente":["borrador","pendiente_informacion","preparado_revision","revisado"],"estado_registro_fiscal":["propuesto","confirmado","pendiente","excluido"],"invite_target":["patient_access","org_membership"],"member_status":["active","revoked"],"notification_channel":["push","email"],"notification_status":["queued","sent","failed","read"],"org_access_status":["pending","beta","suspended"],"org_member_role":["owner","admin","member"],"organization_kind":["solo","center"],"patient_status":["active","archived"],"payment_status":["pending","paid"],"recurrence_freq":["none","daily","weekly","biweekly","monthly"],"resource_kind":["pdf","audio","link"],"territorio_fiscal":["comun","alava","bizkaia","gipuzkoa","navarra","canarias","ceuta","melilla"],"tipo_destinatario":["particular","clinica","aseguradora","empresa","profesional","otro"],"tipo_factura":["ordinaria","rectificativa","anticipo"],"tratamiento_iva":["sujeta","exenta","no_sujeta","pendiente"],"verification_status":["pending","approved","rejected","provisional"]}}} as const;
