@@ -16,13 +16,10 @@
  * Para LISTAR los administradores actuales: `--listar`.
  */
 import { createClient } from "@supabase/supabase-js";
+import { exigirEntorno } from "./lib/entorno.mjs";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !key) {
-  console.error("Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY.");
-  process.exit(1);
-}
+const { NEXT_PUBLIC_SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: key } =
+  exigirEntorno(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
 const db = createClient(url, key, { auth: { persistSession: false } });
 
 const args = process.argv.slice(2);
