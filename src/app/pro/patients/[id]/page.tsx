@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { siteUrl } from "@/lib/site-url";
 import { addDaysYMD, formatYMD, parseYMD, todayYMD } from "@/lib/tz";
 import { notFound } from "next/navigation";
 import { getPatient } from "@/lib/queries/patients";
 import { getTasksForPatient } from "@/lib/queries/tasks";
 import { getNotesForPatient } from "@/lib/queries/notes";
-import { getActiveInvitation } from "@/lib/queries/invitations";
+import { getAccesoPaciente } from "@/lib/queries/invitations";
 import {
   getDocuments,
   getRecentMoodEntries,
@@ -27,6 +26,9 @@ import { Status, type StatusTone } from "@/components/ui/Status";
 import { StatusButton } from "@/app/pro/_components/StatusButton";
 import { TagsEditor } from "@/app/pro/_components/TagsEditor";
 import { InvitePanel } from "@/app/pro/_components/InvitePanel";
+import { AsignacionesPanel } from "@/app/pro/_components/AsignacionesPanel";
+import { getAsignaciones, getMiembros } from "@/lib/queries/organizations";
+import { getContextoPropio } from "@/lib/queries/contexts";
 import { TasksPanel } from "@/app/pro/_components/TasksPanel";
 import { NotesPanel } from "@/app/pro/_components/NotesPanel";
 import { PatientDetailsPanel } from "@/app/pro/_components/PatientDetailsPanel";
@@ -42,7 +44,7 @@ const TABS = [
   { key: "diario", label: "Diario" },
   { key: "recursos", label: "Recursos" },
   { key: "documentos", label: "Documentos" },
-  { key: "invitacion", label: "Invitación" },
+  { key: "invitacion", label: "Acceso y equipo" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -62,16 +64,22 @@ export default async function PatientDetailPage({
   if (!patient) notFound();
 
   // Independientes entre sí: en secuencia eran tres viajes encadenados.
-  const [invitation, flagged] = await Promise.all([
-    getActiveInvitation(id),
+  const [acceso, flagged, asignaciones, contexto] = await Promise.all([
+    getAccesoPaciente(id, Boolean(patient.user_id)),
     getUnacknowledgedFlagged(id),
+    getAsignaciones(id),
+    getContextoPropio(),
   ]);
+  // El reparto de expedientes solo tiene sentido en un centro: en una consulta
+  // individual no hay con quién compartirlo.
+  const esCentro = contexto?.organization_kind === "center";
+  const equipo = esCentro && contexto?.organization_id
+    ? (await getMiembros(contexto.organization_id)).map((m) => ({
+        professionalId: m.professionalId,
+        nombre: m.nombre ?? m.email ?? "Profesional",
+      }))
+    : [];
 
-  // El enlace de invitación lleva el token en el path, así que su base NO puede
-  // salir de cabeceras: con un proxy mal configurado, o una petición directa al
-  // origen, un `x-forwarded-host: evil.tld` generaba un enlace que entregaba el
-  // token al atacante. Se toma de la configuración del despliegue.
-  const baseUrl = siteUrl();
   // "Hoy" en la zona del profesional, resuelto una vez en el servidor.
   const hoy = todayYMD();
 
@@ -170,11 +178,19 @@ export default async function PatientDetailPage({
             {tab === "documentos" && <DocumentsTab patientId={id} />}
             {tab === "invitacion" && (
               <div className="max-w-xl">
-                <InvitePanel
-                  patientId={id}
-                  baseUrl={baseUrl}
-                  activeExpiresAt={invitation?.expires_at}
-                />
+                <div className="flex flex-col gap-4">
+                  <InvitePanel
+                    patientId={id}
+                    acceso={acceso}
+                    emailFicha={patient.email}
+                  />
+                  <AsignacionesPanel
+                    patientId={id}
+                    asignaciones={asignaciones}
+                    equipo={equipo}
+                    esCentro={esCentro}
+                  />
+                </div>
               </div>
             )}
           </div>

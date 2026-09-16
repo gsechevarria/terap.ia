@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 export async function sqlRegressions(db) {
  let passed=0;
  const q=async(sql,args=[]) => (await db.query(sql,args)).rows;
@@ -262,5 +262,256 @@ export async function sqlRegressions(db) {
   assert.equal((await q('select status from appointment_requests where id=$1',[viva]))[0].status,'withdrawn');
   await q("select patient_request_appointment('new',now()+interval '90 days')");
  }));
+ // ===========================================================================
+ // Organizaciones, registro profesional, invitaciones y aislamiento entre
+ // centros. Cubre la lista de comprobaciones del encargo de septiembre.
+ // ===========================================================================
+ const sha = (t) => createHash('sha256').update(t).digest('hex');
+ const tok = () => 'tok-' + randomUUID();
+ // El paciente NUNCA llama a `accept_invitation` directamente: esta cerrada a
+ // la API a proposito. El unico camino es `complete_onboarding`, que ensena el
+ // consentimiento, comprueba que el texto firmado es el que se mostro y vincula
+ // en la misma transaccion.
+ const aceptarInvitacion = async (token) => {
+  const c = (await q('select get_onboarding_consent($1) c', [token]))[0].c;
+  return (await q('select complete_onboarding($1,$2,$3) id', [token, c.id, c.hash]))[0].id;
+ };
+ const nuevaCuenta = async (correo, rol) => {
+  const id = randomUUID();
+  await q("insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data) values($1,$2,now(),$3)",
+    [id, correo, JSON.stringify(rol ? { role: rol } : {})]);
+  return id;
+ };
+
+ await test('Cada profesional preexistente queda con su consulta y de propietario', async () => {
+  const r = (await q(`select o.kind, m.role, m.status from organization_members m
+    join organizations o on o.id=m.organization_id where m.professional_id=$1`, [pro1]))[0];
+  assert.equal(r.kind, 'solo'); assert.equal(r.role, 'owner'); assert.equal(r.status, 'active');
+ });
+ await test('Los expedientes existentes conservan el acceso por asignación', async () => {
+  const a = (await q('select role from patient_assignments where patient_id=$1 and professional_id=$2 and revoked_at is null', [pat1, pro1]))[0];
+  assert.equal(a.role, 'primary');
+  await user(uid1, async () => assert.equal((await q('select id from patients where id=$1', [pat1])).length, 1));
+ });
+ await test('Las cuentas preexistentes NO quedan marcadas como verificadas', async () => {
+  assert.equal((await q('select verification_status s from professionals where id=$1', [pro1]))[0].s, 'provisional');
+ });
+
+ // --- Registro profesional -------------------------------------------------
+ const regUid = await nuevaCuenta('registro@example.invalid', null);
+ let regPro;
+ await test('El registro crea perfil pendiente sin conceder el rol profesional', () => user(regUid, async () => {
+  regPro = (await q("select register_professional('Nueva Psicologa','center','Centro Aurora','COP Madrid','M-1234') id"))[0].id;
+  const p = (await q('select verification_status s, practice_kind k from professionals where id=$1', [regPro]))[0];
+  assert.equal(p.s, 'pending'); assert.equal(p.k, 'center');
+ }));
+ await test('El alta deja la cuenta en professional_pending, no en professional', async () => {
+  assert.equal((await q("select raw_app_meta_data->>'role' r from auth.users where id=$1", [regUid]))[0].r, 'professional_pending');
+ });
+ await test('Reintentar el registro no duplica organizacion ni membresia', async () => {
+  await user(regUid, async () => {
+   await q("select register_professional('Nueva Psicologa','center','Centro Aurora')");
+   await q("select register_professional('Nueva Psicologa','center','Centro Aurora')");
+  });
+  // Fuera de la sesion: un profesional PENDIENTE no tiene identidad para la
+  // RLS todavia (`current_professional_id()` exige el rol ya concedido), asi
+  // que la integridad del dato se comprueba como propietario del esquema.
+  assert.equal((await q('select count(*)::int n from organization_members where professional_id=$1', [regPro]))[0].n, 1);
+  assert.equal((await q('select count(*)::int n from organizations where created_by=$1', [regUid]))[0].n, 1);
+  const o = (await q('select o.name,o.kind from organizations o join organization_members m on m.organization_id=o.id where m.professional_id=$1', [regPro]))[0];
+  assert.equal(o.name, 'Centro Aurora'); assert.equal(o.kind, 'center');
+ });
+ await test('Un profesional pendiente puede consultar su propio estado', () => user(regUid, async () => {
+  const c = (await q('select my_professional_context() c'))[0].c;
+  assert.equal(c.verification_status, 'pending');
+  assert.equal(c.organization_name, 'Centro Aurora');
+ }));
+ const regOrg = (await q('select organization_id o from organization_members where professional_id=$1', [regPro]))[0].o;
+ await test('Un profesional pendiente no opera clinicamente ni invita', () => user(regUid, async () => {
+  assert.equal((await q('select professional_is_operational() b'))[0].b, false);
+  assert.equal((await q('select can_invite_patients($1) b', [regOrg]))[0].b, false);
+  await assert.rejects(q('insert into patients(professional_id,full_name) values($1,$2)', [regPro, 'X']));
+ }));
+ await test('Nadie se autoconcede revision ni acceso beta', () => user(regUid, async () => {
+  await assert.rejects(q("select admin_review_professional($1,'approved')", [regPro]));
+  await assert.rejects(q("select admin_set_org_access($1,'beta')", [regOrg]));
+  await assert.rejects(q('insert into platform_admins(user_id) values($1)', [regUid]));
+ }));
+
+ // --- Administracion de plataforma -----------------------------------------
+ const adminUid = await nuevaCuenta('admin@example.invalid', null);
+ await q('insert into platform_admins(user_id,note) values($1,$2)', [adminUid, 'alta fuera de banda']);
+ await test('Aprobar concede el rol profesional', () => user(adminUid, async () => {
+  await q("select admin_review_professional($1,'approved','Colegiacion comprobada')", [regPro]);
+  assert.equal((await q('select verification_status s from professionals where id=$1', [regPro]))[0].s, 'approved');
+ }));
+ await test('Aprobar asciende la cuenta a professional', async () => {
+  assert.equal((await q("select raw_app_meta_data->>'role' r from auth.users where id=$1", [regUid]))[0].r, 'professional');
+ });
+ await test('Rechazar retira el rol operativo', async () => {
+  await user(adminUid, async () => { await q("select admin_review_professional($1,'rejected','Sin acreditar')", [regPro]); });
+  assert.equal((await q("select raw_app_meta_data->>'role' r from auth.users where id=$1", [regUid]))[0].r, 'professional_pending');
+  await user(adminUid, async () => { await q("select admin_review_professional($1,'approved')", [regPro]); });
+  assert.equal((await q("select raw_app_meta_data->>'role' r from auth.users where id=$1", [regUid]))[0].r, 'professional');
+ });
+ await test('El acceso beta registra quien lo concedio y cuando', () => user(adminUid, async () => {
+  await q("select admin_set_org_access($1,'beta',null,'Centro piloto')", [regOrg]);
+  const a = (await q('select status,granted_by,granted_at from organization_access where organization_id=$1', [regOrg]))[0];
+  assert.equal(a.status, 'beta'); assert.equal(a.granted_by, adminUid); assert.ok(a.granted_at);
+ }));
+
+ // --- Invitacion de profesional a un centro --------------------------------
+ const colUid = await nuevaCuenta('colega@example.invalid', null);
+ let colPro;
+ await user(colUid, async () => { colPro = (await q("select register_professional('Colega','solo') id"))[0].id; });
+ await user(adminUid, async () => { await q("select admin_review_professional($1,'approved')", [colPro]); });
+
+ await test('Solo quien administra invita al centro', () => user(colUid, () => assert.rejects(
+   q("select issue_professional_invitation($1,'x@example.invalid',$2)", [regOrg, sha('otro')]))));
+
+ const orgTok = tok();
+ let orgInv;
+ await test('La invitacion al centro se emite y se previsualiza sin consumirse', async () => {
+  await user(regUid, async () => {
+   orgInv = (await q("select issue_professional_invitation($1,'colega@example.invalid',$2,'member') id", [regOrg, sha(orgTok)]))[0].id;
+  });
+  const p = (await q('select * from professional_invitation_preview($1)', [orgTok]))[0];
+  assert.equal(p.organization_name, 'Centro Aurora');
+  assert.equal((await q('select accepted_at from professional_invitations where id=$1', [orgInv]))[0].accepted_at, null);
+ });
+ await test('El unico propietario no puede degradarse a si mismo', () => user(regUid, async () => {
+  const miembro = (await q('select id from organization_members where organization_id=$1 and professional_id=$2', [regOrg, regPro]))[0].id;
+  await assert.rejects(q("select set_member_permissions($1,'admin',true)", [miembro]));
+ }));
+ await test('Aceptar anade membresia al centro existente, sin crear otro', async () => {
+  // El recuento va fuera de la sesion: dentro, la RLS solo ensena las
+  // organizaciones del propio usuario y el numero cambiaria por verse mas, no
+  // por haberse creado ninguna.
+  const n0 = (await q('select count(*)::int n from organizations'))[0].n;
+  await user(colUid, async () => {
+   const org = (await q('select accept_professional_invitation($1) o', [orgTok]))[0].o;
+   assert.equal(org, regOrg);
+  });
+  assert.equal((await q('select count(*)::int n from organizations'))[0].n, n0);
+  assert.equal((await q("select count(*)::int n from organization_members where organization_id=$1 and professional_id=$2 and status='active'", [regOrg, colPro]))[0].n, 1);
+ });
+ await test('El token del centro es de un solo uso', () => user(colUid, () => assert.rejects(
+   q('select accept_professional_invitation($1)', [orgTok]))));
+ await test('Un administrador no puede invitar a nadie como propietario', async () => {
+  // El colega ya es miembro: se le asciende a administrador y se comprueba que
+  // desde ahi no puede repartir la propiedad del centro.
+  await user(regUid, async () => {
+   const m = (await q('select id from organization_members where organization_id=$1 and professional_id=$2', [regOrg, colPro]))[0].id;
+   await q("select set_member_permissions($1,'admin',true)", [m]);
+  });
+  await user(colUid, () => assert.rejects(
+    q("select issue_professional_invitation($1,'jefe@example.invalid',$2,'owner')", [regOrg, sha('jefe')])));
+  // Y como administrador si puede invitar a un miembro normal.
+  await user(colUid, async () => {
+   await q("select issue_professional_invitation($1,'otromiembro@example.invalid',$2,'member')", [regOrg, sha(tok())]);
+  });
+ });
+ await test('Aceptar con otro correo se rechaza', async () => {
+  const t = tok();
+  await user(regUid, async () => { await q("select issue_professional_invitation($1,'nadie@example.invalid',$2)", [regOrg, sha(t)]); });
+  await user(colUid, () => assert.rejects(q('select accept_professional_invitation($1)', [t])));
+ });
+
+ // --- Acceso clinico: pertenecer al centro no basta -------------------------
+ let centroPat;
+ await user(regUid, async () => {
+  centroPat = (await q("insert into patients(professional_id,full_name,email) values($1,'Paciente del centro','pc@example.invalid') returning id", [regPro]))[0].id;
+ });
+ await test('Pertenecer al centro NO da acceso a sus expedientes', () => user(colUid, async () => {
+  assert.equal((await q('select id from patients where id=$1', [centroPat])).length, 0);
+ }));
+ await test('Asignar concede acceso y revocar la membresia lo retira', async () => {
+  await user(regUid, async () => { await q('select assign_patient($1,$2)', [centroPat, colPro]); });
+  await user(colUid, async () => assert.equal((await q('select id from patients where id=$1', [centroPat])).length, 1));
+  await user(regUid, async () => {
+   await q('select revoke_member((select id from organization_members where organization_id=$1 and professional_id=$2))', [regOrg, colPro]);
+  });
+  await user(colUid, async () => assert.equal((await q('select id from patients where id=$1', [centroPat])).length, 0));
+ });
+ await test('No se retira al profesional de referencia', () => user(regUid, () => assert.rejects(
+   q('select unassign_patient($1,$2)', [centroPat, regPro]))));
+ await test('La organizacion no se queda sin propietario', () => user(regUid, () => assert.rejects(
+   q('select revoke_member((select id from organization_members where organization_id=$1 and professional_id=$2))', [regOrg, regPro]))));
+
+ // --- Invitacion del paciente ----------------------------------------------
+ const patTok = tok();
+ let patInv;
+ await test('Reemitir revoca los enlaces anteriores que siguieran vivos', () => user(regUid, async () => {
+  await q('select * from issue_invitation($1,$2)', [centroPat, sha(tok())]);
+  const r = (await q('select * from issue_invitation($1,$2)', [centroPat, sha(patTok)]))[0];
+  patInv = r.invitation_id;
+  assert.equal((await q('select count(*)::int n from invitations where patient_id=$1 and revoked_at is not null', [centroPat]))[0].n, 1);
+  assert.equal(r.recipient, 'pc@example.invalid');
+ }));
+ await test('La vista previa dice que centro invita y NO consume el token', async () => {
+  const p = (await q('select * from invitation_preview($1)', [patTok]))[0];
+  assert.equal(p.organization_name, 'Centro Aurora');
+  assert.equal(p.professional_name, null);
+  assert.equal((await q('select accepted_at from invitations where id=$1', [patInv]))[0].accepted_at, null);
+ });
+ const pacUid = await nuevaCuenta('pc@example.invalid', 'patient');
+ const otroUid = await nuevaCuenta('otro@example.invalid', 'patient');
+ await test('No se acepta con un correo distinto al invitado', () => user(otroUid, () => assert.rejects(
+   aceptarInvitacion(patTok))));
+ await test('Aceptar vincula la cuenta al expediente existente, sin crear otro', async () => {
+  const n0 = (await q('select count(*)::int n from patients'))[0].n;
+  await user(pacUid, async () => { await aceptarInvitacion(patTok); });
+  // Fuera de la sesion: hasta firmar el consentimiento la RLS no le ensena el
+  // expediente, asi que el recuento dentro no diria nada util.
+  assert.equal((await q('select count(*)::int n from patients'))[0].n, n0);
+  assert.equal((await q('select user_id from patients where id=$1', [centroPat]))[0].user_id, pacUid);
+ });
+ await test('El token del paciente es de un solo uso', () => user(pacUid, async () => {
+  // La invitacion ya esta aceptada: la vista previa no la reconoce y el
+  // consentimiento ya no se puede obtener con ese token.
+  assert.equal((await q('select * from invitation_preview($1)', [patTok])).length, 0);
+ }));
+ await test('Una invitacion revocada no vincula', async () => {
+  const t = tok();
+  let id;
+  await user(regUid, async () => {
+   id = (await q('select * from issue_invitation($1,$2,$3)', [centroPat, sha(t), 'nuevo@example.invalid']))[0].invitation_id;
+   await q('select revoke_invitation($1)', [id]);
+  });
+  const nuevoUid = await nuevaCuenta('nuevo@example.invalid', 'patient');
+  await user(nuevoUid, () => assert.rejects(aceptarInvitacion(t)));
+ });
+ await test('Una invitacion caducada no vincula ni se previsualiza', async () => {
+  const t = tok();
+  await user(regUid, async () => { await q('select * from issue_invitation($1,$2,$3)', [centroPat, sha(t), 'tarde@example.invalid']); });
+  await q("update invitations set expires_at=now()-interval '1 hour' where token_hash=$1", [sha(t)]);
+  const tardeUid = await nuevaCuenta('tarde@example.invalid', 'patient');
+  await user(tardeUid, () => assert.rejects(aceptarInvitacion(t)));
+  assert.equal((await q('select * from invitation_preview($1)', [t])).length, 0);
+ });
+ await test('Sin invitacion no hay alta publica de pacientes', () => user(otroUid, async () => {
+  await assert.rejects(q("insert into patients(professional_id,full_name) values($1,'Yo mismo')", [regPro]));
+  assert.equal((await q('select id from patients')).length, 0);
+ }));
+
+ // --- Expedientes en centros distintos, separados --------------------------
+ await test('La misma persona tiene expedientes separados en dos centros', async () => {
+  let otroCentroPat;
+  await user(uid1, async () => {
+   otroCentroPat = (await q("insert into patients(professional_id,full_name,email) values($1,'Paciente del centro','pc@example.invalid') returning id", [pro1]))[0].id;
+  });
+  const t = tok();
+  await user(uid1, async () => { await q('select * from issue_invitation($1,$2)', [otroCentroPat, sha(t)]); });
+  await user(pacUid, async () => { await aceptarInvitacion(t); });
+  // Fuera de la sesion: los dos expedientes existen y estan en centros
+  // distintos. Sin fusionarse y sin que ninguno pise al otro.
+  const orgs = (await q('select distinct organization_id o from patients where user_id=$1', [pacUid])).map((r) => r.o);
+  assert.equal(orgs.length, 2);
+  assert.equal((await q('select count(*)::int n from consents c join patients p on p.id=c.patient_id where p.user_id=$1', [pacUid]))[0].n, 2);
+  // Y ninguno de los dos profesionales ve el expediente del otro centro.
+  await user(regUid, async () => assert.equal((await q('select id from patients where id=$1', [otroCentroPat])).length, 0));
+  await user(uid1, async () => assert.equal((await q('select id from patients where id=$1', [centroPat])).length, 0));
+ });
+
  return passed;
 }

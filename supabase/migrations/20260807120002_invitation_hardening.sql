@@ -109,6 +109,10 @@ grant execute on function public.accept_invitation(text) to authenticated;
 -- Sigue siendo accesible a `anon` (la landing /invite es pública), pero ya solo
 -- confirma que el enlace sirve y hasta cuándo. Quien tenga un enlace caducado
 -- recibe 0 filas y no averigua nada.
+-- `invitation_preview` cambia de tipo de retorno en 20260916100004 (añade el
+-- nombre de la organización). Sin este drop, esta migración deja de ser
+-- reproducible sobre una base que ya tiene el estado final.
+drop function if exists public.invitation_preview(text);
 create or replace function public.invitation_preview(p_token text)
 returns table (valid boolean, professional_name text, expires_at timestamptz)
 language sql

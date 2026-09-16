@@ -210,6 +210,47 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
 - **Casilla de bono en la agenda**, con validación en servidor incluida la serie
   completa. El bono se consume al registrar la asistencia, no al crear la cita.
 
+## Organizaciones, registro e invitaciones (16-sep) — EN RAMA, migración sin aplicar
+
+Rama `feat/organizaciones-registro-invitaciones`. **Cuatro migraciones nuevas
+(`20260916100001`–`20260916100004`, las 42-45) que NO están aplicadas en el
+remoto.** El PR se queda abierto hasta que se apliquen: el código nuevo sobre el
+esquema viejo rompe producción.
+
+La unidad de aislamiento y de venta pasa a ser la **organización** (consulta
+individual o centro). Dos separaciones nuevas que conviene no romper:
+
+- **Administrar ≠ acceder.** `organization_members.role` da permisos sobre el
+  centro y el equipo; **no abre un solo expediente**. El acceso clínico se
+  concede expediente a expediente en `patient_assignments`, y ahí es donde va
+  ahora `professional_owns_patient()`.
+- **Rol ≠ contexto.** `app_metadata.role` dice qué puede hacer la cuenta; dónde
+  trabaja lo dicen sus membresías y sus expedientes. Una persona puede ser
+  profesional en un centro y paciente en otro, y sus expedientes en centros
+  distintos **no se fusionan**: por eso desaparecen `patients_user_id_key` y su
+  índice, y `current_patient_id()` tiene ahora hermano en plural.
+
+Estado de acreditación: `pending` (no opera) · `approved` (único que la interfaz
+llama verificado) · `rejected` · **`provisional`** (opera, acreditación sin
+comprobar). Las cuentas preexistentes pasan a `provisional`: conservan el acceso
+y **no** se marcan como verificadas.
+
+`platform_admins` **nace vacía**, sin RLS ni permisos de API: el primer
+administrador se da de alta fuera de banda con
+`npm run admin:plataforma -- <correo>`. Hasta entonces nadie aprueba nada.
+
+Correo por **Resend** (API HTTP, sin dependencia npm). Sin `RESEND_API_KEY` y
+`EMAIL_FROM` **no se envía nada y no se finge**: la invitación se crea, queda
+como `no_provider` en `email_deliveries` y la interfaz da el enlace a mano.
+
+**Stripe sigue sin cobrar ni procesar pagos.** No está instalado. Solo hay una
+capa de acceso comercial por organización (`pending`/`beta`/`suspended`) con dos
+columnas reservadas y sin uso.
+
+Procedimiento completo —pruebas, migración, rollback y orden de despliegue— en
+[docs/ORGANIZACIONES-Y-REGISTRO.md](docs/ORGANIZACIONES-Y-REGISTRO.md).
+Informe previo y verificación posterior: `npm run informe:organizaciones`.
+
 ## Lo que queda pendiente
 
 **Cerrado el 15-sep, declarado por Gabriel.** Estos puntos llevaban semanas en

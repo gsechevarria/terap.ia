@@ -399,7 +399,7 @@ export default function Home() {
             <br />
             es <em>estar más cerca.</em>
           </h2>
-          <Link className="button primary" href="/login">
+          <Link className="button primary" href="/acceso">
             Ir a Terap <span>↗</span>
           </Link>
         </section>

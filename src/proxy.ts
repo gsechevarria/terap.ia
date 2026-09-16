@@ -15,7 +15,20 @@ import { ROLES, getUserRole, homePathForRole } from "@/lib/auth/roles";
  * usuario + rol con `supabase.auth.getUser()`. Esto es defensa en profundidad.
  */
 
-const PUBLIC_PREFIXES = ["/login", "/auth", "/invite"];
+/**
+ * Rutas públicas. `/registro` lo es porque el alta profesional empieza sin
+ * sesión; `/invitacion` y `/unirse` porque el enlace se abre antes de tener
+ * cuenta, y ABRIRLO NO CONSUME NADA: el token se canjea al aceptar.
+ */
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/auth",
+  "/invite",
+  "/invitacion",
+  "/unirse",
+  "/registro",
+  "/acceso",
+];
 
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/") return true;
@@ -88,6 +101,24 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return response; // sin rol válido: dejar en la landing/login
   }
 
+  /*
+   * Alta profesional pendiente de revisión.
+   *
+   * Puede consultar su estado y terminar el onboarding, y nada más. NO entra
+   * en el panel: el rol operativo solo lo concede un administrador al aprobar,
+   * y hasta entonces la RLS tampoco le daría un solo expediente.
+   *
+   * Se le deja pasar por `/account` (contraseña) y por `/unirse` (puede haber
+   * sido invitado a un centro mientras esperaba).
+   */
+  if (role === ROLES.PROFESSIONAL_PENDING) {
+    const permitidas = ["/registro", "/account", "/unirse", "/auth", "/contexto"];
+    if (!permitidas.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+      return withCookies(response, new URL("/registro/estado", request.url));
+    }
+    return response;
+  }
+
   // Con sesión pero sin rol válido: bloquear áreas protegidas.
   if (!role) {
     if ((pathname === "/pro" || pathname.startsWith("/pro/")) || (pathname === "/app" || pathname.startsWith("/app/"))) {
@@ -96,10 +127,16 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return response;
   }
 
-  // Aislamiento por rol: cada uno solo entra en su área.
-  if (role === ROLES.PROFESSIONAL && (pathname === "/app" || pathname.startsWith("/app/"))) {
-    return withCookies(response, new URL("/pro", request.url));
-  }
+  /*
+   * Aislamiento por área.
+   *
+   * Ya NO se rebota a un profesional que entra en `/app`: desde que una cuenta
+   * puede ser profesional en un centro y paciente en otro, esa redirección le
+   * dejaba fuera de su propio expediente. Quien decide es el layout de `/app`,
+   * que comprueba si de verdad hay un expediente vinculado y, si no lo hay,
+   * manda al panel. El rebote de paciente a `/pro` sí se conserva: un paciente
+   * no tiene nada que hacer ahí y el panel se lo negaría igualmente.
+   */
   if (role === ROLES.PATIENT && (pathname === "/pro" || pathname.startsWith("/pro/"))) {
     return withCookies(response, new URL("/app", request.url));
   }

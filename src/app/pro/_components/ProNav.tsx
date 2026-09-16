@@ -10,6 +10,7 @@ import {
   Calculator,
   ChartColumnIncreasing,
   Settings,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -20,6 +21,7 @@ const ITEMS: { href: string; label: string; Icon: LucideIcon }[] = [
   { href: "/pro/pagos", label: "Pagos", Icon: CreditCard },
   { href: "/pro/contabilidad", label: "Contabilidad", Icon: Calculator },
   { href: "/pro/analitica", label: "Analítica", Icon: ChartColumnIncreasing },
+  { href: "/pro/equipo", label: "Equipo", Icon: Building2 },
   { href: "/pro/ajustes", label: "Ajustes", Icon: Settings },
 ];
 
