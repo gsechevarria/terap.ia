@@ -1,7 +1,7 @@
 # App del paciente — dirección de interfaz móvil 02
 
 Integración de la entrega `terap-mobile-v2` (15-sep-2026) en el área `/app`.
-Rama `feat/app-paciente-diseno-movil-v2`. **Pendiente de revisión; no fusionada.**
+Rama `feat/app-paciente-diseno-movil-v2`, aprobada y fusionada el 16-sep-2026.
 
 Qué NO ha cambiado: el backend, la autenticación, los permisos, la RLS, las
 migraciones, las server actions, las RPC, el opt-in de escalas, las reglas de
@@ -118,7 +118,7 @@ Las siete pantallas llevan estados de carga (`loading.tsx`), vacío, error y
 ## Alcance
 
 Rediseñadas: **Inicio, Citas y Diario** (las tres de la entrega) más el armazón,
-y, por decisión de producto del 16-sep, también **Recursos, Más, Pagos,
+y, por decisión de producto de Gabriel del 16-sep, también **Recursos, Más, Pagos,
 Notificaciones, Pedir cita y Cuestionario**, que la entrega no cubre. La
 composición de esas seis es propia, no aprobada, y sigue el mismo lenguaje.
 
