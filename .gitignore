@@ -58,3 +58,7 @@ Claude outputs/
 # la captura original con un correo personal visible. Lo publicable ya vive en
 # public/landing-terap/ y src/app/_landing/.
 /terap-landing/
+# Entrega de diseño de la app del paciente (dirección móvil 02). Mismo
+# criterio que la landing: el paquete de referencia no entra en el repositorio;
+# lo que se versiona es su conversión, en `src/app/app/_ui/`.
+/terap-mobile-v2/

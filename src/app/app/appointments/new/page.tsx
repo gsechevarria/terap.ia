@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getMyAppointmentsSplit } from "@/lib/queries/appointments";
 import { addDaysYMD, formatYMD, parseYMD, todayYMD } from "@/lib/tz";
@@ -30,17 +31,22 @@ export default async function RequestAppointmentPage({
   const tomorrow = formatYMD(addDaysYMD(parseYMD(todayYMD()), 1));
 
   return (
-    <div className="mx-auto max-w-md">
-      <Link
-        href="/app/appointments"
-        className="text-sm text-ink-3 hover:text-ink"
-      >
-        ← Mis citas
+    <>
+      <Link href="/app/appointments" className="tp-back">
+        <ArrowLeft size={16} strokeWidth={1.8} aria-hidden />
+        Mis citas
       </Link>
-      <h1 className="page-title mt-3">
-        {target ? "Pedir otro día" : "Pedir cita"}
-      </h1>
-      <p className="mt-1 mb-6 text-sm text-ink-2">
+
+      <div className="tp-page-heading">
+        <p className="tp-overline">
+          {target ? "Cambiar de día" : "Nueva solicitud"}
+        </p>
+        <div>
+          <h1 className="tp-h1">{target ? "Pedir otro día" : "Pedir cita"}</h1>
+        </div>
+      </div>
+
+      <p className="tp-section-desc" style={{ margin: "0 0 22px" }}>
         Dinos cuándo te vendría bien y tu profesional te responde.
       </p>
 
@@ -50,6 +56,6 @@ export default async function RequestAppointmentPage({
         currentStart={currentStart}
         defaultDay={tomorrow}
       />
-    </div>
+    </>
   );
 }

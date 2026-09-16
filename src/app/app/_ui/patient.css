@@ -1,0 +1,1841 @@
+/* ===========================================================================
+ * App del paciente — dirección de interfaz móvil 02 (terap-mobile-v2).
+ *
+ * Transcripción del `mobile.css` entregado, con tres diferencias y ninguna
+ * más. Están todas anotadas ahí donde ocurren:
+ *
+ *  1. TODO cuelga de `.tp-app`. La entrega trae selectores desnudos —`body`,
+ *     `button`, `svg`, `a`, `h1`, `:focus-visible`— pensados para una página
+ *     autónoma. Next conserva el CSS ya cargado al navegar por cliente, así
+ *     que importarlos tal cual habría repintado el panel del profesional con
+ *     solo pasar por la app del paciente. Es exactamente lo que ya ocurrió con
+ *     la portada (ver `_landing/landing.css`); aquí se evita desde el origen.
+ *     Las variables van con prefijo `--tp-` por el mismo motivo: `--ink`,
+ *     `--line` y `--accent` ya existen y significan otra cosa.
+ *
+ *  2. La escala de grises se ha oscurecido para cumplir AA (4,5:1). La
+ *     entrega pinta metadatos de 10-12 px con grises de entre 2,4:1 y 3,9:1
+ *     sobre sus propios fondos: `#929da2` da 2,66:1, `#8c9aa1` 2,77:1,
+ *     `#9aa5aa` (placeholder) 2,41:1, `#8b949a` 2,96:1… Medido uno a uno.
+ *     En vez de inventar seis grises nuevos se colapsan en UNO informativo,
+ *     `--tp-muted`, del mismo tono azulado y verificado sobre las cuatro
+ *     superficies donde se pinta. La jerarquía la sostienen el tamaño y el
+ *     peso, que es el criterio que la propia entrega enuncia. `--tp-faint`
+ *     queda para lo estrictamente decorativo, que no está sujeto al criterio.
+ *     Cuatro colores de píldora se oscurecen por lo mismo, anotados abajo.
+ *
+ *  3. Modo oscuro. La entrega es solo clara y así se queda por defecto. Pero
+ *     la app ya respetaba la preferencia del sistema, y dejar a oscuras a
+ *     quien abre esto de noche era una regresión, así que bajo `.dark` los
+ *     tokens se reasignan a los del sistema visual de la app (`globals.css`)
+ *     en vez de inventar una paleta paralela. Se elige desde `/app/more`.
+ *
+ * Lo que NO está aquí: `.presentation-label`, `.presentation-footer` y el
+ * marco `.phone` de escritorio. Son andamiaje de revisión, no producto.
+ * ======================================================================== */
+
+.tp-app {
+  /* Claro por defecto, como la entrega. `.dark` lo reasigna más abajo. */
+  color-scheme: light;
+
+  --tp-canvas: #f9fafb; /* fondo de pantalla */
+  --tp-paper: #ffffff; /* tarjetas */
+  --tp-sunken: #eceff1; /* segmentado, hundidos */
+  --tp-field: #f8fafb; /* fondo de campo de texto */
+
+  --tp-ink: #18252b; /* titulares y texto principal */
+  /* Único gris informativo. 5,14:1 sobre canvas · 5,37:1 sobre paper ·
+     4,65:1 sobre sunken · 5,13:1 sobre field. Sustituye a los ocho grises de
+     la entrega, que fallaban AA a los tamaños a los que se usan. */
+  --tp-muted: #626c73;
+  /* Decorativo: separadores, trazos de icono que duplican una etiqueta
+     visible, la rejilla del gráfico. Nunca texto que aporte información. */
+  --tp-faint: #9aa5aa;
+
+  --tp-accent: #087b82; /* 4,82:1 — el de la entrega, cumple */
+  --tp-deep: #153d45; /* bloque oscuro de la próxima sesión */
+  --tp-line: #e8ecee;
+  --tp-line-strong: #dce3e6;
+
+  /* Sobre `--tp-deep`, todos los de la entrega cumplen (5,02:1 el más bajo). */
+  --tp-on-deep: #ffffff;
+  --tp-on-deep-2: #c7dce0;
+  --tp-on-deep-3: #aac4cc;
+
+  /* Tintes. Los textos se oscurecen respecto a la entrega para llegar a AA
+     sobre su propio fondo: status #597986→#4f6f7c (4,08→4,71), late
+     #93714a→#83623c (3,87→4,82), score #4d7787→#456d7c (4,23→4,88). */
+  --tp-tint-cool: #e9f1f5;
+  --tp-tint-cool-ink: #4f6f7c;
+  --tp-tint-warm: #f4eee5;
+  --tp-tint-warm-ink: #83623c;
+  --tp-tint-score: #e9f0f3;
+  --tp-tint-score-ink: #456d7c;
+  --tp-tile-blue: #e8f0f5;
+  --tp-tile-blue-ink: #4a7387;
+  --tp-tile-peach: #f3ebe2;
+  --tp-tile-peach-ink: #8a6f4d;
+
+  /* #a16a66 de la entrega da 4,40:1 — falla por una décima. */
+  --tp-danger: #95605c;
+  --tp-help: #8e5554; /* 5,62:1, tal cual viene */
+
+  --tp-focus: #197ba1;
+  --tp-chart-bar: #d7e4e9;
+  --tp-chart-bar-latest: #477e92;
+
+  --tp-gutter: 24px;
+
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--tp-ink);
+  background: var(--tp-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Modo oscuro: se reasignan los tokens a los del sistema visual de la app.
+   No hay una segunda paleta que mantener, y el resultado es coherente con el
+   resto de terap.ia, que es donde el paciente también pasa (Recursos, Más). */
+.dark .tp-app {
+  color-scheme: dark;
+
+  --tp-canvas: var(--canvas);
+  --tp-paper: var(--surface);
+  --tp-sunken: var(--surface-3);
+  --tp-field: var(--surface-2);
+
+  --tp-ink: var(--ink);
+  --tp-muted: var(--ink-2);
+  --tp-faint: var(--ink-faint);
+
+  --tp-accent: var(--accent);
+  /* Petróleo profundo: en oscuro el bloque debe seguir separándose del fondo
+     por tono, no por luminancia. Los tres textos invertidos siguen por
+     encima de 7:1 sobre él. */
+  --tp-deep: #13343c;
+  --tp-line: var(--line);
+  --tp-line-strong: var(--line-strong);
+
+  --tp-tint-cool: #1e3038;
+  --tp-tint-cool-ink: #a9c7d2;
+  --tp-tint-warm: #34291a;
+  --tp-tint-warm-ink: #d9bb8c;
+  --tp-tint-score: #1d2f36;
+  --tp-tint-score-ink: #a3c2ce;
+  --tp-tile-blue: #22323c;
+  --tp-tile-blue-ink: #9fc0d0;
+  --tp-tile-peach: #322a22;
+  --tp-tile-peach-ink: #d4b795;
+
+  --tp-danger: var(--danger);
+  --tp-help: #e9928c;
+
+  --tp-chart-bar: #33444c;
+  --tp-chart-bar-latest: #6ea6bb;
+}
+
+/* --- Reinicio local -------------------------------------------------------
+ * Deliberadamente CORTO. El preflight de Tailwind ya deja en cero el margen,
+ * el relleno y el borde de todo, y hereda tipografía y color en los controles
+ * de formulario, así que repetirlo aquí solo añadiría riesgo: este fichero va
+ * SIN capa y por tanto gana a cualquier utilidad de Tailwind. Un
+ * `.tp-app button { background: none }` habría despintado el selector de
+ * fecha y los botones de Ajustes, que son componentes compartidos con el
+ * panel del profesional y se estilan con utilidades.
+ *
+ * Solo queda lo que el preflight no cubre. */
+.tp-app button {
+  /* Tailwind v4 dejó de forzarlo y el ratón vuelve a la flecha del sistema. */
+  cursor: pointer;
+}
+.tp-app button,
+.tp-app a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.tp-app :focus-visible {
+  outline: 3px solid var(--tp-focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.tp-app svg {
+  flex-shrink: 0;
+}
+
+/* --- Armazón --------------------------------------------------------------
+ * Alto fijo, cabecera y navegación estables, y una sola zona que desplaza.
+ * Se descuenta `--banner-h`, la franja reglamentaria del layout raíz: sin
+ * ello el armazón mide una franja de más y la barra inferior se sale. */
+.tp-shell {
+  height: calc(100dvh - var(--banner-h));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tp-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px var(--tp-gutter);
+  background: var(--tp-canvas);
+  z-index: 2;
+}
+.tp-wordmark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+/* Ayuda urgente. El destino es el 024 real que la app ya usaba en la
+   cabecera y en `/app/more`; la maqueta no llamaba a ningún número y aquí no
+   se ha inventado ninguno nuevo. */
+.tp-help {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 10px 0 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tp-help);
+}
+.tp-help-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.tp-help:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tp-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tp-line-strong) transparent;
+}
+.tp-screen {
+  padding: 12px var(--tp-gutter) 28px;
+  animation: tp-enter 0.16s ease-out;
+}
+@keyframes tp-enter {
+  from {
+    opacity: 0.6;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- Navegación inferior -------------------------------------------------- */
+.tp-nav {
+  flex-shrink: 0;
+  padding: 9px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--tp-paper);
+  border-top: 1px solid var(--tp-line);
+  z-index: 4;
+}
+.tp-nav-inner {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+}
+.tp-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 49px;
+  border-radius: 8px;
+  color: var(--tp-muted);
+}
+.tp-nav-icon {
+  width: 43px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+}
+.tp-nav b {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.1px;
+}
+.tp-nav a[aria-current="page"] {
+  color: var(--tp-deep);
+}
+.dark .tp-nav a[aria-current="page"] {
+  color: var(--tp-accent);
+}
+.tp-nav a[aria-current="page"] .tp-nav-icon {
+  background: var(--tp-tint-cool);
+}
+.tp-nav a[aria-current="page"] b {
+  font-weight: 700;
+}
+
+/* --- Tipografía ----------------------------------------------------------- */
+.tp-h1 {
+  font-size: 34px;
+  line-height: 1.08;
+  letter-spacing: -1.4px;
+  font-weight: 750;
+  margin: 0;
+}
+.tp-h2 {
+  font-size: 19px;
+  line-height: 1.3;
+  letter-spacing: -0.45px;
+  font-weight: 700;
+  margin: 0;
+}
+.tp-overline {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 1.4px;
+  color: var(--tp-muted);
+  margin: 0;
+  text-transform: uppercase;
+}
+.tp-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tp-section-heading > span {
+  font-size: 12px;
+  color: var(--tp-muted);
+}
+.tp-section-heading .tp-count {
+  background: var(--tp-sunken);
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.tp-section-desc {
+  font-size: 13px;
+  color: var(--tp-muted);
+  margin: 7px 0 0;
+  line-height: 1.6;
+}
+.tp-end-note {
+  font-size: 11px;
+  color: var(--tp-muted);
+  text-align: center;
+  margin: 29px 0 4px;
+  letter-spacing: 0.3px;
+}
+
+/* --- Acciones ------------------------------------------------------------- */
+.tp-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 14px 16px;
+  border-radius: 11px;
+  border: 1px solid var(--tp-deep);
+  background: var(--tp-deep);
+  color: var(--tp-on-deep);
+  font-size: 14px;
+  font-weight: 600;
+}
+.dark .tp-primary {
+  border-color: var(--tp-accent);
+  background: var(--tp-accent);
+  color: var(--accent-ink);
+}
+.tp-primary:hover:not(:disabled) {
+  background: #205260;
+}
+.dark .tp-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.tp-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.tp-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 13px;
+  border-radius: 10px;
+  border: 1px solid var(--tp-line-strong);
+  background: transparent;
+  color: var(--tp-ink);
+  font-size: 13px;
+  font-weight: 550;
+}
+.tp-secondary:hover:not(:disabled) {
+  background: var(--tp-sunken);
+}
+.tp-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.tp-wide {
+  width: 100%;
+}
+.tp-round-action {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--tp-deep);
+  color: var(--tp-on-deep);
+  flex-shrink: 0;
+}
+.dark .tp-round-action {
+  background: var(--tp-accent);
+  color: var(--accent-ink);
+}
+.tp-text-action {
+  min-height: 44px;
+  padding: 11px 0;
+  font-size: 13px;
+  color: var(--tp-muted);
+}
+.tp-text-action:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.tp-text-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.tp-danger-text {
+  color: var(--tp-danger);
+}
+
+/* --- Campos --------------------------------------------------------------- */
+/* 16px es deliberado: por debajo, iOS hace zoom al enfocar, y bloquearlo con
+   `maximum-scale` incumple WCAG 1.4.4. Misma regla que `.field` en globals. */
+.tp-textarea,
+.tp-input {
+  width: 100%;
+  font-size: 16px;
+  line-height: 1.6;
+  padding: 13px;
+  border-radius: 10px;
+  border: 1px solid var(--tp-line-strong);
+  background: var(--tp-field);
+  color: var(--tp-ink);
+  resize: vertical;
+}
+.tp-textarea::placeholder,
+.tp-input::placeholder {
+  color: var(--tp-muted);
+}
+.tp-textarea:focus,
+.tp-input:focus {
+  outline: none;
+  border-color: var(--tp-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tp-accent) 20%, transparent);
+}
+.tp-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 20px 0 10px;
+}
+.tp-label > span {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--tp-muted);
+}
+
+/* --- Inicio: saludo ------------------------------------------------------- */
+.tp-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 6px 0 28px;
+}
+.tp-greeting .tp-h1 {
+  margin-top: 10px;
+}
+.tp-profile {
+  width: 43px;
+  height: 43px;
+  border-radius: 50%;
+  border: 1px solid var(--tp-line-strong);
+  background: var(--tp-tint-cool);
+  color: var(--tp-tint-cool-ink);
+  font-weight: 600;
+  font-size: 15px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* --- Inicio: próxima sesión ----------------------------------------------- */
+.tp-session {
+  background: var(--tp-deep);
+  color: var(--tp-on-deep);
+  border-radius: 21px;
+  overflow: hidden;
+}
+.tp-session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 20px 20px 0;
+}
+.tp-session-label {
+  font-size: 10px;
+  letter-spacing: 1.35px;
+  font-weight: 600;
+  color: var(--tp-on-deep-3);
+  text-transform: uppercase;
+}
+.tp-status-inverse {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #d8e8eb;
+  white-space: nowrap;
+}
+.tp-session-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 25px 20px;
+}
+.tp-date-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-right: 21px;
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+.tp-date-block strong {
+  font-size: 61px;
+  line-height: 0.95;
+  letter-spacing: -3.5px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.tp-date-block span {
+  font-size: 10px;
+  letter-spacing: 1.3px;
+  margin-top: 11px;
+  color: var(--tp-on-deep-3);
+  text-transform: uppercase;
+}
+.tp-session-info {
+  min-width: 0;
+}
+.tp-session-info h2 {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+  font-weight: 600;
+  margin: 0;
+  /* "lunes, 10:00" → "Lunes, 10:00". El día de la semana viene en minúscula
+     de `toLocaleString` en español, y aquí abre línea. */
+  text-transform: capitalize;
+}
+.tp-session-info p {
+  font-size: 13px;
+  color: var(--tp-on-deep-2);
+  margin: 5px 0 0;
+}
+.tp-session-info > span {
+  display: block;
+  font-size: 12px;
+  color: var(--tp-on-deep-3);
+  margin-top: 16px;
+}
+.tp-session-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 49px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  font-weight: 550;
+}
+.tp-session-cta svg {
+  color: var(--tp-on-deep-3);
+}
+.tp-session-empty {
+  background: var(--tp-paper);
+  border: 1px solid var(--tp-line);
+  border-radius: 21px;
+  padding: 24px 20px;
+}
+.tp-session-empty p {
+  font-size: 14px;
+  color: var(--tp-muted);
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+
+/* --- Aviso de solicitud en espera ----------------------------------------- */
+.tp-request-notice {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 49px;
+  padding: 10px 3px;
+  font-size: 12px;
+  color: var(--tp-muted);
+}
+.tp-request-notice > svg:last-child {
+  margin-left: auto;
+}
+
+/* --- Ánimo ---------------------------------------------------------------- */
+.tp-mood-section {
+  margin-top: 13px;
+  padding: 19px 0 23px;
+  border-bottom: 1px solid var(--tp-line);
+}
+.tp-mood-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 22px;
+}
+.tp-mood-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 75px;
+  padding: 0 0 8px;
+  border-radius: 12px;
+}
+.tp-mood-icon {
+  width: 47px;
+  height: 47px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--tp-line-strong);
+  background: var(--tp-paper);
+  color: var(--tp-muted);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+.tp-mood-label {
+  font-size: 11px;
+  color: var(--tp-muted);
+  white-space: nowrap;
+}
+/* La selección no depende solo del color: cambia el relleno, el cerco y el
+   peso de la etiqueta, y va marcada con `aria-pressed`. */
+.tp-mood-choice[aria-pressed="true"] .tp-mood-icon {
+  background: var(--tp-deep);
+  border-color: var(--tp-deep);
+  color: var(--tp-on-deep);
+  box-shadow: 0 0 0 4px var(--tp-tint-cool);
+}
+.dark .tp-mood-choice[aria-pressed="true"] .tp-mood-icon {
+  background: var(--tp-accent);
+  border-color: var(--tp-accent);
+  color: var(--accent-ink);
+}
+.tp-mood-choice[aria-pressed="true"] .tp-mood-label {
+  color: var(--tp-ink);
+  font-weight: 700;
+}
+.tp-mood-choice:disabled {
+  cursor: progress;
+}
+.tp-mood-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 13px;
+  font-size: 12px;
+  color: var(--tp-muted);
+  min-height: 44px;
+}
+.tp-mood-feedback a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--tp-accent);
+  white-space: nowrap;
+}
+.tp-mood-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* --- Tareas --------------------------------------------------------------- */
+.tp-task-section {
+  margin-top: 27px;
+}
+.tp-task-list {
+  margin-top: 9px;
+}
+.tp-row {
+  display: flex;
+  text-align: left;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--tp-line);
+  min-height: 84px;
+}
+.tp-row:hover {
+  background: var(--tp-sunken);
+}
+.tp-tile-icon {
+  width: 45px;
+  height: 49px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  flex-shrink: 0;
+}
+.tp-tile-blue {
+  background: var(--tp-tile-blue);
+  color: var(--tp-tile-blue-ink);
+}
+.tp-tile-peach {
+  background: var(--tp-tile-peach);
+  color: var(--tp-tile-peach-ink);
+}
+.tp-row-text {
+  flex: 1;
+  min-width: 0;
+}
+.tp-row-text strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.1px;
+}
+.tp-row-text small {
+  display: block;
+  font-size: 12px;
+  color: var(--tp-muted);
+  margin-top: 4px;
+}
+.tp-badge-late {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--tp-tint-warm);
+  color: var(--tp-tint-warm-ink);
+}
+.tp-badge-done {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--tp-tint-cool);
+  color: var(--tp-tint-cool-ink);
+}
+.tp-chevron {
+  color: var(--tp-muted);
+  flex-shrink: 0;
+}
+.tp-disclosure {
+  margin-top: 14px;
+}
+.tp-disclosure > summary {
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--tp-muted);
+}
+.tp-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* --- Cuestionarios -------------------------------------------------------- */
+.tp-question-section {
+  margin-top: 30px;
+}
+.tp-question-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 17px;
+}
+.tp-question-grid a {
+  display: block;
+  padding: 17px;
+  border-radius: 14px;
+  border: 1px solid var(--tp-line);
+  background: var(--tp-paper);
+}
+.tp-question-grid a:hover {
+  border-color: var(--tp-line-strong);
+}
+.tp-question-grid strong {
+  display: block;
+  font-size: 18px;
+  letter-spacing: -0.3px;
+  margin-top: 14px;
+}
+.tp-question-grid .tp-q-name {
+  display: block;
+  font-size: 12px;
+  color: var(--tp-muted);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tp-question-grid .tp-q-go {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--tp-muted);
+  margin-top: 13px;
+}
+.tp-question-grid > a > svg {
+  color: var(--tp-accent);
+}
+
+/* --- Citas: cabecera y segmentado ----------------------------------------- */
+.tp-page-heading {
+  padding: 8px 0 26px;
+}
+.tp-page-heading > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+.tp-segment {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--tp-sunken);
+  margin-bottom: 25px;
+}
+.tp-segment button {
+  flex: 1;
+  min-height: 41px;
+  padding: 10px 6px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--tp-muted);
+}
+.tp-segment button[aria-pressed="true"] {
+  background: var(--tp-paper);
+  color: var(--tp-ink);
+  box-shadow: 0 2px 5px rgba(38, 57, 65, 0.06);
+}
+.tp-segment button > span {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--tp-tint-cool);
+  color: var(--tp-tint-cool-ink);
+}
+
+/* --- Citas: tarjeta de detalle -------------------------------------------- */
+.tp-appointment {
+  padding: 22px 20px 0;
+  border: 1px solid var(--tp-line);
+  border-radius: 20px;
+  background: var(--tp-paper);
+}
+.tp-appointment + .tp-appointment {
+  margin-top: 14px;
+}
+.tp-appointment-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tp-month-pill {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--tp-muted);
+  text-transform: uppercase;
+}
+.tp-status {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--tp-tint-cool);
+  color: var(--tp-tint-cool-ink);
+  white-space: nowrap;
+}
+.tp-status-muted {
+  background: var(--tp-sunken);
+  color: var(--tp-muted);
+}
+.tp-appointment-hero {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin: 27px 0 26px;
+}
+.tp-appointment-hero > strong {
+  font-size: 83px;
+  line-height: 0.94;
+  letter-spacing: -5px;
+  font-weight: 500;
+  color: var(--tp-deep);
+  font-variant-numeric: tabular-nums;
+}
+.dark .tp-appointment-hero > strong {
+  color: var(--tp-ink);
+}
+.tp-appointment-hero h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  text-transform: capitalize;
+}
+.tp-appointment-hero p {
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--tp-muted);
+  margin: 3px 0 0;
+}
+.tp-professional-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+  border-top: 1px solid var(--tp-line);
+}
+.tp-professional-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--tp-tint-cool);
+  color: var(--tp-tint-cool-ink);
+  flex-shrink: 0;
+}
+.tp-professional-line strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.tp-professional-line span {
+  display: block;
+  font-size: 12px;
+  color: var(--tp-muted);
+  margin-top: 3px;
+}
+.tp-appointment-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 6px 0 10px;
+}
+.tp-appointment-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% + 40px);
+  margin: 0 -20px;
+  padding: 16px;
+  min-height: 49px;
+  border-top: 1px solid var(--tp-line);
+  font-size: 12px;
+  color: var(--tp-muted);
+}
+.tp-appointment-foot:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.tp-inline-error {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--tp-danger);
+}
+.tp-inline-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--tp-tint-warm);
+  color: var(--tp-tint-warm-ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.tp-inline-note button {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: inherit;
+  min-height: 44px;
+}
+
+/* --- Citas: solicitudes e historial --------------------------------------- */
+.tp-space-top {
+  margin-top: 30px;
+}
+.tp-pending {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--tp-line);
+  margin-top: 6px;
+}
+.tp-pending-icon {
+  color: var(--tp-muted);
+  flex-shrink: 0;
+}
+.tp-pending strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.tp-pending p {
+  font-size: 12px;
+  color: var(--tp-muted);
+  margin: 3px 0 0;
+}
+.tp-pending > div {
+  min-width: 0;
+  flex: 1;
+}
+.tp-pending-state {
+  font-size: 11px;
+  color: var(--tp-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.tp-request-another {
+  margin-top: 23px;
+}
+.tp-history-month {
+  font-size: 10px;
+  letter-spacing: 1.1px;
+  color: var(--tp-muted);
+  margin: 26px 0 10px;
+  text-transform: uppercase;
+}
+.tp-history-row {
+  display: flex;
+  text-align: left;
+  align-items: center;
+  gap: 19px;
+  width: 100%;
+  padding: 19px 0;
+  border-bottom: 1px solid var(--tp-line);
+}
+.tp-mini-date {
+  width: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 10px;
+  color: var(--tp-muted);
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+.tp-mini-date b {
+  font-size: 29px;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  font-weight: 500;
+  color: var(--tp-ink);
+  margin-bottom: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.tp-history-row > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.tp-history-row strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+.tp-history-row small {
+  display: block;
+  font-size: 12px;
+  color: var(--tp-muted);
+  margin-top: 4px;
+}
+
+/* --- Diario --------------------------------------------------------------- */
+.tp-diary-symbol {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--tp-tint-cool);
+  color: var(--tp-tint-cool-ink);
+  flex-shrink: 0;
+}
+.tp-composer {
+  padding: 22px 19px;
+  border: 1px solid var(--tp-line);
+  border-radius: 19px;
+  background: var(--tp-paper);
+}
+.tp-composer-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tp-composer-top h2 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+.tp-composer-top > span {
+  font-size: 11px;
+  color: var(--tp-muted);
+  white-space: nowrap;
+}
+.tp-composer .tp-mood-row {
+  gap: 4px;
+  margin-top: 23px;
+}
+.tp-composer .tp-mood-icon {
+  width: 43px;
+  height: 43px;
+}
+.tp-composer .tp-textarea {
+  margin-bottom: 14px;
+  min-height: 120px;
+}
+.tp-composer-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--tp-accent);
+  font-weight: 600;
+}
+
+.tp-trend {
+  margin-top: 29px;
+}
+.tp-week-chart {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  height: 164px;
+  margin-top: 25px;
+  padding: 0 4px;
+}
+.tp-week-chart > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+}
+.tp-week-chart span {
+  font-size: 12px;
+  color: var(--tp-muted);
+}
+.tp-week-chart i {
+  width: 100%;
+  max-width: 22px;
+  height: calc(var(--tp-n) * 23px);
+  border-radius: 5px;
+  background: var(--tp-chart-bar);
+}
+/* Día sin registro: hueco explícito, no un cero. Un 0 diría que el paciente
+   se sintió fatal, y lo que pasó es que no escribió. */
+.tp-week-chart i[data-empty="true"] {
+  height: 3px;
+  background: var(--tp-line-strong);
+  border-radius: 2px;
+}
+.tp-week-chart small {
+  font-size: 11px;
+  color: var(--tp-muted);
+}
+.tp-week-chart .tp-latest i {
+  background: var(--tp-chart-bar-latest);
+}
+.tp-week-chart .tp-latest > span {
+  color: var(--tp-ink);
+  font-weight: 650;
+}
+
+.tp-journal {
+  margin-top: 31px;
+}
+.tp-journal article {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 21px 0;
+  border-bottom: 1px solid var(--tp-line);
+}
+.tp-journal-score {
+  flex-shrink: 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 22px;
+  letter-spacing: -0.6px;
+  background: var(--tp-tint-score);
+  color: var(--tp-tint-score-ink);
+  font-variant-numeric: tabular-nums;
+}
+.tp-journal-score > span {
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.tp-journal article > div {
+  flex: 1;
+  min-width: 0;
+}
+.tp-journal article > div > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tp-journal strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.tp-journal time {
+  font-size: 11px;
+  color: var(--tp-muted);
+  white-space: nowrap;
+}
+.tp-journal p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--tp-muted);
+  margin: 5px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* --- Listas genéricas (Recursos, Más, Pagos, Ajustes) --------------------- */
+.tp-card {
+  border: 1px solid var(--tp-line);
+  border-radius: 16px;
+  background: var(--tp-paper);
+  overflow: hidden;
+}
+.tp-card-pad {
+  padding: 18px;
+}
+.tp-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 16px;
+  min-height: 56px;
+  font-size: 14px;
+}
+.tp-list-row + .tp-list-row {
+  border-top: 1px solid var(--tp-line);
+}
+.tp-list-row:hover {
+  background: var(--tp-sunken);
+}
+.tp-list-row > svg:first-child {
+  color: var(--tp-muted);
+}
+.tp-list-row .tp-list-label {
+  font-weight: 550;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tp-list-row .tp-list-hint {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--tp-muted);
+  white-space: nowrap;
+}
+.tp-list-row .tp-chevron {
+  margin-left: auto;
+}
+.tp-list-row .tp-list-hint + .tp-chevron {
+  margin-left: 0;
+}
+.tp-empty {
+  padding: 28px 20px;
+  border: 1px dashed var(--tp-line-strong);
+  border-radius: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--tp-muted);
+  line-height: 1.6;
+}
+.tp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 13px;
+  color: var(--tp-muted);
+}
+.tp-back:hover {
+  color: var(--tp-ink);
+}
+.tp-metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.tp-metric {
+  padding: 16px;
+  border: 1px solid var(--tp-line);
+  border-radius: 14px;
+  background: var(--tp-paper);
+}
+.tp-metric dt {
+  font-size: 10px;
+  letter-spacing: 1.1px;
+  font-weight: 650;
+  color: var(--tp-muted);
+  text-transform: uppercase;
+}
+.tp-metric dd {
+  margin: 6px 0 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums;
+}
+.tp-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.tp-stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* --- Panel inferior (detalle de tarea) ------------------------------------
+ * `<dialog>` nativo: Escape y foco atrapado los da el navegador. */
+.tp-sheet {
+  position: fixed;
+  inset: auto 0 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85dvh;
+  padding: 33px var(--tp-gutter) calc(28px + env(safe-area-inset-bottom, 0px));
+  border: 0;
+  border-radius: 24px 24px 0 0;
+  background: var(--tp-paper);
+  color: var(--tp-ink);
+  box-shadow: 0 -10px 50px rgba(22, 51, 64, 0.15);
+  overflow-y: auto;
+}
+.tp-sheet::backdrop {
+  background: rgba(32, 56, 66, 0.35);
+  backdrop-filter: blur(3px);
+}
+.tp-sheet-handle {
+  position: absolute;
+  top: 12px;
+  left: calc(50% - 16px);
+  width: 32px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--tp-line-strong);
+}
+.tp-sheet-close {
+  position: absolute;
+  right: 13px;
+  top: 17px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: var(--tp-muted);
+}
+.tp-sheet-eyebrow {
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  color: var(--tp-muted);
+  margin: 5px 0 17px;
+  text-transform: uppercase;
+}
+.tp-sheet-title {
+  font-size: 25px;
+  line-height: 1.2;
+  letter-spacing: -0.8px;
+  font-weight: 700;
+  margin: 0;
+  padding-right: 30px;
+  overflow-wrap: anywhere;
+}
+.tp-sheet-body {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--tp-muted);
+  margin: 17px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tp-sheet-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.tp-sheet-actions {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* --- Esqueletos de carga -------------------------------------------------- */
+.tp-skeleton {
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    var(--tp-sunken) 25%,
+    var(--tp-line) 50%,
+    var(--tp-sunken) 75%
+  );
+  background-size: 200% 100%;
+  animation: tp-shimmer 1.4s ease infinite;
+}
+@keyframes tp-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* --- Pantallas estrechas (320-359 px) ------------------------------------- */
+@media (max-width: 359px) {
+  .tp-app {
+    --tp-gutter: 18px;
+  }
+  .tp-greeting .tp-h1 {
+    font-size: 30px;
+  }
+  .tp-session-header,
+  .tp-session-main {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+  .tp-session-main {
+    gap: 14px;
+  }
+  .tp-date-block {
+    padding-right: 16px;
+  }
+  .tp-date-block strong {
+    font-size: 54px;
+    letter-spacing: -3px;
+  }
+  .tp-session-info h2 {
+    font-size: 19px;
+  }
+  .tp-mood-row {
+    gap: 4px;
+  }
+  .tp-mood-icon {
+    width: 42px;
+    height: 42px;
+  }
+  .tp-mood-label {
+    font-size: 10px;
+  }
+  .tp-section-heading h2 {
+    font-size: 18px;
+  }
+  .tp-row {
+    gap: 11px;
+  }
+  .tp-row-text strong {
+    font-size: 14px;
+  }
+  .tp-tile-icon {
+    width: 39px;
+    height: 44px;
+  }
+  .tp-appointment {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .tp-appointment-foot {
+    width: calc(100% + 32px);
+    margin: 0 -16px;
+  }
+  .tp-appointment-hero {
+    gap: 16px;
+  }
+  .tp-appointment-hero > strong {
+    font-size: 68px;
+    letter-spacing: -4px;
+  }
+  .tp-composer {
+    padding: 18px 15px;
+  }
+  .tp-composer .tp-mood-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .tp-composer-top h2 {
+    font-size: 16px;
+  }
+  .tp-question-grid a {
+    padding: 15px;
+  }
+  .tp-week-chart {
+    gap: 6px;
+  }
+  .tp-nav b {
+    font-size: 10px;
+  }
+  .tp-nav-icon {
+    width: 38px;
+  }
+  .tp-metric-grid {
+    gap: 8px;
+  }
+}
+
+/* Ancho cómodo: se limita la medida, sin convertir esto en un escritorio.
+   El producto sigue siendo el mismo móvil, centrado. */
+@media (min-width: 560px) {
+  .tp-header,
+  .tp-nav-inner,
+  .tp-screen {
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-screen {
+    animation: none;
+  }
+  .tp-mood-icon {
+    transition: none;
+  }
+  .tp-skeleton {
+    animation: none;
+  }
+}
+
+
+/* --- Rejilla de franjas horarias (pedir cita) ----------------------------- */
+.tp-timegrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.tp-timegrid button {
+  min-height: 46px;
+  padding: 11px 4px;
+  border-radius: 10px;
+  border: 1px solid var(--tp-line-strong);
+  background: var(--tp-paper);
+  color: var(--tp-ink);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.tp-timegrid button:hover {
+  border-color: var(--tp-accent);
+}
+.tp-timegrid button[aria-pressed="true"] {
+  background: var(--tp-deep);
+  border-color: var(--tp-deep);
+  color: var(--tp-on-deep);
+  font-weight: 650;
+}
+.dark .tp-timegrid button[aria-pressed="true"] {
+  background: var(--tp-accent);
+  border-color: var(--tp-accent);
+  color: var(--accent-ink);
+}
+@media (max-width: 359px) {
+  .tp-timegrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+}
+
+/* --- Cuestionarios --------------------------------------------------------
+ * Al paciente NO se le devuelve puntuación ni severidad: aquí solo hay
+ * preguntas, opciones y cuántas lleva. */
+.tp-progress {
+  margin: 18px 0 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--tp-sunken);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tp-ink);
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.tp-scale-item {
+  margin-top: 26px;
+}
+.tp-scale-item > legend {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+.tp-scale-item > legend > span {
+  color: var(--tp-muted);
+  margin-right: 4px;
+}
+.tp-scale-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tp-option {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--tp-line);
+  background: var(--tp-paper);
+  color: var(--tp-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+.tp-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.tp-option:hover {
+  background: var(--tp-sunken);
+}
+.tp-option[data-checked="true"] {
+  border-color: var(--tp-deep);
+  background: var(--tp-tint-cool);
+  color: var(--tp-ink);
+  font-weight: 600;
+}
+.dark .tp-option[data-checked="true"] {
+  border-color: var(--tp-accent);
+}
+/* El input está oculto, así que el foco se dibuja sobre la etiqueta. */
+.tp-option:has(input:focus-visible) {
+  outline: 3px solid var(--tp-focus);
+  outline-offset: 3px;
+}
+
+/* --- Aviso de riesgo (ítem crítico del PHQ-9) -----------------------------
+ * Único bloque con relleno de alerta de toda el área del paciente. Ofrece
+ * ayuda; no interpreta ni diagnostica nada. */
+.tp-alert {
+  padding: 24px 20px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--tp-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--tp-danger) 8%, var(--tp-paper));
+}
+.tp-alert > p {
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.tp-emergency-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+.tp-emergency-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 14px 16px;
+  border-radius: 11px;
+  background: var(--tp-danger);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.tp-emergency-link > span {
+  flex: 1;
+  min-width: 0;
+}
+.tp-emergency-link > strong {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tp-emergency-plain {
+  background: var(--tp-sunken);
+  color: var(--tp-ink);
+  font-weight: 500;
+}
+
+/* Texto solo para lectores de pantalla. */
+.tp-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Componentes compartidos con el panel del profesional -----------------
+ * `PushToggle`, `NotificationPreferences`, `SignOutForm` y `DateField` los
+ * usan las dos áreas, así que no se tocan: se les cambia la piel aquí cuando
+ * aparecen dentro de la app del paciente. Sus clases viven en la capa
+ * `components` de `globals.css`, y este fichero va sin capa, así que estas
+ * reglas ganan sin necesidad de `!important`.
+ *
+ * Lo que NO se toca es su comportamiento: siguen siendo los mismos
+ * componentes, con los mismos estados y las mismas acciones. */
+.tp-app .btn-primary {
+  height: auto;
+  min-height: 48px;
+  padding: 13px 18px;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--tp-deep);
+  color: var(--tp-on-deep);
+}
+.dark .tp-app .btn-primary {
+  background: var(--tp-accent);
+  color: var(--accent-ink);
+}
+.tp-app .btn-primary:hover:not(:disabled) {
+  background: #205260;
+}
+.dark .tp-app .btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.tp-app .btn-ghost,
+.tp-app .btn-subtle,
+.tp-app .btn-danger {
+  height: auto;
+  min-height: 46px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 550;
+}
+.tp-app .btn-ghost {
+  border: 1px solid var(--tp-line-strong);
+  background: transparent;
+  color: var(--tp-ink);
+}
+.tp-app .btn-ghost:hover:not(:disabled) {
+  background: var(--tp-sunken);
+}
+.tp-app .btn-subtle {
+  color: var(--tp-muted);
+}
+.tp-app .btn-danger {
+  color: var(--tp-danger);
+}
+.tp-app .card {
+  border-radius: 16px;
+  border-color: var(--tp-line);
+  background: var(--tp-paper);
+}
+.tp-app .field {
+  min-height: 48px;
+  border-radius: 10px;
+  border-color: var(--tp-line-strong);
+  background: var(--tp-field);
+  color: var(--tp-ink);
+}
+.tp-app .field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tp-ink);
+}
+.tp-app .section-label {
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  color: var(--tp-muted);
+}
+.tp-app .row-hover:hover {
+  background: var(--tp-sunken);
+}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getAssignmentForPatient } from "@/lib/queries/scales";
 import { getEmergencyLinks } from "@/lib/queries/emergency";
@@ -16,19 +17,20 @@ export default async function PatientScalePage({
   const emergencyLinks = await getEmergencyLinks();
 
   return (
-    <div className="mx-auto max-w-md">
-      <Link href="/app" className="text-sm text-ink-3 hover:text-ink">
-        ← Inicio
+    <>
+      <Link href="/app" className="tp-back">
+        <ArrowLeft size={16} strokeWidth={1.8} aria-hidden />
+        Inicio
       </Link>
-      <div className="mt-3">
-        <ScaleForm
-          assignmentId={assignment.id}
-          scaleId={assignment.scaleId}
-          scaleCode={assignment.scaleCode}
-          definition={assignment.definition}
-          emergencyLinks={emergencyLinks}
-        />
-      </div>
-    </div>
+
+      <ScaleForm
+        assignmentId={assignment.id}
+        scaleId={assignment.scaleId}
+        scaleCode={assignment.scaleCode}
+        scaleName={assignment.scaleName}
+        definition={assignment.definition}
+        emergencyLinks={emergencyLinks}
+      />
+    </>
   );
 }

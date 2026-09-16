@@ -1,55 +1,67 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { formatCurrency, formatDate } from "@/lib/format";
 
+export const metadata = { title: "Pagos · terap.ia" };
+
 export default async function PatientPaymentsPage() {
   const { payments, debtCents, packRemaining } = await getMyPaymentSummary();
-  const pending = payments.filter((p) => p.status === "pending");
+  const pendientes = payments.filter((p) => p.status === "pending");
 
   return (
-    <div className="mx-auto max-w-md">
-      <Link href="/app/more" className="text-sm text-ink-3 hover:text-ink">
-        ← Más
+    <>
+      <Link href="/app/more" className="tp-back">
+        <ArrowLeft size={16} strokeWidth={1.8} aria-hidden />
+        Más
       </Link>
-      <h1 className="page-title mt-3">Pagos</h1>
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        <div className="card p-4">
-          <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-            Pendiente de pago
-          </div>
-          <div className="mt-0.5 text-lg font-semibold">
-            {formatCurrency(debtCents)}
-          </div>
-        </div>
-        <div className="card p-4">
-          <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-            Sesiones de bono
-          </div>
-          <div className="mt-0.5 text-lg font-semibold">{packRemaining}</div>
+      <div className="tp-page-heading">
+        <div>
+          <h1 className="tp-h1">Pagos</h1>
         </div>
       </div>
 
-      <h2 className="section-label mt-8 mb-2">Pendiente de pago</h2>
-      {pending.length === 0 ? (
-        <p className="mt-2 text-sm text-ink-2">No tienes pagos pendientes.</p>
-      ) : (
-        <ul className="card divide-y divide-line">
-          {pending.map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center justify-between px-4 py-3 text-sm"
-            >
-              <span className="font-medium">
-                {formatCurrency(p.amount_cents, p.currency)}
-              </span>
-              <span className="text-xs text-ink-3">
-                {formatDate(p.created_at)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+      <dl className="tp-metric-grid">
+        <div className="tp-metric">
+          <dt>Pendiente de pago</dt>
+          <dd>{formatCurrency(debtCents)}</dd>
+        </div>
+        <div className="tp-metric">
+          <dt>Sesiones de bono</dt>
+          <dd>{packRemaining}</dd>
+        </div>
+      </dl>
+
+      <section className="tp-space-top" aria-labelledby="tp-pendientes">
+        <div className="tp-section-heading">
+          <h2 className="tp-h2" id="tp-pendientes">
+            Pendiente de pago
+          </h2>
+        </div>
+
+        {pendientes.length === 0 ? (
+          <p className="tp-section-desc">No tienes pagos pendientes.</p>
+        ) : (
+          <div className="tp-card" style={{ marginTop: 14 }}>
+            {pendientes.map((p) => (
+              <div key={p.id} className="tp-list-row">
+                <span className="tp-list-label">
+                  {formatCurrency(p.amount_cents, p.currency)}
+                </span>
+                <span className="tp-list-hint">{formatDate(p.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* La app hace seguimiento de pagos, no facturación: no emite ninguna
+            factura ni cobra nada. El aviso se conserva tal cual estaba. */}
+        <p className="tp-section-desc">
+          Es un seguimiento informativo. El pago se acuerda con tu profesional;
+          desde aquí no se cobra nada.
+        </p>
+      </section>
+    </>
   );
 }

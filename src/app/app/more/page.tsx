@@ -1,19 +1,20 @@
 import Link from "next/link";
 import {
-  CreditCard,
   Bell,
+  ChevronRight,
+  CreditCard,
   KeyRound,
   Phone,
-  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { formatCurrency } from "@/lib/format";
 import { SignOutForm } from "@/components/SignOutForm";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export const metadata = { title: "Más · terap.ia" };
 
-function Row({
+function Fila({
   href,
   label,
   hint,
@@ -25,18 +26,11 @@ function Row({
   Icon: LucideIcon;
 }) {
   return (
-    <Link
-      href={href}
-      className="row-hover flex items-center gap-3 px-4 py-3.5 text-sm"
-    >
-      <Icon className="size-4 shrink-0 text-ink-2" strokeWidth={2} aria-hidden />
-      <span className="font-medium">{label}</span>
-      {hint && <span className="ml-auto text-ink-2">{hint}</span>}
-      <ChevronRight
-        className={`size-4 shrink-0 text-ink-3 ${hint ? "" : "ml-auto"}`}
-        strokeWidth={2}
-        aria-hidden
-      />
+    <Link href={href} className="tp-list-row">
+      <Icon size={18} strokeWidth={1.7} aria-hidden />
+      <span className="tp-list-label">{label}</span>
+      {hint && <span className="tp-list-hint">{hint}</span>}
+      <ChevronRight size={17} strokeWidth={1.8} aria-hidden className="tp-chevron" />
     </Link>
   );
 }
@@ -45,40 +39,72 @@ export default async function MorePage() {
   const pay = await getMyPaymentSummary();
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="page-title">Más</h1>
+    <>
+      <div className="tp-page-heading">
+        <p className="tp-overline">Tu cuenta</p>
+        <div>
+          <h1 className="tp-h1">Más</h1>
+        </div>
+      </div>
 
-      <section className="card divide-y divide-line">
-        <Row
+      <div className="tp-card">
+        <Fila
           href="/app/payments"
           label="Pagos"
           hint={pay.debtCents > 0 ? formatCurrency(pay.debtCents) : undefined}
           Icon={CreditCard}
         />
-        <Row href="/app/settings" label="Notificaciones" Icon={Bell} />
-        <Row href="/account/password" label="Contraseña" Icon={KeyRound} />
-      </section>
+        <Fila href="/app/settings" label="Notificaciones" Icon={Bell} />
+        <Fila href="/account/password" label="Contraseña" Icon={KeyRound} />
+      </div>
 
-      <section>
-        <h2 className="section-label mb-2">Ayuda urgente</h2>
-        <div className="card flex flex-col gap-2 p-4">
-          <p className="text-sm text-ink-2">
-            Si estás en peligro o necesitas hablar con alguien ahora mismo:
-          </p>
-          <div className="flex gap-2">
-            <a href="tel:024" className="btn-danger btn-lg flex-1">
-              <Phone className="size-4" strokeWidth={2.25} aria-hidden />
-              024
-            </a>
-            <a href="tel:112" className="btn-subtle btn-lg flex-1">
-              <Phone className="size-4" strokeWidth={2} aria-hidden />
-              112
-            </a>
-          </div>
+      {/* Ayuda urgente. Los dos números son los que ya usaba la aplicación; no
+          se ha añadido ningún destino nuevo. La cabecera lleva el 024 a un
+          toque desde cualquier pantalla y esto es el detalle. */}
+      <section className="tp-space-top" aria-labelledby="tp-ayuda">
+        <div className="tp-section-heading">
+          <h2 className="tp-h2" id="tp-ayuda">
+            Ayuda urgente
+          </h2>
+        </div>
+        <p className="tp-section-desc">
+          Si estás en peligro o necesitas hablar con alguien ahora mismo.
+        </p>
+        <div
+          style={{ display: "flex", gap: 10, marginTop: 16 }}
+        >
+          <a href="tel:024" className="tp-primary" style={{ flex: 1 }}>
+            <Phone size={18} strokeWidth={1.9} aria-hidden />
+            024
+          </a>
+          <a href="tel:112" className="tp-secondary" style={{ flex: 1 }}>
+            <Phone size={18} strokeWidth={1.7} aria-hidden />
+            112
+          </a>
         </div>
       </section>
 
-      <SignOutForm />
-    </div>
+      {/* La entrega es solo clara. La app venía respetando la preferencia del
+          sistema, así que la elección se conserva aquí en vez de forzar el
+          blanco a quien abre esto de noche. */}
+      <section className="tp-space-top" aria-labelledby="tp-aspecto">
+        <div className="tp-section-heading">
+          <h2 className="tp-h2" id="tp-aspecto">
+            Aspecto
+          </h2>
+        </div>
+        <p className="tp-section-desc">
+          En claro se ve el diseño nuevo. En oscuro se usan los tonos oscuros de
+          terap.ia.
+        </p>
+        <div style={{ marginTop: 14 }}>
+          <ThemeToggle />
+        </div>
+      </section>
+
+      <div className="tp-space-top">
+        <SignOutForm />
+      </div>
+    </>
   );
 }

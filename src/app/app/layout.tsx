@@ -1,19 +1,43 @@
+import type { Viewport } from "next";
 import { hasSignedConsent } from "@/lib/queries/consent";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Brandmark } from "@/components/ui/Brandmark";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { ServiceWorkerRegister } from "@/app/app/_components/ServiceWorkerRegister";
 import { NativeGate } from "@/app/app/_components/NativeGate";
 import { AppTabBar } from "@/app/app/_components/AppTabBar";
+import { ScrollReset } from "@/app/app/_components/ScrollReset";
 import { esAppNativa } from "@/lib/native-request";
+import "./_ui/patient.css";
 
 /**
- * Layout de la app del paciente (base de la futura PWA).
- * Verificación de autorización definitiva + botón de emergencia siempre visible.
+ * `interactiveWidget: "resizes-content"` es lo que hace habitable un armazón de
+ * alto fijo con teclado virtual: sin él el teclado tapa el campo enfocado y la
+ * barra de pestañas se queda flotando encima, porque el viewport de diseño no
+ * se entera de que la pantalla ha menguado. Con él, la zona que desplaza se
+ * encoge y el campo queda visible.
+ *
+ * Se declara aquí, no en el layout raíz: el panel del profesional desplaza la
+ * página entera y no lo necesita. Los campos que no define un segmento se
+ * heredan del raíz, pero `width` e `initialScale` se repiten explícitamente
+ * para no depender de ese detalle de resolución.
+ */
+export const viewport: Viewport = {
+  themeColor: "#f9fafb",
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
+};
+
+/**
+ * Layout de la app del paciente (PWA).
+ *
+ * Verificación de autorización definitiva (el proxy solo redirige de forma
+ * optimista) + armazón móvil: cabecera y navegación estables, una sola zona
+ * que desplaza, y el 024 sin esconder detrás de ningún menú.
  */
 export default async function PatientLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
@@ -32,29 +56,30 @@ export default async function PatientLayout({ children }: { children: ReactNode 
 
   return (
     <NativeGate nativo={nativo}>
-    <div className="flex min-h-full flex-col">
-      <header className="sticky top-[var(--banner-h)] z-10 border-b border-line bg-canvas/95 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-2">
-          <Link href="/app" className="inline-flex items-center">
-            <Brandmark height={30} />
-          </Link>
-          {/* El 024 no se esconde nunca detrás de un menú. */}
-          <a
-            href="tel:024"
-            className="inline-flex h-7 items-center gap-1 rounded-md bg-danger px-2.5 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            <Phone className="size-3.5" strokeWidth={2.25} aria-hidden />
-            Emergencia · 024
-          </a>
+      <div className="tp-app">
+        <div className="tp-shell">
+          <header className="tp-header">
+            <Link href="/app" className="tp-wordmark" aria-label="terap.ia, inicio">
+              <Brandmark height={30} />
+            </Link>
+            {/* El 024 es el mismo destino verificado que ya usaba la app; la
+                maqueta no llamaba a ningún número y aquí no se ha inventado
+                ninguno. El detalle (024 y 112) está en `/app/more`. */}
+            <a href="tel:024" className="tp-help">
+              <span className="tp-help-dot" aria-hidden />
+              Ayuda urgente · 024
+            </a>
+          </header>
+
+          <div className="tp-scroll" id="tp-scroll">
+            <main className="tp-screen">{children}</main>
+          </div>
+
+          <AppTabBar />
         </div>
-      </header>
-      {/* El padding inferior deja sitio a la barra de pestañas fija. */}
-      <main className="mx-auto w-full max-w-md flex-1 px-4 pt-6 pb-28">
-        {children}
-      </main>
-      <AppTabBar />
-      <ServiceWorkerRegister />
-    </div>
+        <ScrollReset />
+        <ServiceWorkerRegister />
+      </div>
     </NativeGate>
   );
 }

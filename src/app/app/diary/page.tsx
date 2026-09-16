@@ -1,50 +1,71 @@
+import { NotebookText } from "lucide-react";
 import { todayYMD } from "@/lib/tz";
 import { getMyMoodEntries } from "@/lib/queries/wellbeing";
-import { MoodLogger } from "@/app/app/_components/MoodLogger";
-import { ScoreChart } from "@/app/pro/_components/ScoreChart";
-import { formatDate } from "@/lib/format";
+import { MoodComposer } from "@/app/app/_components/MoodComposer";
+import { WeeklyMood } from "@/app/app/_components/WeeklyMood";
+import { fechaCompactaYMD } from "@/app/app/_ui/fechas";
+import { etiquetaAnimoTexto } from "@/app/app/_ui/animo";
+
+export const metadata = { title: "Mi diario · terap.ia" };
 
 export default async function PatientDiaryPage() {
   const entries = await getMyMoodEntries();
-  const points = [...entries]
-    .reverse()
-    .map((e) => ({ date: e.entry_date, score: e.mood_value, severity: null }));
+  const hoy = todayYMD();
+  const deHoy = entries.find((e) => e.entry_date === hoy) ?? null;
 
   return (
-    <div className="mx-auto flex max-w-md flex-col gap-6">
+    <>
+      <div className="tp-page-heading">
+        <p className="tp-overline">Un momento para ti</p>
+        <div>
+          <h1 className="tp-h1">Mi diario</h1>
+          <span className="tp-diary-symbol" aria-hidden>
+            <NotebookText size={21} strokeWidth={1.6} />
+          </span>
+        </div>
+      </div>
 
-      <MoodLogger today={entries.find(e => e.entry_date === todayYMD())} />
+      <MoodComposer hoy={deHoy} fechaHoy={`Hoy, ${fechaCompactaYMD(hoy)}`} />
 
-      {entries.length > 0 && (
-        <section className="card p-4">
-          <h2 className="mb-3 text-sm font-semibold">Tu evolución (1-5)</h2>
-          <ScoreChart points={points} max={5} severity={[]} title="Ánimo" />
-        </section>
-      )}
+      <WeeklyMood entries={entries} hoy={hoy} />
 
-      <section>
-        <h2 className="mb-2 text-base font-semibold">Tu historial</h2>
+      <section className="tp-journal" aria-labelledby="tp-momentos">
+        <div className="tp-section-heading">
+          <h2 className="tp-h2" id="tp-momentos">
+            Tus momentos
+          </h2>
+          {entries.length > 0 && (
+            <span>
+              {entries.length} {entries.length === 1 ? "registro" : "registros"}
+            </span>
+          )}
+        </div>
+
         {entries.length === 0 ? (
-          <p className="text-sm text-ink-2">Aún no has registrado tu ánimo.</p>
+          <p className="tp-empty" style={{ marginTop: 16 }}>
+            Aún no has registrado cómo te sientes. Lo que escribas aquí lo ve tu
+            profesional.
+          </p>
         ) : (
-          <ul className="card divide-y divide-line">
-            {entries.map((e) => (
-              <li
-                key={e.id}
-                className="flex items-start justify-between gap-4 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <span className="text-sm font-medium">{e.mood_value}/5</span>
-                  {e.note && <p className="mt-1 text-sm text-ink-2">{e.note}</p>}
+          entries.map((e) => (
+            <article key={e.id}>
+              <span className="tp-journal-score">
+                {e.mood_value}
+                <span>/5</span>
+              </span>
+              <div>
+                <div>
+                  <strong>{etiquetaAnimoTexto(e.mood_value)}</strong>
+                  <time dateTime={e.entry_date}>
+                    {fechaCompactaYMD(e.entry_date)}
+                  </time>
                 </div>
-                <span className="shrink-0 text-xs text-ink-3">
-                  {formatDate(e.entry_date)}
-                </span>
-              </li>
-            ))}
-          </ul>
+                {e.note && <p>{e.note}</p>}
+              </div>
+            </article>
+          ))
         )}
       </section>
-    </div>
+    </>
   );
 }

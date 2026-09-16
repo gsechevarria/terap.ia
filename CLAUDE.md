@@ -260,9 +260,36 @@ checklist personal y el ZIP ya están (#27 y #28). Quedan dos cosas:
 Los pasos de gastos y bienes siguen remitiendo a `/pro/contabilidad/gastos`, que
 es donde vive ese dato.
 
-**Rediseño de la app del paciente.** El panel del psicólogo está hecho; la app
-del paciente conserva la dirección visual anterior salvo lo que hereda de los
-tokens.
+**Rediseño de la app del paciente — desplegado (16-sep).** Integra la entrega
+`terap-mobile-v2` (dirección móvil 02): armazón de 100 dvh con cabecera y
+navegación estables y una sola zona que desplaza, Inicio · Citas · Diario
+rediseñadas y, por decisión del 16-sep, también Recursos, Más, Pagos,
+Notificaciones, Pedir cita y Cuestionario. **No cambia nada del backend:** ni
+esquema, ni RLS, ni RPC, ni Storage, ni configuración de Auth — así que el
+segundo cliente (`terap-app`, Expo) no se ve afectado.
+El CSS vive aislado en `src/app/app/_ui/patient.css` con los 279 selectores
+colgando de **`.tp-app`** —y una prueba, `src/lib/patient-css.test.ts`, que falla
+si alguien vuelve a colar uno suelto o redefine una variable de `globals.css`—,
+porque la entrega traía `body`, `button`, `svg` y `a` desnudos y habría
+repintado el panel del profesional con solo pasar por la app del paciente, igual
+que pasó con la portada. Ese fichero va **sin capa**, así que gana a cualquier
+utilidad de Tailwind: por eso su bloque de reinicio es corto a propósito y los
+cuatro componentes compartidos con `/pro` (`PushToggle`,
+`NotificationPreferences`, `SignOutForm`, `DateField`) se re-pintan al final del
+fichero en vez de tocarse.
+Dos desviaciones respecto a la entrega, medidas y anotadas donde ocurren:
+**once colores subidos a AA** (la paleta entregada daba 2,41:1 en el placeholder
+y 2,66:1 en la nota de pie, a 10-13 px) y **modo oscuro**, que la entrega no
+trae; bajo `.dark` los tokens se reasignan a los de `globals.css` en vez de
+forzar el blanco de noche, y se elige en `/app/more`.
+`preview.js` no se integra: cada uno de sus avisos de diseño va contra el
+servicio real con carga, vacío, error y éxito. «Ayuda urgente» apunta al
+`tel:024` que la app ya usaba; no se ha inventado ningún destino. Los
+cuestionarios siguen sin devolver puntuación ni severidad al paciente.
+Detalle: [docs/DISENO-APP-PACIENTE-2026-09.md](docs/DISENO-APP-PACIENTE-2026-09.md).
+**Falta dispositivo físico**: teclado real de iOS/Android, área segura del
+iPhone, rebote del desplazamiento, el `<dialog>` en la capa superior y la PWA
+instalada. Nada de eso se puede comprobar sin teléfono.
 
 **Deuda técnica abierta:** ver "Queda abierto" al final de la sección de la
 auditoría de agosto, con estas correcciones — `xlsx@0.18.5` ya **no** aplica
