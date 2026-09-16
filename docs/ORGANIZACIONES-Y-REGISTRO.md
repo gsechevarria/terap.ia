@@ -245,15 +245,72 @@ alter table public.patients drop column organization_id;
 Y restaurar las funciones y políticas anteriores desde las migraciones
 `20260909190001`–`20260911140001`.
 
-**Copia de seguridad.** Antes de migrar producción hay que tener una copia
-recuperable del proyecto Supabase, igual que la de septiembre
-(`../BACKUPS/SUPABASE-predeploy-*/database.dump` con su `manifest.json`).
+**Copia de seguridad.** Ver §9.
 
 ---
 
-## 9. Orden de despliegue
+## 9. Copia de seguridad sin plan de pago
 
-1. Copia de seguridad de la base remota. **Verificada, no solo lanzada.**
+Las copias **gestionadas** y el point-in-time recovery son funciones de pago.
+Lo que NO depende del plan es hacerte tú un volcado. Por orden de preferencia:
+
+### a) `supabase db dump` — lo mejor, y funciona en cualquier plan
+
+Es `pg_dump` por debajo. Necesita la contraseña de la base (Dashboard →
+Settings → Database; se puede regenerar), no un plan superior.
+
+```bash
+npx supabase link --project-ref levufuoigdlexscpvlgk
+npx supabase db dump -f ../BACKUPS/pre-organizaciones.sql          # esquema
+npx supabase db dump -f ../BACKUPS/pre-organizaciones-datos.sql --data-only
+```
+
+Trae **todo**: esquema, datos, funciones, políticas y —lo que ninguna otra vía
+da— las contraseñas de `auth.users`.
+
+### b) `npm run copia:datos` — la red cuando (a) no es posible
+
+Lee todas las tablas con `service_role` por la API y las escribe a disco con
+recuentos y SHA-256. No necesita contraseña de base de datos ni plan.
+
+```bash
+npm run copia:datos
+npm run copia:datos -- --verificar ../BACKUPS/DATOS-<sello>
+```
+
+**Qué no cubre, y hay que saberlo:** las contraseñas de `auth.users` (la Admin
+API no las expone: al restaurar, la gente vuelve a entrar por enlace mágico o
+restableciendo contraseña), el contenido binario de Storage (guarda el
+inventario, no los bytes) y el esquema (se reconstruye ejecutando las
+migraciones, que son la fuente de verdad).
+
+### c) Qué riesgo queda de verdad
+
+Estas cuatro migraciones **no borran ningún dato**. Auditado línea a línea: cero
+`DELETE`, cero `DROP TABLE`, cero `DROP COLUMN`, cero `TRUNCATE`. Las únicas
+cuatro escrituras de datos son:
+
+| Operación | Qué toca |
+|---|---|
+| `update professionals` | Rellena `verification_status`, columna **nueva** |
+| `update patients` | Rellena `organization_id`, columna **nueva** |
+| `update invitations` | Rellena `organization_id`, columna **nueva** |
+| `insert` ×4 | Filas en tablas **nuevas** |
+
+Ninguna modifica una columna que ya tuviera datos. Todo lo que se elimina son
+objetos de esquema —políticas, disparadores, un índice, una restricción y dos
+funciones—, y todos se reconstruyen desde los propios ficheros de migración.
+
+Además, **cada migración va dentro de `begin; … commit;`**: o entra entera o no
+entra nada. No existe el estado intermedio a medio aplicar.
+
+Eso no convierte la copia en opcional —un error humano posterior sigue siendo
+posible— pero sí acota el riesgo: lo que hay que poder recuperar es el estado
+de los datos, no una corrupción del esquema.
+
+## 10. Orden de despliegue
+
+1. Copia de seguridad de la base remota (§9). **Verificada, no solo lanzada.**
 2. `npm run informe:organizaciones` y leer la salida.
 3. Variables en Vercel: `RESEND_API_KEY`, `EMAIL_FROM`, y comprobar que
    `NEXT_PUBLIC_SITE_URL` apunta al dominio con HTTPS.
