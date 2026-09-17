@@ -34,8 +34,13 @@ export async function getMiembros(organizationId: string): Promise<Miembro[]> {
   const { data } = await allRows(
     supabase
       .from("organization_members")
+      // `professionals!professional_id` y no `professionals` a secas: esta
+      // tabla tiene DOS claves foráneas a `professionals` —`professional_id` y
+      // `invited_by`—, así que PostgREST no puede adivinar por cuál embeber y
+      // rechaza la consulta entera con "more than one relationship was found".
+      // Sin la pista, /pro/equipo no carga.
       .select(
-        "id, professional_id, role, can_invite_patients, created_at, professionals(full_name, email, verification_status)",
+        "id, professional_id, role, can_invite_patients, created_at, professionals!professional_id(full_name, email, verification_status)",
       )
       .eq("organization_id", organizationId)
       .eq("status", "active")
@@ -91,7 +96,11 @@ export async function getAsignaciones(patientId: string) {
   const { data } = await allRows(
     supabase
       .from("patient_assignments")
-      .select("id, professional_id, role, created_at, professionals(full_name)")
+      // Misma trampa que en `getMiembros`: `patient_assignments` tiene dos
+      // claves foráneas a `professionals` (`professional_id` y `created_by`).
+      // Sin la pista, la FICHA DEL PACIENTE ENTERA deja de cargar, porque esta
+      // consulta se hace en todas sus pestañas.
+      .select("id, professional_id, role, created_at, professionals!professional_id(full_name)")
       .eq("patient_id", patientId)
       .is("revoked_at", null)
       .order("created_at", { ascending: true }),
