@@ -82,6 +82,13 @@ end $$;
 -- Expediente fiscal
 delete from public.factura_cobros;
 delete from public.expediente_documentos;
+
+-- `facturas.rectifica_a` y `retenciones_pagos_cuenta.rectifica_a` apuntan a su
+-- PROPIA tabla con `on delete restrict`. Una sola sentencia las vacía sin
+-- problema —la comprobación de integridad se hace al terminar, cuando ya no
+-- queda ninguna referencia— y hay una regresión con cadenas de rectificativas
+-- que lo sujeta. No hace falta borrarlas por capas; lo que sí importa es no
+-- partir estos dos `delete` en varios.
 delete from public.facturas;
 delete from public.retenciones_pagos_cuenta;
 delete from public.checklist_personal;
@@ -107,10 +114,16 @@ delete from public.patient_notes;
 delete from public.pending_uploads;
 
 -- Agenda y dinero
+--
+-- `payments` va ANTES que `appointments` y que `session_packs`. Sus dos claves
+-- compuestas —`payments_appointment_owner_fk` y `payments_pack_owner_fk`, de la
+-- migración 20260909190001— son `on delete restrict` a propósito: impiden
+-- borrar una cita liquidada o un bono y dejar el cobro colgando. Al revés, el
+-- vaciado aborta con un 23503 a mitad del borrado.
 delete from public.appointment_requests;
+delete from public.payments;
 delete from public.appointments;
 delete from public.agenda_blocks;
-delete from public.payments;
 delete from public.session_packs;
 delete from public.payment_settings;
 

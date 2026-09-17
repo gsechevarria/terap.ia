@@ -24,7 +24,7 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 | Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin`; todo entra por PR) |
 | Commit en producción | `11fdfc7` (#36). CI de `main` en verde y `verificar-produccion.mjs` 50/50 después del despliegue. |
 | Verificación de producción | `node scripts/verificar-produccion.mjs` → **50/50** sobre el commit desplegado (17-sep). Sin credenciales, solo lectura. |
-| Supabase `levufuoigdlexscpvlgk` | **45 migraciones aplicadas**; 46 tablas. Las cuatro de organizaciones se aplicaron el 16-sep. |
+| Supabase `levufuoigdlexscpvlgk` | **45 migraciones aplicadas**; 46 tablas. Las cuatro de organizaciones se aplicaron el 16-sep. 🔴 **La 46 (`20260917100001_expediente_fiscal_operativo`) está SIN aplicar**: desbloquea el expediente fiscal (ver abajo). |
 | Administración de plataforma | `gsechevarria@gmail.com`, alta fuera de banda con `service_role` el 17-sep. `platform_admins` no es accesible desde la aplicación. |
 | Rama de esta copia | `main`, al día con `origin/main` |
 
@@ -280,6 +280,46 @@ columnas reservadas y sin uso.
 Procedimiento completo —pruebas, migración, rollback y orden de despliegue— en
 [docs/ORGANIZACIONES-Y-REGISTRO.md](docs/ORGANIZACIONES-Y-REGISTRO.md).
 Informe previo y verificación posterior: `npm run informe:organizaciones`.
+
+## Orden de borrado del vaciado de la demo, corregido (17-sep)
+
+`vaciar-datos-demo.sql` abortaba con `23503` a mitad del borrado: vaciaba
+`appointments` antes que `payments`, y las claves compuestas
+`payments_appointment_owner_fk` y `payments_pack_owner_fk`
+(`20260909190001`) son `on delete restrict` a propósito, para que nadie borre
+una cita liquidada y deje el cobro colgando. `payments` va ahora delante.
+
+La comprobación en PGlite no lo cazó porque las regresiones dejan pagos, pero
+ninguno ligado a una cita ni a un bono. Ahora las siembra, y con el orden
+antiguo falla con el mismo `23503` que salió en producción.
+
+## El expediente fiscal no funcionaba (17-sep) — migración 46 SIN APLICAR
+
+Al escribir la comprobación del vaciado de la demostración hizo falta dar de
+alta una factura, para ejercitar su clave foránea. No se pudo: **el expediente
+fiscal (`20260915100001`) estaba inservible desde que se desplegó**, por dos
+motivos independientes que se arreglan en
+`20260917100001_expediente_fiscal_operativo.sql`.
+
+1. **Sus siete tablas nunca recibieron permisos de API.**
+   `20260911090001_explicit_api_grants` enumera tabla por tabla lo que ve
+   `authenticated`; el expediente fiscal se creó después y no se añadió a esa
+   lista. Leer o escribir una factura devuelve «permission denied for table», y
+   la RLS —que es correcta— ni llega a evaluarse. En el remoto puede que los
+   privilegios por defecto de Supabase lo tapasen; la migración lo declara
+   igualmente, que es la convención del repositorio.
+2. **El disparador `guard_ruta_justificante` rechazaba toda alta.** Cuelga de
+   las tres tablas y leía `new.documento_path` / `new.justificante_path` dentro
+   de un `case TG_TABLE_NAME`. En PL/pgSQL `new` es un registro y la expresión
+   se planifica entera: `CASE` **no** evita resolver las ramas que no se toman,
+   así que sobre `facturas` fallaba al resolver `justificante_path` y al revés.
+   Toda escritura moría con `42703: record "new" has no field …`. Se lee ahora
+   por `to_jsonb(new)`; la regla de seguridad no cambia.
+
+Regresión nueva en `sql-regressions.mjs`: alta de factura, retención y casilla
+del checklist, más el rechazo de una ruta que no empieza por el identificador
+del profesional. **Nunca se había probado esta parte contra una base real**, ni
+aquí ni en el remoto.
 
 ## Lo que queda pendiente
 

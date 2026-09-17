@@ -103,6 +103,21 @@ export async function sqlRegressions(db) {
   await q("update payments set status='paid',paid_at=now()+interval '1 day' where id=$1",[pay]);
   assert.equal((await q('select paid_at from payments where id=$1',[pay]))[0].paid_at.getTime(),date.getTime());
  }));
+ await test('Factura, retención y checklist admiten alta, y la ruta sigue validada',()=>user(uid1,async()=>{
+  // `guard_ruta_justificante` cuelga de las tres tablas y leía `new.<campo>`
+  // como campo de un registro: plpgsql planifica la expresión entera, así que
+  // resolvía ramas del CASE que no existen en esa tabla y TODA alta moría con
+  // 42703. El libro registro de facturas estuvo inservible desde que se
+  // desplegó el expediente fiscal. Corregido en 20260917100001.
+  const f=(await q("insert into facturas(professional_id,fecha_emision,base_cents,total_cents) values($1,'2026-01-15',10000,10000) returning id",[pro1]))[0].id;
+  const r=(await q("insert into retenciones_pagos_cuenta(professional_id,ejercicio,clase,importe_cents) values($1,2026,'soportada_cliente',5000) returning id",[pro1]))[0].id;
+  await q("insert into checklist_personal(professional_id,ejercicio,clave) values($1,2026,'certificado_retenciones')",[pro1]);
+  // Y la guarda sigue guardando, que es para lo que está.
+  await assert.rejects(q('update facturas set documento_path=$2 where id=$1',[f,randomUUID()+'/ajeno.pdf']));
+  await assert.rejects(q('update retenciones_pagos_cuenta set justificante_path=$2 where id=$1',[r,randomUUID()+'/ajeno.pdf']));
+  await q('update facturas set documento_path=$2 where id=$1',[f,pro1+'/propio.pdf']);
+  assert.equal((await q('select documento_path p from facturas where id=$1',[f]))[0].p,pro1+'/propio.pdf');
+ }));
  const scales=await q('select id,definition from scales order by code');
  const scale=scales.find(s=>s.definition.flag_item!=null)??scales[0];
  const assignment=(await q('insert into scale_assignments(professional_id,patient_id,scale_id) values($1,$2,$3) returning id',[pro1,pat1,scale.id]))[0].id;

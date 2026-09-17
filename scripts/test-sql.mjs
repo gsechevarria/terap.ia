@@ -76,8 +76,52 @@ try {
     .replace("'gsechevarria@gmail.com'", `'${preservado}'`);
   const antes = (await db.query('select count(*)::int n from patients')).rows[0].n;
   assert.ok(antes > 0, 'la comprobación del vaciado necesita datos que borrar');
+
+  // Las tres llaves que el orden de borrado tiene que respetar, sembradas a
+  // propósito. Sin ellas el vaciado pasaba la prueba y fallaba en producción
+  // con un 23503: las regresiones dejan pagos, pero ninguno ligado a una cita
+  // ni a un bono, y ninguna factura rectificativa.
+  //
+  //  · payments → appointments   (`on delete restrict`, clave compuesta)
+  //  · payments → session_packs  (`on delete restrict`, clave compuesta)
+  //  · facturas → facturas       (`rectifica_a`, RESTRICT sobre su propia tabla)
+  const ficha = (await db.query('select id, professional_id from patients limit 1')).rows[0];
+  const cita = (await db.query(
+    "insert into appointments(professional_id,patient_id,starts_at,ends_at)"
+    + " values($1,$2,now(),now()+interval '1 hour') returning id",
+    [ficha.professional_id, ficha.id])).rows[0].id;
+  await db.query(
+    "insert into payments(professional_id,patient_id,appointment_id,amount_cents,status)"
+    + " values($1,$2,$3,5000,'paid')", [ficha.professional_id, ficha.id, cita]);
+  const bono = (await db.query(
+    "insert into session_packs(professional_id,patient_id,total_sessions,price_cents)"
+    + " values($1,$2,5,20000) returning id", [ficha.professional_id, ficha.id])).rows[0].id;
+  await db.query(
+    "insert into payments(professional_id,patient_id,session_pack_id,amount_cents,status)"
+    + " values($1,$2,$3,20000,'pending')", [ficha.professional_id, ficha.id, bono]);
+  const factura = (await db.query(
+    "insert into facturas(professional_id,fecha_emision,base_cents,total_cents)"
+    + " values($1,'2026-01-15',10000,10000) returning id", [ficha.professional_id])).rows[0].id;
+  const rectificativa = (await db.query(
+    "insert into facturas(professional_id,fecha_emision,base_cents,total_cents,tipo,rectifica_a)"
+    + " values($1,'2026-02-15',-10000,-10000,'rectificativa',$2) returning id",
+    [ficha.professional_id, factura])).rows[0].id;
+  // Una cadena de dos saltos: rectificar la rectificativa. Un borrado "por
+  // capas" de una sola pasada tampoco bastaría.
+  await db.query(
+    "insert into facturas(professional_id,fecha_emision,base_cents,total_cents,tipo,rectifica_a)"
+    + " values($1,'2026-03-15',5000,5000,'rectificativa',$2)",
+    [ficha.professional_id, rectificativa]);
+  const retencion = (await db.query(
+    "insert into retenciones_pagos_cuenta(professional_id,ejercicio,clase,importe_cents)"
+    + " values($1,2026,'soportada_cliente',5000) returning id", [ficha.professional_id])).rows[0].id;
+  await db.query(
+    "insert into retenciones_pagos_cuenta(professional_id,ejercicio,clase,importe_cents,rectifica_a)"
+    + " values($1,2026,'soportada_cliente',-5000,$2)", [ficha.professional_id, retencion]);
+
   await db.exec(vaciado);
-  for (const tabla of ['patients','professionals','organizations','appointments','payments','invitations']) {
+  for (const tabla of ['patients','professionals','organizations','appointments','payments','invitations',
+                       'session_packs','facturas','retenciones_pagos_cuenta']) {
     assert.equal((await db.query(`select count(*)::int n from ${tabla}`)).rows[0].n, 0,
       `el vaciado dejó filas en ${tabla}`);
   }
