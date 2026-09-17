@@ -171,9 +171,33 @@ Cuatro estados, y no se confunden: `pending` (creada), `sent` (**el proveedor lo
 aceptó**, que no es acuse de lectura), `failed` (rechazado, con motivo) y
 `no_provider`.
 
+`email_deliveries` **no tiene políticas de RLS a propósito** —quién ha sido
+invitado no debe leerse con la clave pública—, así que se consulta con:
+
+```bash
+npm run correos          # los 20 últimos intentos, con su estado y motivo
+npm run correos -- 50
+```
+
 El correo lleva el nombre del centro, el botón «Activar mi acceso», la caducidad
 y qué hacer si no lo esperaba. **No lleva** diagnósticos, etiquetas, tareas,
 citas, el nombre del profesional ni nada del expediente.
+
+### El dominio: la restricción que muerde
+
+Resend **no entrega a terceros desde un dominio sin verificar**. Con el
+remitente de pruebas `onboarding@resend.dev` solo llega a la dirección de la
+propia cuenta de Resend; cualquier otra devuelve `403 validation_error` y queda
+`failed` con ese motivo íntegro en `email_deliveries`.
+
+`terap.vercel.app` **no se puede verificar**: es de Vercel y no se le pueden
+añadir registros DNS. Hace falta un dominio propio, y conviene dar de alta un
+**subdominio** (`terap.<tu-dominio>`) en vez del raíz: es lo que recomienda el
+propio Resend, para que el correo transaccional no afecte a la reputación ni al
+DMARC del correo corporativo.
+
+Comprobado el 17-sep: emisión → `sent` con identificador de proveedor hacia la
+dirección de la cuenta; `failed` con el 403 hacia cualquier otra.
 
 ---
 

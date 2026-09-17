@@ -257,10 +257,21 @@ fuera de banda con `npm run admin:plataforma -- <correo>`. Ya hay uno
 Los tres profesionales existentes figuran ahí como `provisional`, pendientes de
 revisión retroactiva de su colegiación.
 
-Correo por **Resend** (API HTTP, sin dependencia npm). **`RESEND_API_KEY` y
-`EMAIL_FROM` siguen sin configurar en Vercel**, así que hoy no sale ningún
-correo — y no se finge: la invitación se crea, queda como `no_provider` en
-`email_deliveries` y la interfaz da el enlace para entregarlo a mano.
+Correo por **Resend** (API HTTP, sin dependencia npm). **Configurado y
+comprobado de punta a punta el 17-sep**: invitación emitida → correo `sent` con
+identificador de proveedor. `npm run correos` lista los intentos con su estado.
+
+⚠️ **Limitado a una sola dirección hasta que haya dominio verificado.**
+`EMAIL_FROM` es hoy `onboarding@resend.dev`, el remitente de pruebas de Resend,
+que **solo entrega a la dirección de la cuenta de Resend**
+(`gsechevarria@gmail.com`); a cualquier otra devuelve 403 y queda `failed` con
+el motivo. Para invitar a un paciente de verdad hay que verificar un dominio en
+Resend —se recomienda un **subdominio** como `terap.darstelecom.es`, para no
+tocar la reputación ni el DMARC del correo corporativo— y cambiar `EMAIL_FROM`.
+
+Que el correo falle **no bloquea nada**: la invitación se crea igual y la
+interfaz da el enlace para entregarlo por otra vía, con el mismo token, la
+misma caducidad y el mismo uso único.
 
 **Stripe sigue sin cobrar ni procesar pagos.** No está instalado. Solo hay una
 capa de acceso comercial por organización (`pending`/`beta`/`suspended`) con dos
