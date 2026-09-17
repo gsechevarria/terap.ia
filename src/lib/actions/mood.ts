@@ -4,6 +4,7 @@ import { ActionInputError } from "@/lib/action-result";
 
 import { todayYMD } from "@/lib/tz";
 import { revalidatePath } from "next/cache";
+import { revalidateProfesional } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient } from "@/lib/queries/identity";
 
@@ -23,6 +24,9 @@ async function addMoodEntryActionImpl(value: number, note?: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/app");
   revalidatePath("/app/diary");
+  // El profesional ve el diario en la pestaña Diario y la última actividad en
+  // su listado de pacientes.
+  revalidateProfesional(patient.id);
 }
 
 async function deleteMoodEntryActionImpl(id: string) {
@@ -36,6 +40,7 @@ async function deleteMoodEntryActionImpl(id: string) {
     .eq("patient_id", patient.id);
   if (error) throw new Error(error.message);
   revalidatePath("/app/diary");
+  revalidateProfesional(patient.id);
 }
 
 export async function addMoodEntryAction(...args: Parameters<typeof addMoodEntryActionImpl>) { return runAction(() => addMoodEntryActionImpl(...args)); }

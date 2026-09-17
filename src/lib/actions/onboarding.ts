@@ -3,6 +3,8 @@ import { runAction } from "@/lib/action-server";
 
 import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
+import { getCurrentPatient } from "@/lib/queries/identity";
+import { revalidateProfesional } from "@/lib/revalidate";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -53,6 +55,15 @@ async function completeOnboardingActionImpl(token: string, templateId: string, c
     p_token: token, p_template_id: templateId, p_content_hash: contentHash,
   });
   if (error) return { ok: false, error: invitationError(error) };
+
+  // El expediente acaba de quedar vinculado a una cuenta. Sin invalidar, el
+  // profesional seguía viendo la etiqueta «Sin cuenta» en su listado y el
+  // estado «invitación pendiente» en la ficha, aunque el paciente ya estuviera
+  // dentro. Se resuelve el expediente DESPUÉS de vincular: hasta ahora la
+  // cuenta no tenía ninguno.
+  const patient = await getCurrentPatient();
+  revalidateProfesional(patient?.id);
+
   return { ok: true };
 }
 

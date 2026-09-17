@@ -3,7 +3,6 @@ import { runAction } from "@/lib/action-server";
 import { ActionInputError } from "@/lib/action-result";
 
 import { allRows } from "@/lib/query-result";
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   getCurrentPatient,
@@ -395,8 +394,13 @@ async function respondAppointmentActionImpl(
     p_action: action,
   });
   if (error) throw new Error(error.message);
-  revalidatePath("/app");
-  revalidatePath("/app/appointments");
+  // `revalidateAgenda` cubre las dos orillas: el calendario, el listado de
+  // citas y la ficha del profesional, y de paso las pantallas del paciente.
+  //
+  // Antes esto solo invalidaba `/app`: el paciente CANCELABA una cita y el
+  // profesional la seguía viendo en su agenda como si nada. Es el peor de los
+  // cuatro desajustes, porque lleva a presentarse a una sesión anulada.
+  revalidateAgenda(patient.id);
 }
 
 // ---- Solicitudes de cita ---------------------------------------------------

@@ -3,6 +3,7 @@ import { runAction } from "@/lib/action-server";
 import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
+import { revalidateProfesional } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient, requireOwnedPatient } from "@/lib/queries/identity";
 import { getScaleForForm } from "@/lib/queries/scales";
@@ -85,6 +86,11 @@ async function submitScaleResponseActionImpl(input: {
   if (error) return { ok: false, error: scaleError(error) };
 
   revalidatePath("/app");
+  // Lo único que invalidaba esto era `/app`, así que la respuesta no llegaba a
+  // ninguna pantalla del profesional: ni la ficha, ni el listado, ni —lo
+  // importante— el aviso del ítem de riesgo del PHQ-9, que existe precisamente
+  // para verse pronto.
+  revalidateProfesional(patient.id);
   return { ok: true, flagged: !!data.flagged };
 }
 
