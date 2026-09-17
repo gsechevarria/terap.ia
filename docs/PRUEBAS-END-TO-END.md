@@ -21,6 +21,22 @@ npm run copia:datos -- --verificar ../BACKUPS/DATOS-<sello>
 **Si esa copia no existe, para aquí.** El plan de Supabase no tiene
 recuperación a un punto en el tiempo, así que esto es lo único que hay.
 
+La migración **46**
+(`supabase/migrations/20260917100001_expediente_fiscal_operativo.sql`) hace
+falta para el apartado 3.11: desbloquea el expediente fiscal, que no admitía ni
+una factura. **Aplicada el 17-sep**, comprobada con
+
+```sql
+select case when pg_get_functiondef(p.oid) like '%to_jsonb(new)%'
+            then 'corregido' else 'SIN corregir' end as disparador
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and p.proname = 'guard_ruta_justificante';
+```
+
+Si alguna vez rehaces el entorno desde cero, esa consulta es la que dice si
+está o no: los permisos por sí solos **no lo prueban**, porque Supabase puede
+concederlos por privilegios por defecto.
+
 ## 1. Vaciar
 
 `supabase/scripts/vaciar-datos-demo.sql`, desde el editor SQL del panel.
@@ -198,6 +214,16 @@ Del paciente al profesional — haz y comprueba en el panel:
 - [ ] Con el teclado abierto: el campo no queda tapado y la barra inferior no
       flota encima.
 - [ ] Instalarla como PWA y abrirla desde el icono.
+
+### 3.11 Expediente fiscal (recién desbloqueado)
+Con `+psico1` aprobado, en `/pro/contabilidad/expediente/2026`. Hasta la
+migración 46 ninguna de estas tres tablas admitía una fila, así que **esto no
+se había probado nunca contra la base real**.
+
+- [ ] Anotar una **factura** en el libro registro: se guarda y aparece listada.
+- [ ] Una **rectificativa** sobre ella: exige indicar a cuál rectifica.
+- [ ] Una **retención** soportada y una casilla del **checklist personal**.
+- [ ] Descargar el ZIP del expediente: se genera y avisa si va incompleto.
 
 ---
 
