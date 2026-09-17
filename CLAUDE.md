@@ -294,6 +294,40 @@ La comprobación en PGlite no lo cazó porque las regresiones dejan pagos, pero
 ninguno ligado a una cita ni a un bono. Ahora las siembra, y con el orden
 antiguo falla con el mismo `23503` que salió en producción.
 
+## El alta profesional, corregida y comprobada (17-sep)
+
+Tres fallos encadenados la tenían rota de punta a punta. Ninguno daba error en
+los registros de la aplicación, y por eso duraron:
+
+1. **El «Site URL» de Supabase estaba sin esquema** (`terap.vercel.app`).
+   Supabase lo trataba como ruta relativa y el enlace de confirmación moría en
+   `<proyecto>.supabase.co/terap.vercel.app` → `requested path is invalid`. Es
+   configuración del panel, no código. Hoy lo comprueba sola
+   `verificar-produccion.mjs`, pidiendo una verificación con un token inválido
+   a propósito y mirando a dónde redirige: **52/52** contra producción.
+2. **`/registro` no estaba en la lista blanca de `safeNext`.** El correo vuelve
+   a `/auth/confirm?next=/registro`, el destino se descartaba en silencio y el
+   recién registrado aterrizaba en `/app` —su rol nace como paciente— en vez de
+   en el paso «tu consulta». Prueba automática en
+   `src/lib/destinos-de-vuelta.test.ts`: contrasta los destinos que construye el
+   código con la lista que hay en la ruta.
+3. **La cuenta parecía no recibir correo al reintentar.** Un `signUp` sobre una
+   cuenta ya confirmada no envía nada y tampoco da error, a propósito, para no
+   revelar qué direcciones existen.
+
+**Gabriel confirma el 17-sep haber recorrido el alta profesional de punta a
+punta.** Se anota como declaración suya: cubre el apartado 3.2 de
+`docs/PRUEBAS-END-TO-END.md`, no los demás.
+
+⚠️ **Sigue abierto, y no es lo mismo:** una cuenta creada pero con el alta a
+medias tiene rol `patient`. Al iniciar sesión, `homePathForRole` la manda a
+`/app`, el layout ve que no hay consentimiento y deriva a
+`/onboarding/current`, que sin expediente muere en «Pide a tu profesional un
+enlace vigente». A un psicólogo registrándose eso no le dice nada. Se rodea
+escribiendo `/registro` en la barra de direcciones. Arreglarlo exige decidir
+antes qué se le ofrece a una cuenta sin expediente —continuar el alta
+profesional o pedir invitación—, y **esa decisión está sin tomar**.
+
 ## El expediente fiscal no funcionaba (17-sep) — CORREGIDO, migración 46 aplicada
 
 Al escribir la comprobación del vaciado de la demostración hizo falta dar de
