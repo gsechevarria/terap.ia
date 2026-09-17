@@ -3,6 +3,7 @@ import { runAction } from "@/lib/action-server";
 import { ActionInputError } from "@/lib/action-result";
 
 import { revalidatePath } from "next/cache";
+import { revalidateProfesional } from "@/lib/revalidate";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentPatient } from "@/lib/queries/identity";
 
@@ -17,6 +18,9 @@ async function completeTaskActionImpl(taskId: string, responseText?: string) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/app");
+  // Sin esto, el profesional seguía viendo la tarea como pendiente —en el
+  // listado y en la ficha— hasta que algo más invalidara esas rutas.
+  revalidateProfesional(patient.id);
 }
 
 export async function completeTaskAction(...args: Parameters<typeof completeTaskActionImpl>) { return runAction(() => completeTaskActionImpl(...args)); }

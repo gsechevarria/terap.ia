@@ -30,6 +30,28 @@ export function revalidatePaciente(): void {
   revalidatePath("/app/appointments");
   revalidatePath("/app/payments");
   revalidatePath("/app/resources");
+  // `/app/more` enseña la deuda pendiente: sin esto, el paciente cobraba y
+  // seguía viendo el importe de antes en el menú.
+  revalidatePath("/app/more");
+}
+
+/**
+ * Pantallas del PROFESIONAL que dependen de lo que escribe el PACIENTE.
+ *
+ * La simetría de `revalidatePaciente`, y faltaba. Septiembre arregló una
+ * dirección —lo que escribe el profesional, que el paciente debe ver— y dejó
+ * la otra: el paciente marcaba una tarea como hecha, registraba su ánimo o
+ * confirmaba una cita y el profesional seguía viendo lo de antes, sin ningún
+ * error. El dato estaba bien en la base; lo que estaba viejo era la pantalla.
+ *
+ * `/pro` no es decorativo aquí: su listado resume tareas pendientes, última
+ * actividad y alertas por paciente. `/pro/analitica` agrega respuestas de
+ * escala y asistencia.
+ */
+export function revalidateProfesional(patientId?: string): void {
+  revalidatePath("/pro");
+  revalidatePath("/pro/analitica");
+  if (patientId) revalidatePath(`/pro/patients/${patientId}`);
 }
 
 /** Un pago creado, modificado o borrado. */
