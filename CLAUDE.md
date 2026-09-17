@@ -9,7 +9,7 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 
 ---
 
-# ⚑ ESTADO ACTUAL — 15 de septiembre de 2026
+# ⚑ ESTADO ACTUAL — 17 de septiembre de 2026
 
 > **Lee este bloque antes que nada.** Todo lo que hay bajo `## Estado` es el
 > registro histórico sesión a sesión: sirve para entender *por qué* cada cosa
@@ -22,9 +22,10 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 |---|---|
 | Producción | https://terap.vercel.app |
 | Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin`; todo entra por PR) |
-| Commit en producción | `eeaa149` (#31, landing nueva). CI de `main` en verde y `verificar-produccion.mjs` 50/50 después del despliegue. |
-| Verificación de producción | `node scripts/verificar-produccion.mjs` → **50/50** sobre el commit desplegado (15-sep). Sin credenciales, solo lectura. |
-| Supabase `levufuoigdlexscpvlgk` | **41 migraciones aplicadas y registradas**; 38 tablas, 1 vista, 28 funciones tipadas. Historial reparado el 15-sep: marca 41. |
+| Commit en producción | `11fdfc7` (#36). CI de `main` en verde y `verificar-produccion.mjs` 50/50 después del despliegue. |
+| Verificación de producción | `node scripts/verificar-produccion.mjs` → **50/50** sobre el commit desplegado (17-sep). Sin credenciales, solo lectura. |
+| Supabase `levufuoigdlexscpvlgk` | **45 migraciones aplicadas**; 46 tablas. Las cuatro de organizaciones se aplicaron el 16-sep. |
+| Administración de plataforma | `gsechevarria@gmail.com`, alta fuera de banda con `service_role` el 17-sep. `platform_admins` no es accesible desde la aplicación. |
 | Rama de esta copia | `main`, al día con `origin/main` |
 
 Sigue siendo **entorno de demostración con datos ficticios**
@@ -210,12 +211,27 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
 - **Casilla de bono en la agenda**, con validación en servidor incluida la serie
   completa. El bono se consume al registrar la asistencia, no al crear la cita.
 
-## Organizaciones, registro e invitaciones (16-sep) — EN RAMA, migración sin aplicar
+## Organizaciones, registro e invitaciones (17-sep) — DESPLEGADO
 
-Rama `feat/organizaciones-registro-invitaciones`. **Cuatro migraciones nuevas
-(`20260916100001`–`20260916100004`, las 42-45) que NO están aplicadas en el
-remoto.** El PR se queda abierto hasta que se apliquen: el código nuevo sobre el
-esquema viejo rompe producción.
+Migraciones `20260916100001`–`20260916100004` (las 42-45) **aplicadas en el
+remoto el 16-sep** y código en producción desde el 17-sep (PR #34).
+
+**Backfill verificado** con `npm run informe:organizaciones -- --verificar`:
+3 profesionales → 3 organizaciones y 3 membresías activas; 17 expedientes →
+**17 asignaciones clínicas vivas**; cero expedientes sin organización y cero
+sin su profesional de referencia asignado. Ningún expediente cambió de manos.
+La cifra de 1 cuenta de paciente sin expediente es el residuo conocido de
+agosto (invitación abierta con otro correo); la migración no lo tocó.
+
+> ⚠️ **Al aplicar, NO se relanza ninguna migración antigua.** El 16-sep se
+> relanzaron `20260807120002` y `20260725100001` —modificadas solo para
+> añadirles un `drop function if exists`, por la convención de
+> reproducibilidad— y, al hacerlo en orden inverso, dejaron vivas las
+> versiones de julio de `accept_invitation` e `invitation_preview`, con
+> `accept_invitation` otra vez expuesta a `authenticated` y la caducidad de
+> vuelta a 72 h. El alta de pacientes por invitación estuvo caída hasta que la
+> `20260916100004` lo reparó. No era explotable —`patients_guard` bloqueaba la
+> escritura— pero costó una tarde. Se aplican **solo** las migraciones nuevas.
 
 La unidad de aislamiento y de venta pasa a ser la **organización** (consulta
 individual o centro). Dos separaciones nuevas que conviene no romper:
@@ -235,13 +251,16 @@ llama verificado) · `rejected` · **`provisional`** (opera, acreditación sin
 comprobar). Las cuentas preexistentes pasan a `provisional`: conservan el acceso
 y **no** se marcan como verificadas.
 
-`platform_admins` **nace vacía**, sin RLS ni permisos de API: el primer
-administrador se da de alta fuera de banda con
-`npm run admin:plataforma -- <correo>`. Hasta entonces nadie aprueba nada.
+`platform_admins` **nace vacía**, sin RLS ni permisos de API: se da de alta
+fuera de banda con `npm run admin:plataforma -- <correo>`. Ya hay uno
+(`gsechevarria@gmail.com`, 17-sep), así que la cola de `/admin` es operativa.
+Los tres profesionales existentes figuran ahí como `provisional`, pendientes de
+revisión retroactiva de su colegiación.
 
-Correo por **Resend** (API HTTP, sin dependencia npm). Sin `RESEND_API_KEY` y
-`EMAIL_FROM` **no se envía nada y no se finge**: la invitación se crea, queda
-como `no_provider` en `email_deliveries` y la interfaz da el enlace a mano.
+Correo por **Resend** (API HTTP, sin dependencia npm). **`RESEND_API_KEY` y
+`EMAIL_FROM` siguen sin configurar en Vercel**, así que hoy no sale ningún
+correo — y no se finge: la invitación se crea, queda como `no_provider` en
+`email_deliveries` y la interfaz da el enlace para entregarlo a mano.
 
 **Stripe sigue sin cobrar ni procesar pagos.** No está instalado. Solo hay una
 capa de acceso comercial por organización (`pending`/`beta`/`suspended`) con dos
