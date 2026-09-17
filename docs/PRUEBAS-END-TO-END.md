@@ -21,10 +21,21 @@ npm run copia:datos -- --verificar ../BACKUPS/DATOS-<sello>
 **Si esa copia no existe, para aquí.** El plan de Supabase no tiene
 recuperación a un punto en el tiempo, así que esto es lo único que hay.
 
-Aplica también, desde el editor SQL, la migración
-`supabase/migrations/20260917100001_expediente_fiscal_operativo.sql`. No tiene
-nada que ver con el vaciado: desbloquea el expediente fiscal, que no admitía ni
-una factura. Sin ella, el apartado 3.11 no se puede probar. Es la número **46**.
+La migración **46**
+(`supabase/migrations/20260917100001_expediente_fiscal_operativo.sql`) hace
+falta para el apartado 3.11: desbloquea el expediente fiscal, que no admitía ni
+una factura. **Aplicada el 17-sep**, comprobada con
+
+```sql
+select case when pg_get_functiondef(p.oid) like '%to_jsonb(new)%'
+            then 'corregido' else 'SIN corregir' end as disparador
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and p.proname = 'guard_ruta_justificante';
+```
+
+Si alguna vez rehaces el entorno desde cero, esa consulta es la que dice si
+está o no: los permisos por sí solos **no lo prueban**, porque Supabase puede
+concederlos por privilegios por defecto.
 
 ## 1. Vaciar
 

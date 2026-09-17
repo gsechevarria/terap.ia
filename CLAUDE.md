@@ -24,7 +24,8 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 | Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin`; todo entra por PR) |
 | Commit en producción | `11fdfc7` (#36). CI de `main` en verde y `verificar-produccion.mjs` 50/50 después del despliegue. |
 | Verificación de producción | `node scripts/verificar-produccion.mjs` → **50/50** sobre el commit desplegado (17-sep). Sin credenciales, solo lectura. |
-| Supabase `levufuoigdlexscpvlgk` | **45 migraciones aplicadas**; 46 tablas. Las cuatro de organizaciones se aplicaron el 16-sep. 🔴 **La 46 (`20260917100001_expediente_fiscal_operativo`) está SIN aplicar**: desbloquea el expediente fiscal (ver abajo). |
+| Supabase `levufuoigdlexscpvlgk` | **46 migraciones aplicadas**; 46 tablas. Las cuatro de organizaciones el 16-sep; la 46 (`20260917100001_expediente_fiscal_operativo`) el 17-sep, comprobada con `pg_get_functiondef` → `corregido`. Se aplicó desde el editor SQL, así que **el historial del CLI vuelve a estar desincronizado**. |
+| Vuelta desde el correo | **Corregida el 17-sep.** El «Site URL» estaba sin esquema y el enlace de confirmación moría en `<proyecto>.supabase.co/terap.vercel.app`. Hoy `https://terap.vercel.app`, y `verificar-produccion.mjs` lo comprueba solo: **52/52**. |
 | Administración de plataforma | `gsechevarria@gmail.com`, alta fuera de banda con `service_role` el 17-sep. `platform_admins` no es accesible desde la aplicación. |
 | Rama de esta copia | `main`, al día con `origin/main` |
 
@@ -293,7 +294,7 @@ La comprobación en PGlite no lo cazó porque las regresiones dejan pagos, pero
 ninguno ligado a una cita ni a un bono. Ahora las siembra, y con el orden
 antiguo falla con el mismo `23503` que salió en producción.
 
-## El expediente fiscal no funcionaba (17-sep) — migración 46 SIN APLICAR
+## El expediente fiscal no funcionaba (17-sep) — CORREGIDO, migración 46 aplicada
 
 Al escribir la comprobación del vaciado de la demostración hizo falta dar de
 alta una factura, para ejercitar su clave foránea. No se pudo: **el expediente
