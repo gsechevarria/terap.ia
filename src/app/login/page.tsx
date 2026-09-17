@@ -10,7 +10,7 @@ export default async function LoginPage({
 }) {
   const { invite } = await searchParams;
   return (
-    <main className="relative flex flex-1 flex-col items-center justify-center gap-6 p-6">
+    <main className="pantalla-acceso relative flex flex-1 flex-col items-center justify-center gap-6 p-6">
       {/* Salida al inicio. Es un enlace y no un `history.back()`: a esta
           pantalla se llega también desde una redirección del proxy, y volver
           atrás devolvería a la ruta protegida que acaba de rebotar. */}

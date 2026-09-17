@@ -92,6 +92,28 @@
   color-scheme: dark;
 }
 
+/*
+ * Las pantallas de ENTRADA van siempre en claro.
+ *
+ * Son la continuación visual de la portada, que es solo clara por diseño. Sin
+ * esto, quien tiene el móvil en modo oscuro pasaba de `/` a `/acceso` y la
+ * pantalla cambiaba de golpe a oscuro a mitad del mismo gesto. Y el área del
+ * paciente, al otro extremo del flujo, también fuerza claro
+ * (`_ui/patient.css`), así que lo oscuro quedaba solo en medio.
+ *
+ * Va con `:root:has(…)` y no con la clase `.light` sobre un contenedor porque
+ * los tokens se declaran en `:root`: `light-dark()` se resuelve ahí y una
+ * clase anidada no los reevalúa. Es el mismo mecanismo que usa la portada
+ * (`:root:has(.lp-terap)`), y deja de aplicarse en cuanto la pantalla sale del
+ * documento al navegar por cliente.
+ *
+ * Esto NO toca el conmutador de aspecto: dentro de `/pro` y de `/app` la
+ * preferencia del usuario sigue mandando.
+ */
+:root:has(.pantalla-acceso) {
+  color-scheme: light;
+}
+
 @theme inline {
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
