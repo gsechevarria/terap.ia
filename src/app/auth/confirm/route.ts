@@ -27,7 +27,11 @@ function safeNext(raw: string | null): string | null {
   if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) {
     return null;
   }
-  const ALLOW = ["/app", "/pro", "/account/password", "/onboarding/"];
+  // `/registro` es el paso 3 del alta profesional, y el correo de confirmación
+  // vuelve justo ahí. Faltaba, así que quien confirmaba su correo aterrizaba en
+  // la home de su rol —`/app`, porque el rol nace como paciente— en vez de en
+  // el formulario de su consulta, y el alta parecía no haber servido de nada.
+  const ALLOW = ["/app", "/pro", "/account/password", "/onboarding/", "/registro"];
   return ALLOW.some((p) => raw === p || raw.startsWith(p)) ? raw : null;
 }
 export async function GET(request: NextRequest) {

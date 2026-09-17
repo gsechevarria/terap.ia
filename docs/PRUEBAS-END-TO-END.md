@@ -87,6 +87,26 @@ Comprueba cada envío con `npm run correos`.
 - [ ] «Soy paciente» dice que hace falta invitación y **no ofrece registro**.
 - [ ] `/pro` sin sesión redirige al acceso.
 
+### Antes del primer registro: URLs de Supabase
+
+En **Supabase → Authentication → URL Configuration**:
+
+| Campo | Valor |
+|---|---|
+| Site URL | `https://terap.vercel.app` — **con `https://`** |
+| Redirect URLs | `https://terap.vercel.app/**` y `http://localhost:3000/**` |
+
+El esquema no es un detalle. Sin él, Supabase trata el valor como una ruta
+relativa y el enlace de confirmación acaba en
+`levufuoigdlexscpvlgk.supabase.co/terap.vercel.app`, que responde
+`{"error":"requested path is invalid"}`. Pasa igual si el correo se confirma
+bien: el destino al que vuelve está roto de todas formas.
+
+Si al pinchar el enlace sale `otp_expired` («Email link is invalid or has
+expired»), el token ya se había gastado o había caducado. Pide un enlace nuevo
+—vuelve a `/registro` con la sesión abierta y recarga— y ábrelo **una sola vez**
+y desde el mismo navegador.
+
 ### 3.2 Alta profesional (consulta individual) — `+psico1`
 - [ ] `/registro` → nombre, correo, contraseña → llega el correo de confirmación.
 - [ ] Antes de confirmar, la pantalla dice que confirmar el correo **no**
