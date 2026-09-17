@@ -38,7 +38,8 @@
     "seed:demo": "node --env-file=.env.local scripts/seed-demo.mjs",
     "informe:organizaciones": "node --env-file=.env.local scripts/informe-migracion-organizaciones.mjs",
     "admin:plataforma": "node --env-file=.env.local scripts/alta-admin-plataforma.mjs",
-    "copia:datos": "node --env-file=.env.local scripts/copia-seguridad.mjs"
+    "copia:datos": "node --env-file=.env.local scripts/copia-seguridad.mjs",
+    "correos": "node --env-file=.env.local scripts/estado-correos.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
