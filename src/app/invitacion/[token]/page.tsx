@@ -131,7 +131,7 @@ export default async function InvitacionPage({
 
 function Marco({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-5 px-5 py-10">
+    <main className="pantalla-acceso mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-5 px-5 py-10">
       <Brandmark height={52} />
       <div className="card flex flex-col gap-4 p-6">{children}</div>
     </main>

@@ -32,7 +32,7 @@ export default async function EstadoRegistroPage() {
   const estado = contexto.verification_status;
 
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-5 py-10">
+    <main className="pantalla-acceso mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-5 py-10">
       <Brandmark height={48} />
 
       {estado === "approved" ? (

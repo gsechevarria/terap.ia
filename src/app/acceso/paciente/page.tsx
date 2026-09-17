@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Acceso de pacientes · terap.ia" };
  */
 export default function AccesoPacientePage() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-5 py-10">
+    <main className="pantalla-acceso mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-5 py-10">
       <Link href="/acceso" className="inline-flex items-center gap-2 text-sm text-ink-3 hover:text-ink">
         <ArrowLeft size={16} strokeWidth={1.8} aria-hidden />
         Volver

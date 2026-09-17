@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Entrar en terap.ia" };
  */
 export default function AccesoPage() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-10">
+    <main className="pantalla-acceso mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-8 px-5 py-10">
       <div className="flex flex-col items-center gap-4 text-center">
         <Link href="/" className="inline-flex items-center">
           <Brandmark height={72} />

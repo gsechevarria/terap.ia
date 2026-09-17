@@ -28,7 +28,7 @@ export default async function OnboardingPage({
   if (error || !data) return <main className="mx-auto max-w-2xl p-6">No se puede abrir el consentimiento. Pide a tu profesional un enlace vigente o vuelve a intentarlo.</main>;
   const consent = data as { id: string; title: string; body: string; hash: string; version: number };
   return (
-    <main className="mx-auto w-full max-w-2xl p-6">
+    <main className="pantalla-acceso mx-auto w-full max-w-2xl p-6">
       <p className="section-label">Un último paso antes de empezar</p>
       <h1 className="page-title mt-2">{consent.title}</h1>
 
