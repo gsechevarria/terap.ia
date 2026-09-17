@@ -62,5 +62,30 @@ try {
   const checks = await sqlRegressions(db);
   await db.exec('create schema supabase_migrations; create table supabase_migrations.schema_migrations(version text)');
   await db.exec(await readFile('supabase/scripts/diagnostico-correcciones-202609.sql','utf8'));
-  console.log(`OK: ${checks} regresiones SQL; ${files.length} migraciones, conservación de históricos y alta sin escalada de privilegios`);
+
+  // El vaciado de la demo, sobre la base que acaban de dejar las 84
+  // regresiones: llena de profesionales, organizaciones y expedientes.
+  //
+  // Se comprueba aquí y no en otro sitio porque este script se ejecuta a mano
+  // y BORRA: cualquier tabla nueva que no se añada a la lista quedaría con
+  // datos de la etapa anterior, y una llave foránea nueva lo haría fallar a
+  // mitad. La primera vez ya falló por el disparador que protege al último
+  // propietario; sin esta comprobación se habría descubierto en producción.
+  const preservado = 'admin@example.invalid';   // la crea `sqlRegressions`
+  const vaciado = (await readFile('supabase/scripts/vaciar-datos-demo.sql','utf8'))
+    .replace("'gsechevarria@gmail.com'", `'${preservado}'`);
+  const antes = (await db.query('select count(*)::int n from patients')).rows[0].n;
+  assert.ok(antes > 0, 'la comprobación del vaciado necesita datos que borrar');
+  await db.exec(vaciado);
+  for (const tabla of ['patients','professionals','organizations','appointments','payments','invitations']) {
+    assert.equal((await db.query(`select count(*)::int n from ${tabla}`)).rows[0].n, 0,
+      `el vaciado dejó filas en ${tabla}`);
+  }
+  // Y lo que NO debe llevarse por delante.
+  assert.ok((await db.query('select count(*)::int n from scales')).rows[0].n > 0, 'se borró el catálogo de escalas');
+  assert.ok((await db.query('select count(*)::int n from emergency_links where professional_id is null')).rows[0].n > 0, 'se borraron los teléfonos de emergencia');
+  assert.equal((await db.query('select count(*)::int n from platform_admins')).rows[0].n, 1, 'se perdió el administrador de plataforma');
+  assert.equal((await db.query('select count(*)::int n from auth.users')).rows[0].n, 1, 'quedaron cuentas que debían borrarse');
+
+  console.log(`OK: ${checks} regresiones SQL; ${files.length} migraciones, conservación de históricos, alta sin escalada de privilegios y vaciado de la demo`);
 } finally { await db.close(); }
