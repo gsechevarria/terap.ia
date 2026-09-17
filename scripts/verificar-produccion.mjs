@@ -187,6 +187,78 @@ async function pwa() {
   }
 }
 
+// --- Vuelta desde el correo de autenticación --------------------------------
+
+/**
+ * A dónde devuelve Supabase después de verificar un enlace de correo.
+ *
+ * Es configuración del panel, no código, así que no la ve ninguna prueba del
+ * repositorio — y cuando está mal rompe el alta entera sin dejar ni un error en
+ * los registros de la aplicación. Pasó el 17-sep: el «Site URL» estaba puesto
+ * como `terap.vercel.app`, **sin esquema**, así que Supabase lo trataba como
+ * una ruta relativa y el enlace de confirmación aterrizaba en
+ * `<proyecto>.supabase.co/terap.vercel.app` → `requested path is invalid`.
+ * Ocurre igual aunque la verificación salga bien: el destino está roto solo.
+ *
+ * Se comprueba con un token deliberadamente inválido. La verificación falla
+ * —que es justo lo que se quiere: no se consume el enlace de nadie— y en la
+ * redirección de vuelta viaja el destino configurado.
+ *
+ * El proyecto de Supabase se deduce de la propia CSP, que es donde la
+ * aplicación declara con quién habla. Es información pública, no un secreto, y
+ * así la comprobación no necesita configurarse.
+ */
+async function vueltaDeCorreo() {
+  console.log("\nVuelta desde el correo de autenticación");
+
+  const res = await pedir("/login");
+  const proyecto = (res.headers.get("content-security-policy") ?? "").match(
+    /https:\/\/[a-z0-9]+\.supabase\.co/,
+  )?.[0];
+
+  if (!proyecto) {
+    anotar("proyecto de Supabase", "no se deduce de la CSP; no se comprueba el destino de vuelta");
+    return;
+  }
+
+  const control = new AbortController();
+  const reloj = setTimeout(() => control.abort(), TIMEOUT_MS);
+  let destino;
+  try {
+    const verify = await fetch(
+      `${proyecto}/auth/v1/verify?token=token-invalido-de-verificacion&type=signup`,
+      {
+        redirect: "manual",
+        signal: control.signal,
+        headers: { "user-agent": "verificar-produccion/1.0" },
+      },
+    );
+    destino = verify.headers.get("location");
+  } finally {
+    clearTimeout(reloj);
+  }
+
+  if (!destino) {
+    anotar("destino de vuelta", "la verificación no redirigió; no se deduce el Site URL");
+    return;
+  }
+
+  // Lo que delata el fallo: un destino relativo es un Site URL sin esquema.
+  comprobar(
+    "el Site URL de Supabase es absoluto",
+    /^https?:\/\//.test(destino),
+    `redirige a «${destino}» — falta el esquema en Authentication → URL Configuration`,
+  );
+
+  if (/^https?:\/\//.test(destino)) {
+    comprobar(
+      "el Site URL apunta a esta aplicación",
+      new URL(destino).origin === new URL(BASE).origin,
+      `redirige a ${new URL(destino).origin}, no a ${new URL(BASE).origin}`,
+    );
+  }
+}
+
 // --- Ejecución --------------------------------------------------------------
 
 console.log(`Verificación de ${BASE} — solo lectura, sin credenciales`);
@@ -196,6 +268,7 @@ try {
   await rutasPrivadas();
   await handlers();
   await pwa();
+  await vueltaDeCorreo();
 } catch (error) {
   console.error(`\nLa verificación se interrumpió: ${error.message}`);
   process.exit(2);
