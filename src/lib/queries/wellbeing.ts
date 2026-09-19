@@ -64,10 +64,17 @@ export async function getMyDocuments(): Promise<DocumentRow[]> {
   return data ?? [];
 }
 
+/**
+ * El registro de hoy, si lo hay.
+ *
+ * Trae `mood_scale` porque sin ella el valor no se puede interpretar: un 3 es
+ * «Normal» en la escala de cinco y «Bien» en la de cuatro. El formulario la
+ * usa para decidir si puede preseleccionar la cara o no.
+ */
 export async function getMyMoodToday() {
   const supabase = await createClient();
   const patient = await getCurrentPatient();
   if (!patient) return null;
-  const { data } = await checked(supabase.from("mood_entries").select("mood_value,note").eq("patient_id", patient.id).eq("entry_date", todayYMD()).maybeSingle());
+  const { data } = await checked(supabase.from("mood_entries").select("mood_value,mood_scale,note").eq("patient_id", patient.id).eq("entry_date", todayYMD()).maybeSingle());
   return data;
 }

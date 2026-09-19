@@ -883,6 +883,7 @@ Row: {
 "note": string | null;
 "entry_date": string;
 "created_at": string;
+"mood_scale": number;
 };
 Insert: {
 "id"?: string;
@@ -891,6 +892,7 @@ Insert: {
 "note"?: string | null;
 "entry_date"?: string;
 "created_at"?: string;
+"mood_scale"?: number;
 };
 Update: {
 "id"?: string;
@@ -899,6 +901,7 @@ Update: {
 "note"?: string | null;
 "entry_date"?: string;
 "created_at"?: string;
+"mood_scale"?: number;
 };
 Relationships: [{ foreignKeyName: "mood_entries_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] }];
 };
