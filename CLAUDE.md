@@ -282,6 +282,29 @@ Procedimiento completo —pruebas, migración, rollback y orden de despliegue—
 [docs/ORGANIZACIONES-Y-REGISTRO.md](docs/ORGANIZACIONES-Y-REGISTRO.md).
 Informe previo y verificación posterior: `npm run informe:organizaciones`.
 
+## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
+
+`20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
+cuatro, con nota opcional y mensajes de apoyo.
+
+**Lo que no se ha hecho, y es el fondo del asunto:** no se han convertido los
+valores antiguos. Un 3 era «Normal» en la escala de cinco y es «Bien» en la de
+cuatro, así que reinterpretarlos con las etiquetas nuevas habría cambiado en
+silencio lo que dijo un paciente. La escala viaja con cada fila en
+`mood_entries.mood_scale` (5 lo anterior, 4 lo nuevo), un `check` impide un
+valor fuera de su escala, y **ninguna función traduce un valor sin su escala**.
+La semana del paciente y la ficha del profesional las presentan por separado;
+no hay medias ni tendencias que las crucen.
+
+Un solo componente (`MoodEntryForm`) para Inicio y Diario, con radios nativos
+—selección única y recorrido con flechas gratis—, contador de nota y rechazo
+explícito al pasarse del límite, que antes se recortaba en silencio.
+
+Detalle, despliegue y reversión: [docs/DIARIO-EMOCIONAL.md](docs/DIARIO-EMOCIONAL.md).
+
+⚠️ **El PR se queda abierto hasta aplicar la migración**: el código escribe
+`mood_scale` y sobre el esquema viejo fallaría toda escritura del diario.
+
 ## Orden de borrado del vaciado de la demo, corregido (17-sep)
 
 `vaciar-datos-demo.sql` abortaba con `23503` a mitad del borrado: vaciaba
@@ -501,6 +524,12 @@ commits de la revisión: `supabase/scripts/reparar-historial.sql`,
 - **Diario emocional incluido:** registro de ánimo del paciente, visible por su
   profesional. **Sin interpretación ni recomendaciones** (evita reclasificación
   como producto sanitario, MDR).
+  **Excepción acotada (19-sep): mensajes de apoyo.** Al elegir «Mal» o
+  «Regular» aparece una frase fija de acompañamiento. Depende **solo** de la
+  opción pulsada: no se analiza la nota, no hay modelo ni servicio externo, y
+  **no activa ninguna alerta ni notificación**. El circuito de riesgo sigue
+  siendo el ítem 9 del PHQ-9 y el 024. Catálogo y reglas de redacción en
+  `src/app/app/_ui/apoyo.ts`, sujetas por `src/lib/apoyo.test.ts`.
 - **Solo datos ficticios** hasta que existan DPA + base jurídica RGPD art. 9 +
   decisión explícita. Banner permanente de demo siempre visible.
 - **Nada que interprete o recomiende clínicamente. Nada que emita facturas.**

@@ -620,13 +620,39 @@
   padding: 19px 0 23px;
   border-bottom: 1px solid var(--tp-line);
 }
+/* El selector son radios nativos: la selección única, el recorrido con
+   flechas y el anuncio «2 de 4» los da el navegador. El `fieldset` agrupa;
+   `disabled` sobre él desactiva las cuatro de una vez. */
+.tp-mood-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
 .tp-mood-row {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-top: 22px;
 }
+/* Oculto a la vista pero NO a la accesibilidad ni al teclado: sigue siendo el
+   control real, recibe el foco y es lo que anuncia el lector de pantalla.
+   `display:none` lo habría sacado del orden de tabulación. */
+.tp-mood-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+/* La etiqueta entera es el área pulsable. A 320 px cada columna pasa de 60 px
+   de ancho y la altura mínima es de 75, así que cumple los 44 × 44. */
 .tp-mood-choice {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -635,6 +661,7 @@
   min-height: 75px;
   padding: 0 0 8px;
   border-radius: 12px;
+  cursor: pointer;
 }
 .tp-mood-icon {
   width: 47px;
@@ -655,49 +682,68 @@
   color: var(--tp-muted);
   white-space: nowrap;
 }
-/* La selección no depende solo del color: cambia el relleno, el cerco y el
-   peso de la etiqueta, y va marcada con `aria-pressed`. */
-.tp-mood-choice[aria-pressed="true"] .tp-mood-icon {
+/* La selección no depende solo del color: cambia el relleno, aparece un cerco
+   y la etiqueta pasa a negrita. Quien no distinga el verde ve igualmente cuál
+   ha marcado. */
+.tp-mood-choice:has(.tp-mood-input:checked) .tp-mood-icon {
   background: var(--tp-deep);
   border-color: var(--tp-deep);
   color: var(--tp-on-deep);
   box-shadow: 0 0 0 4px var(--tp-tint-cool);
 }
-.dark .tp-mood-choice[aria-pressed="true"] .tp-mood-icon {
+.dark .tp-mood-choice:has(.tp-mood-input:checked) .tp-mood-icon {
   background: var(--tp-accent);
   border-color: var(--tp-accent);
   color: var(--accent-ink);
 }
-.tp-mood-choice[aria-pressed="true"] .tp-mood-label {
+.tp-mood-choice:has(.tp-mood-input:checked) .tp-mood-label {
   color: var(--tp-ink);
   font-weight: 700;
 }
-.tp-mood-choice:disabled {
-  cursor: progress;
+/* El foco se dibuja sobre la etiqueta porque el control real es invisible. */
+.tp-mood-choice:has(.tp-mood-input:focus-visible) {
+  outline: 2px solid var(--tp-accent);
+  outline-offset: 2px;
 }
-.tp-mood-feedback {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 13px;
+.tp-mood-fieldset:disabled .tp-mood-choice {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+/* Mensaje de apoyo. Aparece al elegir «Mal» o «Regular», antes de guardar.
+   Tono contenido a propósito: acompaña, no celebra ni alarma. */
+.tp-apoyo {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--tp-line);
+  background: var(--tp-tint-cool);
+  color: var(--tp-ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tp-field-help {
+  margin-top: 4px;
   font-size: 12px;
   color: var(--tp-muted);
-  min-height: 44px;
+  line-height: 1.4;
 }
-.tp-mood-feedback a {
+/* Quién lee la nota y cuánto queda. Lo primero no es decorativo: el
+   profesional con acceso al expediente puede leerla, así que no se puede
+   presentar como privada. */
+.tp-field-foot {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 44px;
-  font-weight: 600;
-  color: var(--tp-accent);
-  white-space: nowrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--tp-muted);
 }
-.tp-mood-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.tp-journal-escala {
+  font-size: 12px;
+  color: var(--tp-muted);
 }
 
 /* --- Tareas --------------------------------------------------------------- */
@@ -1200,12 +1246,21 @@
 .tp-week-chart i {
   width: 100%;
   max-width: 22px;
-  height: calc(var(--tp-n) * 23px);
+  /* La altura se reparte sobre el máximo de la escala vigente, no sobre un
+     5 fijo: con cuatro opciones un 4 tiene que llegar arriba del todo. */
+  height: calc(var(--tp-n) / var(--tp-max, 5) * 115px);
   border-radius: 5px;
   background: var(--tp-chart-bar);
 }
 /* Día sin registro: hueco explícito, no un cero. Un 0 diría que el paciente
    se sintió fatal, y lo que pasó es que no escribió. */
+/* Un registro de la escala anterior NO se dibuja como barra: se marca con
+   una raya baja. Pintarlo a una altura afirmaría una equivalencia que no
+   existe entre las dos escalas. */
+.tp-week-chart i[data-otra-escala="true"] {
+  height: 3px;
+  background: var(--tp-line-strong);
+}
 .tp-week-chart i[data-empty="true"] {
   height: 3px;
   background: var(--tp-line-strong);

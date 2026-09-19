@@ -25,7 +25,7 @@ import {
   mesLargo,
 } from "@/app/app/_ui/fechas";
 import { PatientTasks } from "@/app/app/_components/PatientTasks";
-import { MoodCheckin } from "@/app/app/_components/MoodCheckin";
+import { MoodEntryForm } from "@/app/app/_components/MoodEntryForm";
 
 export default async function PatientHome() {
   const patient = await getCurrentPatient();
@@ -146,7 +146,14 @@ export default async function PatientHome() {
         </Link>
       )}
 
-      <MoodCheckin hoy={mood} />
+      {/* El mismo formulario que el diario: cuatro caras, nota opcional y un
+          botón. Antes aquí se guardaba al tocar una cara, sin nota; tener dos
+          caminos hacia la misma fila era tener dos sitios donde equivocarse. */}
+      {/* El encabezado lo pone el propio formulario; la sección solo aporta
+          la separación. Repetirlo aquí daría dos títulos para una cosa. */}
+      <section className="tp-mood-section">
+        <MoodEntryForm hoy={mood} dia={hoy} enlaceAlDiario />
+      </section>
 
       <PatientTasks tasks={tasks} hoy={hoy} />
 

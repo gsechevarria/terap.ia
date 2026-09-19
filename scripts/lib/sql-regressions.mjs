@@ -144,6 +144,54 @@ export async function sqlRegressions(db) {
   assert.equal((await q('select count(*)::int n from mood_entries'))[0].n,1);
   await assert.rejects(q("insert into mood_entries(patient_id,mood_value,entry_date) values($1,3,current_date-1)",[pat1]));
  }));
+ // --- Diario: dos escalas conviviendo ---------------------------------------
+ // La escala pasa de cinco opciones a cuatro (20260919100001). Lo que se
+ // comprueba aquí no es la interfaz, es que la BASE impide reinterpretar un
+ // registro antiguo y que el aislamiento sigue donde estaba.
+ await test('El histórico conserva su valor Y su escala', async () => {
+  // Fuera de sesión: simula una fila escrita antes de la migración.
+  await q("insert into mood_entries(patient_id,mood_value,entry_date) values($1,3,current_date-10)", [pat1]);
+  const fila = (await q("select mood_value,mood_scale from mood_entries where patient_id=$1 and entry_date=current_date-10", [pat1]))[0];
+  assert.equal(fila.mood_value, 3);
+  // El 3 de entonces era «Normal». Si la columna dijera 4, la ficha lo
+  // enseñaría como «Bien»: otra cosa distinta de la que dijo el paciente.
+  assert.equal(fila.mood_scale, 5);
+ });
+ await test('Un valor fuera de su escala no entra', async () => {
+  // Sin sesión: aquí solo puede rechazar la restricción, no la RLS.
+  await assert.rejects(q("insert into mood_entries(patient_id,mood_value,mood_scale,entry_date) values($1,5,4,current_date-11)", [pat1]));
+  await assert.rejects(q("insert into mood_entries(patient_id,mood_value,mood_scale,entry_date) values($1,6,5,current_date-12)", [pat1]));
+  await assert.rejects(q("insert into mood_entries(patient_id,mood_value,mood_scale,entry_date) values($1,2,3,current_date-13)", [pat1]));
+ });
+ await test('La nota tiene tope y lo sostiene la base', async () => {
+  await q("insert into mood_entries(patient_id,mood_value,mood_scale,note,entry_date) values($1,2,4,$2,current_date-14)", [pat1, 'x'.repeat(5000)]);
+  await assert.rejects(q("insert into mood_entries(patient_id,mood_value,mood_scale,note,entry_date) values($1,2,4,$2,current_date-15)", [pat1, 'x'.repeat(5001)]));
+ });
+ await test('El registro de hoy se actualiza, no se duplica', () => user(patUid1, async () => {
+  // Doble pulsación o reintento: el índice único por día lo convierte en una
+  // actualización de la misma fila.
+  for (const v of [1, 4, 2]) {
+   await q("insert into mood_entries(patient_id,mood_value,mood_scale) values($1,$2,4) on conflict(patient_id,entry_date) do update set mood_value=excluded.mood_value, mood_scale=excluded.mood_scale", [pat1, v]);
+  }
+  const hoy = await q("select mood_value,mood_scale from mood_entries where patient_id=$1 and entry_date=((now() at time zone 'Europe/Madrid'))::date", [pat1]);
+  assert.equal(hoy.length, 1);
+  assert.equal(hoy[0].mood_value, 2);
+  assert.equal(hoy[0].mood_scale, 4);
+ }));
+ await test('Un día anterior ya no se toca', () => user(patUid1, async () => {
+  // La RLS no lanza error: sencillamente no alcanza esas filas. Comprobar que
+  // «no falló» no diría nada, así que se comprueba que la fila sigue intacta.
+  await q("update mood_entries set mood_value=1, note='reescrito' where patient_id=$1 and entry_date=current_date-10", [pat1]);
+  await q("delete from mood_entries where patient_id=$1 and entry_date=current_date-10", [pat1]);
+  const fila = (await q("select mood_value,note from mood_entries where patient_id=$1 and entry_date=current_date-10", [pat1]))[0];
+  assert.equal(fila.mood_value, 3);
+  assert.equal(fila.note, null);
+ }));
+ await test('El diario de otro no se lee ni se escribe', () => user(patUid2, async () => {
+  assert.equal((await q('select id from mood_entries where patient_id=$1', [pat1])).length, 0);
+  await assert.rejects(q("insert into mood_entries(patient_id,mood_value,mood_scale) values($1,4,4)", [pat1]));
+ }));
+
  await test('Endpoint push local se rechaza incluso por SQL directo',()=>user(patUid1,()=>assert.rejects(q("insert into push_subscriptions(user_id,endpoint,p256dh,auth) values($1,'https://127.0.0.1/private',$2,$3)",[patUid1,'a'.repeat(87),'a'.repeat(22)]))));
  await test('No se notifican destinatarios ajenos',()=>user(uid1,()=>assert.rejects(q("insert into notifications(user_id,professional_id,patient_id,type) values($1,$2,$3,'new_task')",[patUid2,pro1,pat1]))));
  await test('Paciente no fabrica notificaciones',()=>user(patUid1,()=>assert.rejects(q("insert into notifications(user_id,type) values($1,'new_task')",[patUid1]))));

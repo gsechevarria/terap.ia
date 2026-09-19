@@ -29,6 +29,7 @@ import { InvitePanel } from "@/app/pro/_components/InvitePanel";
 import { AsignacionesPanel } from "@/app/pro/_components/AsignacionesPanel";
 import { getAsignaciones, getMiembros } from "@/lib/queries/organizations";
 import { getContextoPropio } from "@/lib/queries/contexts";
+import { ESCALA_ACTUAL, etiquetaAnimo } from "@/lib/diario";
 import { TasksPanel } from "@/app/pro/_components/TasksPanel";
 import { NotesPanel } from "@/app/pro/_components/NotesPanel";
 import { PatientDetailsPanel } from "@/app/pro/_components/PatientDetailsPanel";
@@ -304,21 +305,46 @@ async function PaymentsTab({ patientId }: { patientId: string }) {
 
 async function DiaryTab({ patientId }: { patientId: string }) {
   const entries = await getRecentMoodEntries(patientId);
-  const points = [...entries]
-    .reverse()
-    .map((e) => ({ date: e.entry_date, score: e.mood_value, severity: null }));
+
+  /*
+   * El diario convive con DOS escalas: la original de cinco opciones y la de
+   * cuatro caras que la sustituye (migración 20260919100001).
+   *
+   * Se dibuja **una serie por escala, nunca una sola**. Un 3 con la escala de
+   * cinco era «Normal» y con la de cuatro es «Bien»: unirlos en la misma
+   * gráfica inventaría una evolución que nadie ha medido, y aquí eso no es un
+   * detalle estético — es la diferencia entre mostrar lo que dijo el paciente
+   * y mostrar otra cosa. Por el mismo motivo no se calcula ninguna media.
+   */
+  const escalas = [...new Set(entries.map((e) => e.mood_scale))].sort(
+    (a, b) => (b === ESCALA_ACTUAL ? 1 : 0) - (a === ESCALA_ACTUAL ? 1 : 0) || b - a,
+  );
+
   return (
     <div>
       {entries.length === 0 ? (
         <p className="text-sm text-ink-2">Sin entradas en el diario.</p>
       ) : (
         <>
-          <div className="card p-4">
-            <h3 className="mb-3 text-sm font-semibold">
-              Evolución del ánimo (1-5)
-            </h3>
-            <ScoreChart points={points} max={5} severity={[]} title="Ánimo" />
-          </div>
+          {escalas.map((escala) => {
+            const deLaEscala = entries.filter((e) => e.mood_scale === escala);
+            const points = [...deLaEscala]
+              .reverse()
+              .map((e) => ({ date: e.entry_date, score: e.mood_value, severity: null }));
+            return (
+              <div key={escala} className="card mb-4 p-4">
+                <h3 className="mb-1 text-sm font-semibold">
+                  Evolución del ánimo (1-{escala})
+                </h3>
+                <p className="mb-3 text-xs text-ink-3">
+                  {escala === ESCALA_ACTUAL
+                    ? `${etiquetaAnimo(1, escala)} · ${etiquetaAnimo(escala, escala)}`
+                    : `Escala anterior, retirada. Sus valores no son comparables con los de la escala de ${ESCALA_ACTUAL}.`}
+                </p>
+                <ScoreChart points={points} max={escala} severity={[]} title="Ánimo" />
+              </div>
+            );
+          })}
           <ul className="card mt-4 divide-y divide-line">
             {entries.map((e) => (
               <li
@@ -326,7 +352,13 @@ async function DiaryTab({ patientId }: { patientId: string }) {
                 className="flex items-start justify-between gap-4 px-4 py-3"
               >
                 <div className="min-w-0">
-                  <span className="text-sm font-medium">{e.mood_value}/5</span>
+                  <span className="text-sm font-medium">
+                    {etiquetaAnimo(e.mood_value, e.mood_scale)}
+                  </span>
+                  {/* El número va siempre con su escala: «3» a secas es ambiguo. */}
+                  <span className="ml-2 text-xs text-ink-3">
+                    {e.mood_value}/{e.mood_scale}
+                  </span>
                   {e.note && (
                     <p className="mt-1 text-sm text-ink-2">{e.note}</p>
                   )}
@@ -342,6 +374,7 @@ async function DiaryTab({ patientId }: { patientId: string }) {
     </div>
   );
 }
+
 
 async function ResourcesTab({ patientId }: { patientId: string }) {
   const resources = await getProfessionalResources(patientId);
