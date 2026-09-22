@@ -10,35 +10,41 @@ function iniciales(nombre: string | null, correo: string): string {
 }
 
 /**
- * Tarjeta de identidad al pie de la barra lateral.
+ * Identidad al pie de la barra lateral: avatar de iniciales, nombre y, debajo,
+ * la consulta o centro en el que se está trabajando.
  *
- * Muestra solo lo que consta: nombre y correo. El mockup añadía número de
- * colegiado y un estado "En consulta" — `professionals` no tiene columna de
- * colegiación y no hay noción de presencia en la aplicación, así que inventar
- * ambos sería escribir en la interfaz un dato profesional que nadie ha
- * introducido. Cuando existan esas columnas, este es el sitio.
+ * La segunda línea es el nombre de la organización, no el correo. Quien puede
+ * ser profesional en un centro y paciente en otro necesita ver DÓNDE está
+ * trabajando más que su propia dirección de correo, que ya conoce. El correo se
+ * conserva en el `title` del avatar, para poder comprobar con qué cuenta se ha
+ * entrado sin ocupar una línea con ello.
+ *
+ * Sin caja ni borde: va directamente sobre el lienzo, como el resto de la barra.
  */
 export function SidebarPerfil({
   nombre,
   correo,
+  organizacion,
 }: {
   nombre: string | null;
   correo: string;
+  organizacion?: string | null;
 }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-xl border border-line bg-surface-2 p-2">
+    <div className="flex items-center gap-2.5 px-2.5">
       <span
         aria-hidden
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-label-sm font-semibold text-accent"
+        title={correo}
+        className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-green-2 text-[13px] font-semibold text-ink"
       >
         {iniciales(nombre, correo)}
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-label-sm leading-tight font-semibold text-ink">
+      <div className="min-w-0 flex-1 leading-tight">
+        <p className="truncate text-[13.5px] font-semibold text-ink">
           {nombre ?? "Profesional"}
         </p>
-        <p className="truncate text-[10px] text-ink-3" title={correo}>
-          {correo}
+        <p className="truncate text-[12px] text-ink-4" title={organizacion ?? correo}>
+          {organizacion ?? correo}
         </p>
       </div>
       <SignOutForm soloIcono />

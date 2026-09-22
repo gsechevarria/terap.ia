@@ -1,14 +1,17 @@
 @import "tailwindcss";
 
 /*
- * Sistema visual terap.ia — "Calma Orgánica & Soft Surfaces".
+ * Sistema visual terap.ia — panel del profesional.
  *
- * Calma clínica, software de autor. Geometría blanda (cápsulas, radios de
- * 16/24), separación por borde de 1px, elevación casi nula, jerarquía por
- * tipografía y espacio. Neutros CÁLIDOS, un único acento verde y semánticos
- * desaturados. Nada de sombras difusas de plantilla.
+ * Neutros verdes fríos sobre un lienzo que NO es blanco: la hoja de trabajo es
+ * lo único blanco de la pantalla, y se lee como una hoja porque tiene algo
+ * detrás. Un solo acento verde, geometría con jerarquía real de radios y
+ * CERO sombras: la separación la hacen el color de fondo y la línea de 1 px.
  *
- * Dos reglas de arquitectura que conviene no romper:
+ * La referencia de esta paleta es `docs/design/referencia-hoy.html`, y la
+ * documentación viva es `docs/DESIGN.md`, que trae la tabla de contraste.
+ *
+ * Tres reglas de arquitectura que conviene no romper:
  *
  *  1. El tema se resuelve AQUÍ, en los tokens, con `light-dark()`. Las vistas
  *     no llevan `dark:` — son más de cuarenta ficheros y duplicar cada color en
@@ -17,6 +20,30 @@
  *  2. `light-dark()` mira el `color-scheme` heredado, así que la clase `.dark`
  *     en <html> fuerza el tema y sin clase se sigue la preferencia del sistema.
  *     Una sola declaración por token cubre los tres casos.
+ *  3. Los nombres de token NO se renombran, se reasignan. `--ink-3` aparece en
+ *     un centenar de sitios: cambiar su valor corrige el contraste en todos a
+ *     la vez, cambiar su nombre obliga a tocar un centenar de ficheros.
+ *
+ * Dos desviaciones deliberadas respecto a la paleta especificada, ambas por
+ * contraste y ambas medidas (`scripts/contraste-tokens.mjs`):
+ *
+ *  · `--ink-4` pasa de #66706B a #626C67. El especificado da 4,30:1 sobre
+ *    `--canvas`, y sobre `--canvas` es justo donde se pintan los contadores de
+ *    la barra lateral, a 12,5 px. Con #626C67 quedan en 4,57:1.
+ *  · `--ink-disabled` pasa de #8A928E a #6A706D. El especificado da 3,19:1
+ *    sobre blanco y 2,86:1 sobre `--surface-muted`, que es el fondo de las
+ *    sesiones ya realizadas. Ahí no hay solo un tachado decorativo: están el
+ *    nombre del paciente y la palabra «Realizada», que son información. El
+ *    valor nuevo cumple AA sobre las dos superficies y sigue leyéndose como
+ *    apagado frente a `--ink-3`.
+ *
+ * En OSCURO la restricción va al revés y aprieta más: apagar un texto es
+ * acercarlo al fondo, y el fondo ya es oscuro. `--ink-4` y `--ink-disabled`
+ * acaban a 1,12:1 el uno del otro, casi indistinguibles. Es lo que hay: por
+ * debajo de ahí se incumple AA. Lo que separa una sesión realizada del resto en
+ * modo oscuro no es entonces el gris, sino el tachado, la palabra «Realizada» y
+ * el fondo hundido — que es como debía ser de todas formas, porque el color
+ * nunca puede ser el único portador.
  */
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -25,64 +52,116 @@
   /* Sin clase se respeta el sistema; `.light` / `.dark` en <html> lo fuerzan. */
   color-scheme: light dark;
 
-  /* ---- Superficies (neutros cálidos) ---------------------------------- */
-  --canvas: light-dark(#fbf8fe, #18181b); /* fondo de página, nunca #FFF */
-  --surface: light-dark(#ffffff, #212124); /* tarjetas e islas */
-  --surface-2: light-dark(#f5f2f8, #2a2a2e); /* superficie secundaria / hover */
-  --surface-3: light-dark(#f0edf2, #303034); /* contenedor, un paso más */
-  --panel: var(--surface-2); /* alias histórico: sidebar, chips, hundidos */
-  --sunken: light-dark(#efece9, #2a2a2e); /* fondo hundido / active */
-  --wash: light-dark(rgba(31, 31, 35, 0.045), rgba(255, 255, 255, 0.05));
-  --wash-2: light-dark(rgba(31, 31, 35, 0.08), rgba(255, 255, 255, 0.09));
-  --line: light-dark(#e6e6e3, #2e2e33); /* separador 1px */
-  --line-strong: light-dark(#dad9d4, #3a3a40); /* borde de control */
+  /* ---- Superficies ------------------------------------------------------
+     Cuatro, y cada una tiene un trabajo. `canvas` es el fondo de la
+     aplicación: detrás de la barra lateral y alrededor de la hoja. `surface`
+     es la hoja. `muted` hunde (buscador, segmentados, sesiones realizadas).
+     `subtle` tinta sin hundir (cabeceras de tabla, días no activos). */
+  --canvas: light-dark(#e9ece8, #121614);
+  --surface: light-dark(#ffffff, #1b201d);
+  --surface-muted: light-dark(#f1f3f0, #242a26);
+  --surface-subtle: light-dark(#f6f7f5, #1f2522);
 
-  /* ---- Tinta ----------------------------------------------------------- */
-  --ink: light-dark(#1f1f23, #f2f2f0);
-  --ink-2: light-dark(#5a5a63, #a0a0a8);
-  /* Terciario. Cumple AA (4,5:1) sobre las TRES superficies donde se pinta:
-     claro — surface 5,52:1 · canvas 5,33:1 · surface-2 4,98:1;
-     oscuro — surface 5,14:1 · surface-2 4,64:1.
-     No es decorativo: pinta las horas del calendario, las fechas de las notas,
-     las etiquetas de la ficha y los placeholders de todos los inputs. El
-     #71717A de la especificación se queda en 4,06:1 sobre canvas, por debajo
-     del criterio, así que NO se usa. Al ajustarlo hay que medir contra las
-     tres superficies, no solo contra el fondo de página. */
-  --ink-3: light-dark(#686871, #91919a);
-  /* Gris tenue, SOLO decorativo (separadores, iconos de adorno): no transmite
-     información y por eso no está sujeto al criterio de contraste. */
-  --ink-faint: light-dark(#a1a1aa, #6b6b73);
+  /* Alias históricos. El sistema anterior tenía `surface-2` (hover suave) y
+     `surface-3` (un paso más); se mantienen apuntando a los equivalentes
+     nuevos para no tener que tocar las ~40 vistas que los usan. */
+  --surface-2: var(--surface-subtle);
+  --surface-3: var(--surface-muted);
+  --panel: var(--surface-muted);
+  --sunken: var(--surface-muted);
+  --wash: light-dark(rgba(29, 36, 32, 0.045), rgba(236, 241, 238, 0.05));
+  --wash-2: light-dark(rgba(29, 36, 32, 0.08), rgba(236, 241, 238, 0.09));
 
-  /* ---- Acento: verde sereno (identidad) -------------------------------- */
-  --accent: light-dark(#0f7b6c, #4f9d8b);
-  --accent-hover: light-dark(#0c6558, #5ead9b);
-  --accent-ink: light-dark(#ffffff, #10130f);
-  --accent-soft: light-dark(#e6f4f1, #1a332e);
+  /* ---- Líneas -----------------------------------------------------------
+     `line` separa secciones y enmarca tablas; `line-soft` es la línea entre
+     filas y las horarias de la agenda; `line-strong` es el eje de las gráficas
+     y el borde discontinuo de los huecos libres. */
+  --line: light-dark(#e4e7e3, #2e3531);
+  --line-soft: light-dark(#eef0ed, #272e2a);
+  --line-strong: light-dark(#c8cec9, #414a45);
 
-  /* ---- Semánticos desaturados ------------------------------------------
-     Texto medido siempre sobre su propio fondo suave, que es donde se usan:
-     danger 5,12:1 · info 4,94:1 · success 4,77:1 · warn 5,42:1. */
-  --danger: light-dark(#b4413c, #f87171);
-  --danger-soft: light-dark(#fdf2f2, #3a1e1e);
-  --danger-solid: light-dark(#b4413c, #c65a52); /* badge crítico, texto blanco */
-  /* El #9A6B1E de la especificación da 4,46:1 sobre #FEF9EE — falla AA por
-     cuatro centésimas. Se oscurece lo justo para cumplirlo. */
-  --warn: light-dark(#8a5e15, #fbbf24);
-  --warn-soft: light-dark(#fef9ee, #3a2e14);
-  --info: light-dark(#3a6ea5, #60a5fa);
-  --info-soft: light-dark(#f0f6fc, #1a283d);
-  --success: light-dark(#2e7d5b, #34d399);
-  --success-soft: light-dark(#f0fdf4, #132e22);
+  /* ---- Tinta ------------------------------------------------------------
+     Cinco niveles. Los cuatro primeros son informativos y TODOS cumplen AA
+     (4,5:1) sobre las cuatro superficies. El quinto se reserva a lo pasado o
+     cancelado y también lo cumple, por la desviación anotada arriba. */
+  --ink-1: light-dark(#1d2420, #ecf1ee);
+  --ink-2: light-dark(#3c4641, #c2ccc6);
+  --ink-3: light-dark(#56605b, #9ea9a3);
+  --ink-4: light-dark(#626c67, #939d97);
+  --ink-disabled: light-dark(#6a706d, #8a948e);
 
-  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
-  /* Elevación solo funcional (menús, modales), nunca decorativa. */
-  --shadow-menu: light-dark(
-    0 8px 24px -12px rgba(31, 31, 35, 0.22),
-    0 12px 32px -14px rgba(0, 0, 0, 0.7)
+  /* Alias históricos: `--ink` era el principal y `--ink-faint` el apagado. */
+  --ink: var(--ink-1);
+  --ink-faint: var(--ink-disabled);
+
+  /* ---- Acento -----------------------------------------------------------
+     `accent` es el verde interactivo: acción primaria, navegación activa,
+     enlaces. En oscuro se aclara, porque ahí tiene que funcionar como TEXTO.
+     `accent-solid` es el bloque verde macizo (tarjeta de próxima sesión,
+     próxima cita en la agenda) y se queda oscuro en los dos temas: si
+     siguiera a `accent` se volvería verde claro de noche y la tarjeta pasaría
+     de ser el elemento más rotundo de la pantalla a ser el más pálido. */
+  --accent: light-dark(#2f6b4f, #6fb894);
+  --accent-hover: light-dark(#26583f, #84c7a6);
+  --accent-ink: light-dark(#ffffff, #10201a);
+  --accent-soft: light-dark(#e5efe8, #1e2f27);
+  --accent-solid: light-dark(#2f6b4f, #2a5e46);
+  --accent-solid-ink: #ffffff;
+  --accent-on-dark: light-dark(#cfe3d7, #bfd9cb);
+
+  /* ---- Escala de datos --------------------------------------------------
+     Secuencial de un solo tono, para ocupación y mapas de calor. No codifica
+     mejoría ni empeoramiento: codifica cantidad. */
+  --green-1: light-dark(#e5efe8, #1e2f27);
+  --green-2: light-dark(#c2dacb, #2e5843);
+  --green-3: light-dark(#8fbda3, #4a8a68);
+  --green-4: light-dark(#5a9677, #5ca37c);
+  --green-5: light-dark(#2f6b4f, #6fb894);
+
+  /* ---- Semánticos -------------------------------------------------------
+     `danger` es el rojo de la línea de «ahora», el aviso de seguridad y la
+     insignia de alertas. `danger-ink` es su versión para texto sobre fondo
+     claro. `warning-ink` es el ámbar de «sin confirmar» y «hace 19 días»: solo
+     texto, nunca relleno. */
+  --danger: light-dark(#b42318, #f08a80);
+  --danger-ink: light-dark(#8f1b12, #fca9a0);
+  --danger-soft: light-dark(#fdf1f0, #33201e);
+  --danger-solid: light-dark(#b42318, #c0524a);
+  --warning-ink: light-dark(#8a5200, #e3b466);
+  --warning-line: light-dark(#e8d6ae, #6a5a33);
+  --warning-soft: light-dark(#fbf3e4, #2e2617);
+  --info: light-dark(#2c5f86, #7fb6e8);
+  --info-soft: light-dark(#eff4f9, #17242e);
+  --success: light-dark(#2c6b4e, #6fc79b);
+  --success-soft: light-dark(#eaf3ed, #16261d);
+
+  /* Alias históricos de los semánticos. */
+  --warn: var(--warning-ink);
+  --warn-soft: var(--warning-soft);
+
+  /* Trama de 45º para lo bloqueado y lo que cae fuera del horario. No es un
+     color: es una textura, y por eso se lee como «aquí no se agenda» sin
+     depender de distinguir un gris de otro. */
+  --hatch: repeating-linear-gradient(
+    45deg,
+    light-dark(#f6f7f5, #1f2522) 0 6px,
+    light-dark(#eceeea, #272e2a) 6px 9px
   );
 
-  /* Alto de la franja superior fija (se descuenta a la sidebar). */
-  --banner-h: 2rem;
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
+
+  /* ---- Franja reglamentaria ---------------------------------------------
+     Va oscura en los DOS temas y por eso no usa `--ink-1` directamente: en
+     oscuro `--ink-1` es casi blanco, y la franja habla de datos de salud, no
+     es un titular — 30 px de blanco encendido cruzando la parte alta de la
+     pantalla de noche es exactamente lo que no debe hacer. */
+  --banner-bg: light-dark(#1d2420, #0b0e0d);
+  --banner-ink: light-dark(#e9ece8, #d4dbd7);
+
+  /* Alto de la franja reglamentaria superior (se descuenta a la barra lateral). */
+  --banner-h: 30px;
+  /* Ancho de la barra lateral. */
+  --sidebar-w: 236px;
 }
 
 .light {
@@ -117,6 +196,8 @@
 @theme inline {
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-subtle: var(--surface-subtle);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
   --color-panel: var(--panel);
@@ -124,75 +205,111 @@
   --color-wash: var(--wash);
   --color-wash-2: var(--wash-2);
   --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
   --color-line-strong: var(--line-strong);
-  --color-ink: var(--ink);
+  --color-ink: var(--ink-1);
+  --color-ink-1: var(--ink-1);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-ink-disabled: var(--ink-disabled);
   --color-ink-faint: var(--ink-faint);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-solid: var(--accent-solid);
+  --color-accent-solid-ink: var(--accent-solid-ink);
+  --color-accent-on-dark: var(--accent-on-dark);
+  --color-green-1: var(--green-1);
+  --color-green-2: var(--green-2);
+  --color-green-3: var(--green-3);
+  --color-green-4: var(--green-4);
+  --color-green-5: var(--green-5);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);
+  --color-danger-ink: var(--danger-ink);
   --color-danger-soft: var(--danger-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
+  --color-warning-ink: var(--warning-ink);
+  --color-warning-line: var(--warning-line);
+  --color-warning-soft: var(--warning-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-banner-bg: var(--banner-bg);
+  --color-banner-ink: var(--banner-ink);
 
+  /*
+   * Familia única. Sin serif, sin monoespaciada: la diferencia de ancho en las
+   * cifras la da `tabular-nums`, no una segunda familia.
+   *
+   * `--font-mono` se conserva apuntando a la misma pila porque hay vistas que
+   * usan `font-mono` para importes y nombres de fichero; lo que necesitaban de
+   * verdad era el ancho fijo de dígito, y eso lo da ahora la clase `.mono`.
+   */
   --font-sans:
-    var(--font-sans-loaded), system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-  --font-mono:
-    var(--font-mono-loaded), ui-monospace, SFMono-Regular, Menlo, Consolas,
-    monospace;
+    var(--font-sans-loaded), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-sans);
 
-  /* Geometría del mockup, más contenida que la etapa anterior: los controles
-     son rectángulos de esquina corta y la curva grande se reserva a las
-     tarjetas. La píldora de estado es lo único que se acerca a la cápsula. */
+  /*
+   * Radios con jerarquía: la escala dice qué tan grande es la cosa, no gusto.
+   * hoja 14 · tarjeta de próxima sesión y diálogos 12 · contenedor de tabla y
+   * tarjetas 10 · días de la semana y controles de cabecera 8 · botones y
+   * enlaces dentro del contenido 7 · bloques de agenda y franjas 6 · barras de
+   * gráfica 3 · leyendas 2.
+   */
+  --radius-xs: 2px;
   --radius-sm: 3px;
   --radius-DEFAULT: 4px;
   --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 10px;
-  --radius-2xl: 16px;
-  --radius-3xl: 20px;
+  --radius-lg: 7px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+  --radius-3xl: 12px;
+  --radius-4xl: 14px;
 
-  /* Escala tipográfica explícita (tamaño / interlineado / espaciado). */
-  --text-display: 32px;
-  --text-display--line-height: 40px;
-  --text-display--letter-spacing: -0.025em;
+  /*
+   * Escala tipográfica explícita. Los nombres se conservan del sistema
+   * anterior; los valores se reasignan a la escala nueva.
+   */
+  --text-display: 40px;
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.03em;
+  --text-figure: 28px;
+  --text-figure--line-height: 1.15;
+  --text-figure--letter-spacing: -0.02em;
   --text-headline-xl: 26px;
-  --text-headline-xl--line-height: 34px;
+  --text-headline-xl--line-height: 1.1;
   --text-headline-xl--letter-spacing: -0.02em;
   --text-headline-lg: 20px;
   --text-headline-lg--line-height: 28px;
   --text-headline-lg--letter-spacing: -0.015em;
-  --text-headline: 16px;
+  --text-headline: 17px;
   --text-headline--line-height: 24px;
   --text-headline--letter-spacing: -0.01em;
-  --text-body-lg: 15px;
-  --text-body-lg--line-height: 24px;
-  --text-body-lg--letter-spacing: -0.005em;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 1.55;
   --text-body: 14px;
-  --text-body--line-height: 22px;
+  --text-body--line-height: 21px;
   --text-body-sm: 13px;
-  --text-body-sm--line-height: 20px;
-  --text-body-sm--letter-spacing: 0.005em;
+  --text-body-sm--line-height: 19px;
+  --text-meta: 12.5px;
+  --text-meta--line-height: 17px;
   --text-label: 12px;
   --text-label--line-height: 16px;
-  --text-label--letter-spacing: 0.01em;
-  --text-label-sm: 11px;
-  --text-label-sm--line-height: 14px;
-  --text-label-sm--letter-spacing: 0.02em;
+  --text-label-sm: 11.5px;
+  --text-label-sm--line-height: 15px;
 }
 
 body {
   background: var(--canvas);
-  color: var(--ink);
+  color: var(--ink-1);
   font-family: var(--font-sans);
+  /* Las cifras tienen que cuadrar en columna sin recurrir a una segunda
+     familia: mismo ancho de dígito en toda la aplicación. */
+  font-variant-numeric: tabular-nums;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -200,7 +317,7 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: 7px;
 }
 
 ::selection {
@@ -218,45 +335,45 @@ body {
 
 @layer components {
   /* ---- Botones ---------------------------------------------------------
-     Jerarquía por geometría: las acciones (primaria, secundaria, destructiva)
-     son cápsulas; las terciarias no tienen caja. En Tailwind v4 `@apply` no
-     compone clases propias, así que la base se comparte por grupo de
-     selectores en vez de heredarse. */
+     Tres niveles y nada más: primario macizo, secundario con borde, terciario
+     sin caja. En Tailwind v4 `@apply` no compone clases propias, así que la
+     base se comparte por grupo de selectores en vez de heredarse. */
   .btn,
   .btn-primary,
   .btn-ghost,
   .btn-subtle,
   .btn-danger {
-    @apply inline-flex h-8 cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 select-none disabled:cursor-not-allowed disabled:opacity-45;
+    @apply inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 text-[13.5px] font-medium whitespace-nowrap transition-colors duration-150 select-none disabled:cursor-not-allowed disabled:opacity-45;
   }
   .btn-primary {
-    @apply bg-accent text-accent-ink;
+    @apply font-semibold;
+    background: var(--accent);
+    color: var(--accent-ink);
   }
   .btn-primary:hover:not(:disabled) {
     background: var(--accent-hover);
   }
   .btn-ghost {
-    @apply border border-line-strong bg-surface text-ink hover:bg-surface-2;
+    @apply border border-line-strong bg-surface text-ink hover:bg-surface-muted;
   }
   .btn-subtle {
-    @apply px-3 text-ink-2 hover:bg-surface-2 hover:text-ink;
+    @apply px-3 text-ink-2 hover:bg-surface-muted hover:text-ink;
   }
   .btn-danger {
-    @apply text-danger hover:bg-danger-soft;
+    @apply hover:bg-danger-soft;
+    color: var(--danger-ink);
   }
   .btn-sm {
-    @apply h-7 px-2.5 text-[12px];
+    @apply h-8 px-3 text-[13px];
   }
   .btn-lg {
     @apply h-10 px-4.5 text-[15px];
   }
 
   /* ---- Campos ----------------------------------------------------------
-     `text-base` (16px) es deliberado y no debe bajarse a `text-sm`: iOS hace
-     zoom automático al enfocar un input de menos de 16px, y evitarlo con
-     `maximumScale: 1` bloquea el pinch-zoom e incumple WCAG 1.4.4.
-     El fondo es `canvas` sobre tarjeta `surface`: el control queda
-     ligeramente hundido sin necesidad de sombra. */
+     16px es deliberado y no debe bajarse: iOS hace zoom automático al enfocar
+     un input de menos de 16px, y evitarlo con `maximumScale: 1` bloquea el
+     pinch-zoom e incumple WCAG 1.4.4. */
   .field {
     @apply w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-base text-ink transition-colors duration-150 outline-none placeholder:text-ink-3;
   }
@@ -265,30 +382,38 @@ body {
     box-shadow: var(--ring);
   }
   .field-label {
-    @apply mb-1.5 block text-xs font-medium text-ink-2;
+    @apply mb-1.5 block text-[12.5px] font-medium text-ink-2;
   }
 
   /* ---- Superficies -----------------------------------------------------
-     `card` es la tarjeta corriente; `island` es la agrupación grande que
-     envuelve a varias (radio mayor, para que la anidación se lea). */
+     `sheet` es la hoja de trabajo del panel: lo único blanco de la pantalla.
+     `card` es la tarjeta corriente. Ninguna lleva sombra. */
+  .sheet {
+    @apply rounded-4xl bg-surface;
+  }
   .card {
     @apply rounded-2xl border border-line bg-surface;
   }
   .island {
     @apply rounded-2xl border border-line bg-surface;
   }
+  /* Bloque tintado sin borde, para cifras secundarias y agrupaciones suaves. */
+  .tinted {
+    @apply rounded-2xl bg-surface-muted;
+  }
 
   /* ---- Tag / chip (etiquetas de contenido, no estado) ------------------ */
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full border border-line bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-ink-2;
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-surface-muted px-2 py-0.5 text-[11.5px] font-medium text-ink-2;
   }
 
-  /* ---- Estados: punto + etiqueta --------------------------------------
-     El estado NUNCA se expresa solo por color: siempre punto redondo más
-     etiqueta de texto visible. Quien no distingue el verde del rojo sigue
-     leyendo "Requiere atención". */
+  /* ---- Estados ---------------------------------------------------------
+     El estado de una cita va en TEXTO DE COLOR, no en pastilla rellena: la
+     pastilla rellena se reserva a los contadores y a lo crítico. `.st` se
+     conserva para las vistas que aún la usan, ya sin caja. El color nunca va
+     solo: siempre hay etiqueta legible al lado. */
   .st {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-ink-2;
+    @apply inline-flex items-center gap-1.5 text-[12.5px] font-medium whitespace-nowrap text-ink-2;
   }
   .st .dot {
     @apply size-1.5 shrink-0 rounded-full;
@@ -309,50 +434,63 @@ body {
     color: var(--info);
   }
   .d-warn {
-    background: var(--warn);
-    color: var(--warn);
+    background: var(--warning-ink);
+    color: var(--warning-ink);
   }
   .d-danger {
     background: var(--danger);
     color: var(--danger);
   }
   .d-neutral {
-    background: var(--ink-3);
+    background: var(--ink-4);
   }
 
-  /* Estado crítico — píldora sólida, reservada a lo que debe destacar. */
+  /* Contador: la única pastilla rellena del sistema. */
+  .counter {
+    @apply inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11.5px] font-semibold text-white;
+    background: var(--danger);
+  }
   .st-solid {
-    @apply inline-flex items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-2 text-[11px] font-semibold whitespace-nowrap text-white;
+    @apply inline-flex items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-2 text-[11.5px] font-semibold whitespace-nowrap text-white;
     background: var(--danger-solid);
   }
 
-  /* ---- Banda de alerta clínica prioritaria -----------------------------
-     Precede a las listas cuando hay ítems de riesgo. Tono coral desaturado,
-     mensaje sobrio: informa, no alarma. */
+  /* ---- Franja de aviso de seguridad ------------------------------------
+     Franja, no tarjeta: cruza el ancho de la hoja y se lee antes que nada.
+     Describe lo que el paciente respondió; no lo interpreta. */
   .alert-clinical {
-    @apply flex flex-wrap items-start gap-3 rounded-2xl border border-line bg-danger-soft p-4 text-sm text-ink;
-    border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+    @apply flex flex-wrap items-start gap-3 rounded-md border px-4 py-3 text-[13.5px] text-ink;
+    background: var(--danger-soft);
+    border-color: color-mix(in srgb, var(--danger) 32%, transparent);
   }
 
   /* ---- Encabezados ----------------------------------------------------- */
   .page-title {
-    @apply text-headline-xl font-semibold text-ink;
+    @apply text-display font-semibold text-ink;
+  }
+  .section-title {
+    @apply text-headline font-semibold text-ink;
   }
   .card-title {
     @apply text-headline font-semibold text-ink;
   }
+  /* Etiqueta de sección en minúscula de frase: nada de MAYÚSCULAS espaciadas. */
   .section-label {
-    @apply text-label-sm font-semibold tracking-wide text-ink-3 uppercase;
+    @apply text-[12.5px] font-medium text-ink-3;
   }
-  /* Cifras e identificadores: ancho fijo para que las columnas no bailen. */
+  /* Cifra destacada. */
+  .figure {
+    @apply text-figure font-semibold text-ink;
+  }
+  /* Cifras e identificadores: ancho de dígito fijo, misma familia. */
   .mono {
-    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
   }
 
   /* ---- Filas interactivas --------------------------------------------- */
   .row-hover {
-    @apply transition-colors duration-150 hover:bg-wash;
+    @apply transition-colors duration-150 hover:bg-surface-subtle;
   }
 
   /* ---- Tabs ------------------------------------------------------------ */
@@ -360,47 +498,75 @@ body {
     @apply flex items-center gap-6 overflow-x-auto border-b border-line;
   }
   .tab {
-    @apply relative cursor-pointer border-b-2 border-transparent pb-3 text-[13px] whitespace-nowrap text-ink-2 transition-colors duration-150 hover:text-ink;
+    @apply relative cursor-pointer border-b-2 border-transparent pb-3 text-[13.5px] whitespace-nowrap text-ink-2 transition-colors duration-150 hover:text-ink;
   }
   .tab-active {
     @apply border-accent font-semibold text-accent;
   }
 
-  /* ---- Tablas ---------------------------------------------------------- */
-  .table-base {
-    @apply w-full border-collapse text-sm;
+  /* ---- Segmentado ------------------------------------------------------ */
+  .segmented {
+    @apply inline-flex gap-1 rounded-lg p-[3px];
+    background: var(--surface-muted);
   }
-  .table-base th {
-    @apply border-b border-line px-4 py-2.5 text-left text-label-sm font-medium tracking-wide text-ink-3 uppercase;
+  .segmented > * {
+    @apply cursor-pointer rounded-sm border-0 px-2.5 py-[5px] text-[12.5px] text-ink-2 transition-colors;
+    background: transparent;
   }
-  .table-base td {
-    @apply border-b border-line px-4 py-3 align-middle text-[13px] text-ink;
+  .segmented > [aria-pressed="true"],
+  .segmented > [aria-current="true"],
+  .segmented > [aria-current="page"] {
+    @apply font-semibold text-ink;
+    background: var(--surface);
   }
 
-  /* ---- Modal ----------------------------------------------------------- */
+  /* ---- Tablas ----------------------------------------------------------
+     Cabecera tintada, filas separadas por `line-soft`, contenedor de radio 10.
+     Sin MAYÚSCULAS en las etiquetas de columna. */
+  .table-wrap {
+    @apply overflow-hidden rounded-2xl border border-line;
+  }
+  .table-base {
+    @apply w-full border-collapse text-[13.5px];
+  }
+  .table-base th {
+    @apply px-4 py-2.5 text-left text-[12.5px] font-medium text-ink-3;
+    background: var(--surface-subtle);
+    border-bottom: 1px solid var(--line);
+  }
+  .table-base td {
+    @apply px-4 py-3 align-middle text-[13.5px] text-ink;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .table-base tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  /* ---- Modal -----------------------------------------------------------
+     Radio 12, borde y velo. Sin sombra pesada. */
   .modal {
-    @apply w-full overflow-hidden rounded-2xl border border-line bg-surface;
-    box-shadow: var(--shadow-menu);
+    @apply w-full overflow-hidden rounded-3xl border border-line bg-surface;
   }
   .modal-header {
     @apply px-6 pt-5 pb-1 text-[15px] font-semibold text-ink;
   }
   .modal-body {
-    @apply px-6 pb-5 text-sm text-ink-2;
+    @apply px-6 pb-5 text-[13.5px] text-ink-2;
   }
   .modal-footer {
-    @apply flex justify-end gap-2 border-t border-line bg-surface-2 px-6 py-4;
+    @apply flex justify-end gap-2 border-t border-line px-6 py-4;
+    background: var(--surface-subtle);
   }
 
   /* ---- Toast ----------------------------------------------------------- */
   .toast {
-    @apply flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink;
-    box-shadow: var(--shadow-menu);
+    @apply flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-4 py-3 text-[13.5px] text-ink;
   }
 
-  /* ---- Empty state ----------------------------------------------------- */
+  /* ---- Estado vacío ----------------------------------------------------
+     Dice qué hacer. No se disculpa. */
   .empty {
-    @apply rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center text-[13px] text-ink-2;
+    @apply rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center text-[13.5px] text-ink-2;
   }
 
   /* ---- Skeleton -------------------------------------------------------- */
@@ -408,9 +574,9 @@ body {
     @apply rounded-lg;
     background: linear-gradient(
       90deg,
-      var(--surface-2) 25%,
-      var(--sunken) 50%,
-      var(--surface-2) 75%
+      var(--surface-subtle) 25%,
+      var(--surface-muted) 50%,
+      var(--surface-subtle) 75%
     );
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.4s ease infinite;
@@ -419,5 +585,10 @@ body {
     to {
       background-position: -200% 0;
     }
+  }
+
+  /* ---- Trama de bloqueo ------------------------------------------------ */
+  .hatch {
+    background: var(--hatch);
   }
 }

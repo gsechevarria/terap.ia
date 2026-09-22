@@ -8,7 +8,7 @@ export default function NewPatientPage() {
   return (
     <div className="mx-auto max-w-lg">
       <Link
-        href="/pro"
+        href="/pro/patients"
         className="inline-flex items-center gap-1.5 text-sm text-ink-3 transition-colors hover:text-ink"
       >
         <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Schibsted_Grotesk } from "next/font/google";
 import { FranjaReglamentaria } from "@/components/FranjaReglamentaria";
 import "./globals.css";
 
@@ -11,17 +11,21 @@ import "./globals.css";
  * abrir a terceros, y la IP del paciente no viaja a un tercero por el hecho de
  * abrir su expediente.
  *
- * Inter para la interfaz; JetBrains Mono para cifras e identificadores, donde
- * el ancho fijo evita que las columnas bailen entre filas.
+ * Familia ÚNICA: Schibsted Grotesk, en los cuatro pesos que usa el sistema
+ * visual. Antes había dos (Inter para la interfaz, JetBrains Mono para las
+ * cifras); la monoespaciada se retira porque lo que hacía falta de ella era el
+ * ancho de dígito fijo, y eso lo da `font-variant-numeric: tabular-nums`, que
+ * `globals.css` aplica al `body` entero. Una familia menos es también una
+ * descarga menos y un token de sistema menos que mantener.
+ *
+ * `--font-mono-loaded` ya no existe: `--font-mono` apunta a la misma pila que
+ * `--font-sans` en `globals.css`, así que las vistas que aún escriben
+ * `font-mono` siguen compilando y se ven con la familia única.
  */
-const inter = Inter({
+const schibsted = Schibsted_Grotesk({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-sans-loaded",
-  display: "swap",
-});
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono-loaded",
   display: "swap",
 });
 
@@ -40,7 +44,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4f9d8b",
+  themeColor: "#2f6b4f",
   width: "device-width",
   initialScale: 1,
   // Sin `maximumScale` ni `userScalable: false`: bloquear el pinch-zoom
@@ -61,7 +65,7 @@ export default async function RootLayout({
   return (
     <html
       lang="es"
-      className={`h-full antialiased ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`h-full antialiased ${schibsted.variable}`}
       suppressHydrationWarning
     >
       {/* Aplica el aspecto elegido ANTES del primer pintado: sin esto, quien

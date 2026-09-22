@@ -32,6 +32,7 @@
     "test:integration:analytics": "node --env-file=.env.test scripts/test-analytics.mjs",
     "test:integration:contabilidad": "node --env-file=.env.test scripts/test-contabilidad.mjs",
     "test:integration": "node --env-file=.env.test scripts/test-integration.mjs",
+    "test:contraste": "node scripts/contraste-tokens.mjs",
     "test:sql": "node scripts/test-sql.mjs",
     "gen:types:embedded": "node scripts/test-sql.mjs --generate-types",
     "test:types": "node scripts/test-sql.mjs --check-types",

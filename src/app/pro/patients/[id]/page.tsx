@@ -87,7 +87,7 @@ export default async function PatientDetailPage({
   return (
     <div className="mx-auto max-w-5xl">
       <nav aria-label="Ruta" className="flex items-center gap-2 text-label-sm text-ink-3">
-        <Link href="/pro" className="transition-colors hover:text-accent">
+        <Link href="/pro/patients" className="transition-colors hover:text-accent">
           Pacientes
         </Link>
         <ChevronRight size={13} strokeWidth={1.75} aria-hidden className="text-ink-faint" />

@@ -123,6 +123,23 @@ export async function getFlaggedCountForPatient(
   return count ?? 0;
 }
 
+/**
+ * Avisos de ítem de riesgo abiertos en TODA la consulta.
+ *
+ * Alimenta la señal de la cabecera del panel, que tiene que estar visible desde
+ * cualquier pantalla. Es un recuento con `head: true`: no trae ni una fila, así
+ * que ponerlo en el layout no cuesta un viaje de datos, solo uno de red.
+ */
+export async function countAvisosAbiertos(): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await checked(supabase
+    .from("scale_responses")
+    .select("id", { count: "exact", head: true })
+    .eq("flagged", true)
+    .is("acknowledged_at", null));
+  return count ?? 0;
+}
+
 export type FlaggedResponse = {
   id: string;
   submittedAt: string;
