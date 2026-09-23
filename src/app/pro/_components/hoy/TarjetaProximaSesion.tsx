@@ -130,7 +130,10 @@ export function TarjetaProximaSesion({
         className="flex flex-wrap items-end gap-4 border-t pt-3"
         style={{ borderColor: "rgba(255,255,255,0.18)" }}
       >
-        <div className="min-w-[180px] flex-1">
+        {/* 160 y no 180: a 390 px de pantalla, con los 16 de margen de página y
+            los 20 de la tarjeta, quedan 318 útiles. Con 180 + 16 de hueco + 120
+            de la columna de cifras son 316, y cabía por dos píxeles. */}
+        <div className="min-w-[160px] flex-1">
           {sesion.escala ? (
             <>
               <p className="mb-1.5 text-[12.5px]" style={{ color: "var(--accent-on-dark)" }}>

@@ -282,6 +282,56 @@ Procedimiento completo —pruebas, migración, rollback y orden de despliegue—
 [docs/ORGANIZACIONES-Y-REGISTRO.md](docs/ORGANIZACIONES-Y-REGISTRO.md).
 Informe previo y verificación posterior: `npm run informe:organizaciones`.
 
+## Rediseño del panel del profesional (22-sep-2026) — SIN DESPLEGAR
+
+Rama `feat/rediseno-hoy-sistema-visual`. Sistema visual nuevo en `/pro`, a
+partir de la maqueta aprobada `docs/design/referencia-hoy.html`. **Ni una
+migración: no se ha tocado el esquema, ni la RLS, ni una función SQL, ni el
+flujo de autenticación.** `/app` y la portada quedan como estaban.
+
+La referencia es **[docs/DESIGN.md](docs/DESIGN.md)**, que trae tokens, escala
+tipográfica, radios, clases, reglas anti-plantilla, anatomía del shell, la tabla
+de contraste y lo que quedó sin comprobar.
+
+- **Tokens reasignados, no renombrados**, así que las más de cien apariciones de
+  `text-ink-3` heredan el contraste corregido sin tocar cien ficheros. Hoja
+  blanca sobre lienzo `#E9ECE8`, y de ahí sale la regla de que **no hay ni una
+  sombra** en el sistema.
+- **Familia única Schibsted Grotesk** con `next/font`. Fuera Inter y JetBrains
+  Mono; el ancho de dígito fijo lo da ahora `tabular-nums` en el `body`.
+- **`/pro` pasa a ser «Hoy»** y el listado de pacientes se mueve a
+  `/pro/patients`, añadido ya a las rutas privadas de
+  `verificar-produccion.mjs`.
+- **`npm run test:contraste`** (`scripts/contraste-tokens.mjs`) lee los tokens
+  del propio `globals.css` y mide **66 pares en los dos temas: todos AA**. Salió
+  con código 1 la primera vez, que es para lo que está.
+- **Modo oscuro conservado**, con paleta propia verificada. Efecto colateral
+  aceptado y anotado: la app del paciente en oscuro hereda los neutros nuevos,
+  porque su `patient.css` mapea sus tokens a los de `globals.css`.
+
+**Nada quedó tras una bandera**, y es deliberado: en la CI el `build` solo recibe
+tres variables de entorno, así que una `NEXT_PUBLIC_FEATURE_*` nueva llega
+`undefined` y lo único que se compila y se typechequea es la rama apagada. Los
+bloques sin datos dicen en voz alta lo que les falta, que era la otra opción
+prevista.
+
+**Lo que la maqueta pide y el esquema no tiene** —y por tanto no se ha
+inventado—: horario o disponibilidad del profesional (de ahí que la jornada no
+tenga denominador «de 8 h disponibles»), lista de espera, frecuencia acordada
+por paciente, sala y estado «enlace enviado». Además, `late_cancel` es una
+etiqueta que se marca a mano, no una regla de 24 h, y el rótulo lo dice así.
+
+Verificado: lint, typecheck, build, **224 pruebas** (11 nuevas) y los 66 pares de
+contraste. Auditado el diff completo: los `href` son idénticos uno a uno, no se
+tocó ningún fichero fuera de alcance y los atributos de accesibilidad salen
+ganando.
+
+⚠️ **Sin revisión visual y sin desplegar.** No hay navegador en este entorno: en
+este repositorio vitest corre en Node y **ningún test renderiza componentes**,
+así que todo lo que toca la interfaz se comprueba leyendo ficheros con
+expresiones regulares. Eso no sustituye a mirar la pantalla. Falta también
+dispositivo físico y ver el modo oscuro de verdad.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a

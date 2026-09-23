@@ -352,3 +352,75 @@ Anotado para que no se confunda con un olvido:
   etiqueta que el profesional marca a mano en el modal de asistencia. No hay
   ninguna regla que compare la hora de cancelación con la de la cita, así que el
   rótulo dice «que marcaste como tardías».
+
+---
+
+## Revisión de la implantación (22-sep-2026)
+
+Lo que se comprobó al cerrar el rediseño, y con qué.
+
+### Contraste
+
+`npm run test:contraste`: **66 pares, todos AA en los dos temas**. La tabla de
+arriba es su salida. El script encontró un fallo real mientras se escribía —el
+oscuro iba a quedar con `--ink-disabled` sobre `--surface-muted` en 4,4995:1—,
+que es justo para lo que sirve.
+
+### Teclado
+
+- **«Hoy» no tiene un solo control que no sea un elemento real.** Sus siete
+  componentes suman 17 enlaces, cero `<button>` y cero `<div onClick>` o
+  `tabIndex` a mano: todo lo que se pulsa es un `<Link>`, así que el recorrido
+  con tabulador y la activación con Intro salen del navegador.
+- **Agenda**: los bloques del calendario son `<button>`, no `<div>`. El popup de
+  vista previa y el modal de edición se cierran con Escape, el modal lleva
+  `role="dialog"`, `aria-modal` y foco programático, y el velo de cierre por
+  ratón va `aria-hidden` para no anunciarse como un control sin nombre.
+- El foco visible (`:focus-visible`, contorno de 2 px en `--accent`) no se
+  desactiva en ninguna pantalla.
+
+### Responsive
+
+Un solo corte en el shell, **1024 px**: por debajo, la barra lateral pasa a
+cajón y la hoja ocupa todo el ancho sin margen ni radio. Dentro del contenido
+los cortes son `sm` (640) y `lg` (1024).
+
+Todos los anchos fijos del panel están sujetos a `lg:` o son `max-w-*`, así que
+por debajo de 1024 px no hay ninguno: se comprobó uno a uno. A 390 px la tarjeta
+de próxima sesión era el caso más apretado —sus dos columnas interiores sumaban
+316 px de los 318 disponibles— y se bajó el mínimo de la gráfica de 180 a 160.
+
+En móvil «Hoy» apila la **tarjeta de próxima sesión por delante de la barra de
+jornada**: en un teléfono importa más a quién se atiende dentro de un rato que
+cómo queda repartido el día. Se hace con `order`, no moviendo el marcado, para
+que el `h1` siga siendo el primer elemento del documento.
+
+### Pruebas
+
+`npm test`: **224** (11 nuevas, sobre la frase de la jornada y el saludo).
+`npm run lint`, `npm run typecheck` y `npm run build`, en verde.
+
+Lo que estas pruebas **no** cubren, y conviene no confundir: en este repositorio
+vitest corre en Node y ningún test renderiza componentes. Todo lo que toca la
+interfaz se comprueba leyendo ficheros con expresiones regulares. **Nada de esto
+sustituye a mirar la pantalla**, que sigue pendiente.
+
+### Nada quedó tras una bandera
+
+La especificación permitía esconder tras `NEXT_PUBLIC_FEATURE_*` los bloques sin
+datos. **No se ha usado ninguna**, y el motivo es concreto: en la CI el `build`
+solo recibe tres variables de entorno, así que cualquier bandera nueva llega
+`undefined` y lo único que se compila y se typechequea es la rama apagada. Una
+bandera habría dejado el código nuevo sin ninguna puerta de calidad.
+
+En su lugar, cada bloque sin datos dice en voz alta lo que le falta — que es la
+otra opción que la especificación daba. Están listados en «Lo que la maqueta
+pide y aquí no está».
+
+### Lo que sigue sin comprobarse
+
+- **Revisión visual en navegador.** No hay pantalla en este entorno.
+- **Dispositivo físico**: teclado real de iOS y Android, área segura del iPhone
+  y rebote del desplazamiento.
+- **Modo oscuro mirado de verdad.** Los 66 pares están medidos, pero medir el
+  contraste no es lo mismo que ver si la pantalla resulta agradable.

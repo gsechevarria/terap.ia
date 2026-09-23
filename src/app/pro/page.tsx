@@ -51,15 +51,28 @@ export default async function Hoy({ searchParams }: { searchParams: Promise<SP> 
 
   return (
     <div className="flex flex-col gap-[22px]">
-      {/* Saludo y próxima sesión */}
-      <div className="flex flex-col gap-7 lg:flex-row lg:items-stretch">
-        <div className="flex min-w-0 flex-1 flex-col justify-between gap-6 py-1">
-          <div>
-            <h1 className="page-title">
-              {saludo(minutesOfDayInTZ(ahora), contexto?.full_name ?? null)}
-            </h1>
-            <p className="mt-3 max-w-[500px] text-body-lg text-ink-2">{frase}</p>
-          </div>
+      {/*
+        Saludo, jornada y próxima sesión.
+
+        En escritorio son dos columnas: a la izquierda el saludo arriba y la
+        barra de jornada abajo; a la derecha la tarjeta, ocupando el alto de las
+        dos filas. En móvil se apila y la TARJETA SUBE por delante de la barra:
+        en un teléfono, lo que hace falta saber primero es a quién se atiende
+        dentro de un rato, no cómo queda repartido el día.
+
+        El orden visual se cambia con `order`, no moviendo el marcado: así el
+        `h1` sigue siendo el primer elemento del documento y quien navega con
+        lector de pantalla o por teclado no empieza por una tarjeta suelta.
+      */}
+      <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_500px] lg:grid-rows-[auto_auto]">
+        <div className="order-1 min-w-0 lg:order-none lg:col-start-1 lg:row-start-1">
+          <h1 className="page-title">
+            {saludo(minutesOfDayInTZ(ahora), contexto?.full_name ?? null)}
+          </h1>
+          <p className="mt-3 max-w-[500px] text-body-lg text-ink-2">{frase}</p>
+        </div>
+
+        <div className="order-3 min-w-0 lg:order-none lg:col-start-1 lg:row-start-2 lg:self-end">
           <BarraJornada
             tramos={panel.tramos}
             minutosDeSesion={panel.minutosDeSesion}
@@ -67,7 +80,9 @@ export default async function Hoy({ searchParams }: { searchParams: Promise<SP> 
           />
         </div>
 
-        <TarjetaProximaSesion sesion={panel.proxima} ahoraISO={panel.ahoraISO} />
+        <div className="order-2 lg:order-none lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <TarjetaProximaSesion sesion={panel.proxima} ahoraISO={panel.ahoraISO} />
+        </div>
       </div>
 
       {/* Aviso de seguridad: siempre delante de todo lo demás. */}

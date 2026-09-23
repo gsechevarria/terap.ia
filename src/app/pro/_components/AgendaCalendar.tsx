@@ -825,13 +825,17 @@ function EditModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25 p-4"
       onClick={onClose}
     >
+      {/* Radio 12, que es el del diálogo, y no el 10 de la tarjeta. No usa
+          `.modal` porque esa clase lleva `overflow-hidden` y aquí hace falta
+          `overflow-y-auto`: el formulario es más alto que la pantalla en un
+          móvil. Lo que lo separa del fondo es el borde y el velo, no sombra. */}
       <div
         ref={dialogRef}
         tabIndex={-1}
         role="dialog"
         aria-label="Modificar cita"
         aria-modal
-        className="card max-h-[90dvh] w-full max-w-md overflow-y-auto p-6"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-line bg-surface p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
