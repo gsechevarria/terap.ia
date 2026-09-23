@@ -352,6 +352,14 @@ solo la próxima, y una de 90 min no se distinguía de una de 60.
 «Proponer cita» a quien no tiene ninguna. De paso, «Proponer cita» en «Hoy»
 mandaba `?paciente=` y la agenda lee `?patient=`: no preseleccionaba a nadie.
 
+**`/pro/pagos`, igual.** Frase de estado bajo el título; «Ingresos por mes»
+con el trazado de «Ocupación de tu agenda» (`IngresosPorMes`, 150 px, importe
+escrito bajo cada barra), en vez de `BarChart`, cuyo SVG escalado al ancho
+dejaba rótulos de 22 px. Los meses sin cobros salen a cero: antes se saltaban
+y julio quedaba al lado de septiembre. Tabla de detalle sin caja, y
+«Septiembre de 2026» en vez del «Septiembre De 2026» que daba `capitalize`.
+`BarChart` sigue en Analítica y en el histórico.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
