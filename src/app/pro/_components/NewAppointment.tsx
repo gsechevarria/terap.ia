@@ -8,27 +8,49 @@ import { createAppointmentAction } from "@/lib/actions/appointments";
 import { actionErrorMessage } from "@/lib/errors";
 import { fromDatetimeLocal } from "@/lib/format";
 import { fromWallClock, ymdParts } from "@/lib/tz";
+import { FechaHoraSesion } from "@/app/pro/_components/FechaHoraSesion";
 
 type Freq = "none" | "weekly" | "biweekly" | "monthly";
 
 const DURATIONS = [30, 45, 60, 90] as const;
 
+export type PacienteSelect = {
+  id: string;
+  full_name: string | null;
+  bonoDisponible: number;
+  tieneCuenta: boolean;
+};
+
+/**
+ * Formulario de nueva cita. Vive en dos sitios con el mismo código: el bloque
+ * lateral de la agenda y el diálogo que se abre al pinchar un hueco libre del
+ * calendario, que llega con el día y la hora ya puestos.
+ */
 export function NewAppointment({
   patients,
   defaultPatientId,
+  initialDay = "",
+  initialTime = "",
+  enDialogo = false,
+  onCreated,
 }: {
-  patients: {
-    id: string;
-    full_name: string | null;
-    bonoDisponible: number;
-    tieneCuenta: boolean;
-  }[];
+  patients: PacienteSelect[];
   defaultPatientId?: string;
+  /** 'YYYY-MM-DD' con el que arranca el formulario. */
+  initialDay?: string;
+  /** 'HH:MM' con el que arranca el formulario. */
+  initialTime?: string;
+  /** Sin tarjeta ni título propios: los pone el diálogo que lo envuelve. */
+  enDialogo?: boolean;
+  /** Tras crear. Sin él, el formulario se vacía y se queda donde está. */
+  onCreated?: () => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [patientId, setPatientId] = useState(defaultPatientId ?? "");
-  const [start, setStart] = useState("");
+  const [day, setDay] = useState(initialDay);
+  const [time, setTime] = useState(initialTime);
+  const [creadas, setCreadas] = useState(0);
   const [duration, setDuration] = useState<number>(60);
   const [customMode, setCustomMode] = useState(false);
   const [customMin, setCustomMin] = useState("60");
@@ -61,8 +83,8 @@ export function NewAppointment({
       setError("No hay pacientes activos.");
       return;
     }
-    if (!start) {
-      setError("Indica la fecha y hora de la sesión.");
+    if (!day || !time) {
+      setError("Elige el día y la hora de la sesión.");
       return;
     }
     if (!minutes || minutes < 5) {
@@ -71,7 +93,7 @@ export function NewAppointment({
     }
     // La hora escrita se interpreta como hora de Madrid, no como hora del
     // navegador ni del servidor (este componente también se renderiza en SSR).
-    const startDate = fromDatetimeLocal(start);
+    const startDate = fromDatetimeLocal(`${day}T${time}`);
     if (!startDate) {
       setError("La fecha y hora no son válidas.");
       return;
@@ -102,7 +124,16 @@ export function NewAppointment({
           setConflict(res.conflict);
           return;
         }
-        setStart("");
+        if (onCreated) {
+          router.refresh();
+          onCreated();
+          return;
+        }
+        // El día se conserva: lo normal es dar varias citas seguidas en la
+        // misma semana, y así la rejilla ya enseña ocupada la que se acaba de
+        // crear.
+        setTime("");
+        setCreadas((n) => n + 1);
         setDuration(60);
         setCustomMode(false);
         setCustomMin("60");
@@ -120,9 +151,9 @@ export function NewAppointment({
   }
 
   return (
-    <div className="tinted p-4">
-      <h3 className="section-title">Nueva cita</h3>
-      <div className="mt-3 grid gap-2.5">
+    <div className={enDialogo ? "" : "tinted p-4"}>
+      {!enDialogo && <h3 className="section-title">Nueva cita</h3>}
+      <div className={`grid gap-2.5 ${enDialogo ? "" : "mt-3"}`}>
         <label className="block">
           <span className="field-label">Paciente</span>
           <select
@@ -173,19 +204,6 @@ export function NewAppointment({
               : "Sin bono activo con sesiones disponibles."}
           </p>
         </div>
-
-        <label className="block">
-          <span className="field-label">Fecha y hora de la sesión</span>
-          <input
-            type="datetime-local"
-            value={start}
-            onChange={(e) => {
-              setStart(e.target.value);
-              clearConflict();
-            }}
-            className="field"
-          />
-        </label>
 
         <div>
           <span className="field-label">Duración</span>
@@ -244,6 +262,21 @@ export function NewAppointment({
             </div>
           )}
         </div>
+
+        <FechaHoraSesion
+          day={day}
+          time={time}
+          minutes={minutes}
+          version={creadas}
+          onDay={(v) => {
+            setDay(v);
+            clearConflict();
+          }}
+          onTime={(v) => {
+            setTime(v);
+            clearConflict();
+          }}
+        />
 
         <label className="block">
           <span className="field-label">Link de videollamada (opcional)</span>

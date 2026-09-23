@@ -34,6 +34,11 @@ import {
   ymdInTZ,
 } from "@/lib/tz";
 import { Status, type StatusTone } from "@/components/ui/Status";
+import { FechaHoraSesion } from "@/app/pro/_components/FechaHoraSesion";
+import {
+  NewAppointment,
+  type PacienteSelect,
+} from "@/app/pro/_components/NewAppointment";
 import type { AgendaAppointment, AgendaBlock } from "@/lib/queries/appointments";
 
 export type CalendarView = "day" | "week" | "month";
@@ -119,20 +124,33 @@ type Popup =
   | { kind: "appt"; appt: AgendaAppointment; x: number; y: number }
   | { kind: "block"; block: AgendaBlock; x: number; y: number };
 
+/** Hueco pinchado en el calendario: día y, en día/semana, la hora. */
+type NuevaCita = { day: string; time: string };
+type OnNew = (day: string, time: string) => void;
+
 export function AgendaCalendar({
   view,
   dateYMD,
   appointments,
   blocks,
+  patients,
+  defaultPatientId,
 }: {
   view: CalendarView;
   dateYMD: string;
   appointments: AgendaAppointment[];
   blocks: AgendaBlock[];
+  patients: PacienteSelect[];
+  defaultPatientId?: string;
 }) {
   const router = useRouter();
   const [popup, setPopup] = useState<Popup | null>(null);
   const [editing, setEditing] = useState<AgendaAppointment | null>(null);
+  const [nueva, setNueva] = useState<NuevaCita | null>(null);
+  const onNew: OnNew = (day, time) => {
+    setPopup(null);
+    setNueva({ day, time });
+  };
 
   // "Hoy"/"ahora" fuera del render (pureza de React); solo tras montar.
   // El intervalo es necesario: sin él la línea roja se quedaba clavada en la
@@ -156,6 +174,7 @@ export function AgendaCalendar({
       if (e.key === "Escape") {
         setPopup(null);
         setEditing(null);
+        setNueva(null);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -183,6 +202,7 @@ export function AgendaCalendar({
           blocks={blocks}
           todayYMD={today}
           onOpen={openPopup}
+          onNew={onNew}
         />
       ) : (
         <TimeGrid
@@ -193,6 +213,7 @@ export function AgendaCalendar({
           todayYMD={today}
           nowMin={nowMin}
           onOpen={openPopup}
+          onNew={onNew}
         />
       )}
 
@@ -244,6 +265,18 @@ export function AgendaCalendar({
         </>
       )}
 
+      {/* Nueva cita desde un hueco del calendario */}
+      {nueva && (
+        <NewAppointmentDialog
+          key={`${nueva.day}T${nueva.time}`}
+          day={nueva.day}
+          time={nueva.time}
+          patients={patients}
+          defaultPatientId={defaultPatientId}
+          onClose={() => setNueva(null)}
+        />
+      )}
+
       {/* Modal de edición */}
       {editing && (
         <EditModal
@@ -273,6 +306,7 @@ function MonthGrid({
   blocks,
   todayYMD,
   onOpen,
+  onNew,
 }: {
   date: Date;
   appointments: AgendaAppointment[];
@@ -282,6 +316,7 @@ function MonthGrid({
     e: React.MouseEvent,
     p: { kind: "appt"; appt: AgendaAppointment } | { kind: "block"; block: AgendaBlock },
   ) => void;
+  onNew: OnNew;
 }) {
   const first = new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1),
@@ -333,13 +368,19 @@ function MonthGrid({
             const dayBlocks = blockByDay.get(k) ?? [];
             const MAX = 3;
             const extra = dayAppts.length + dayBlocks.length - MAX;
+            // Pinchar el fondo de la celda abre una cita nueva ese día, sin
+            // hora: en el mes no hay a qué altura apuntar. El número y las
+            // citas siguen haciendo lo suyo y no llegan hasta aquí.
             return (
               <div
                 key={k}
-                className={`min-h-[6.5rem] p-1.5 ${inMonth ? "bg-surface" : "bg-surface-subtle"}`}
+                onClick={() => onNew(k, "")}
+                title="Nueva cita este día"
+                className={`min-h-[6.5rem] cursor-pointer p-1.5 ${inMonth ? "bg-surface" : "bg-surface-subtle"}`}
               >
                 <Link
                   href={`/pro/agenda?view=day&date=${k}`}
+                  onClick={(e) => e.stopPropagation()}
                   aria-current={isToday ? "date" : undefined}
                   className={`mb-1 inline-flex size-6 items-center justify-center rounded-xl text-[12px] transition-colors hover:bg-surface-muted ${
                     isToday
@@ -378,6 +419,7 @@ function MonthGrid({
                   {extra > 0 && (
                     <Link
                       href={`/pro/agenda?view=day&date=${k}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="px-1.5 text-[10.5px] text-accent hover:underline"
                     >
                       {extra} más
@@ -421,6 +463,7 @@ function TimeGrid({
   todayYMD,
   nowMin,
   onOpen,
+  onNew,
 }: {
   days: 1 | 7;
   date: Date;
@@ -432,7 +475,11 @@ function TimeGrid({
     e: React.MouseEvent,
     p: { kind: "appt"; appt: AgendaAppointment } | { kind: "block"; block: AgendaBlock },
   ) => void;
+  onNew: OnNew;
 }) {
+  // Media hora bajo el puntero, para enseñar qué hueco se va a pedir antes
+  // de pinchar. Solo cambia de estado al cruzar de una media hora a otra.
+  const [hover, setHover] = useState<{ k: string; min: number } | null>(null);
   const start = days === 7 ? mondayOfYMD(date) : date;
   const cols = Array.from({ length: days }, (_, i) => addDaysYMD(start, i));
   const hours = Array.from(
@@ -527,8 +574,20 @@ function TimeGrid({
             return (
               <div
                 key={k}
-                className={`relative border-l border-line ${isToday ? "bg-accent-soft/30" : ""}`}
+                className={`relative cursor-pointer border-l border-line ${isToday ? "bg-accent-soft/30" : ""}`}
                 style={{ height: GRID_H }}
+                onClick={(ev) => onNew(k, hhmm(slotAt(ev)))}
+                onMouseMove={(ev) => {
+                  // Sobre una cita o un bloqueo no se ofrece hueco: ese clic
+                  // abre lo que hay, no una cita nueva.
+                  if ((ev.target as HTMLElement).closest("button")) {
+                    if (hover) setHover(null);
+                    return;
+                  }
+                  const min = slotAt(ev);
+                  if (hover?.k !== k || hover.min !== min) setHover({ k, min });
+                }}
+                onMouseLeave={() => setHover(null)}
               >
                 {/* Líneas de hora */}
                 {hours.map((h) =>
@@ -540,6 +599,19 @@ function TimeGrid({
                       style={{ top: (h - HOUR_START) * HOUR_PX }}
                     />
                   ) : null,
+                )}
+                {/* Hueco bajo el puntero */}
+                {hover?.k === k && (
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0.5 rounded-md border border-dashed border-line-strong px-1.5 py-0.5 text-[10.5px] text-ink-3"
+                    style={{
+                      top: ((hover.min - HOUR_START * 60) / 60) * HOUR_PX,
+                      height: HOUR_PX / 2,
+                    }}
+                  >
+                    + {hhmm(hover.min)}
+                  </div>
                 )}
                 {/* Bloqueos: trama, no gris plano. */}
                 {dayBlocks.map(({ b, s, e }) => (
@@ -605,6 +677,67 @@ function TimeGrid({
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Media hora (en minutos desde medianoche) bajo el puntero en una columna. */
+function slotAt(ev: React.MouseEvent<HTMLElement>): number {
+  const y = ev.clientY - ev.currentTarget.getBoundingClientRect().top;
+  const min = HOUR_START * 60 + Math.floor((y / HOUR_PX) * 2) * 30;
+  return Math.min(Math.max(min, HOUR_START * 60), HOUR_END * 60 - 30);
+}
+function hhmm(min: number): string {
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+}
+
+/* ------------------------------------------------- diálogo de nueva cita --- */
+
+function NewAppointmentDialog({
+  day,
+  time,
+  patients,
+  defaultPatientId,
+  onClose,
+}: {
+  day: string;
+  time: string;
+  patients: PacienteSelect[];
+  defaultPatientId?: string;
+  onClose: () => void;
+}) {
+  const dialogRef = useDialogFocus(onClose);
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25 p-4"
+      onClick={onClose}
+    >
+      {/* Mismo diálogo que «Modificar cita»: radio 12, borde y velo, sin
+          sombra, y desplazable porque el formulario no cabe en un móvil. */}
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-label="Nueva cita"
+        aria-modal
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-line bg-surface p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <h3 className="text-base font-semibold">Nueva cita</h3>
+          <button type="button" onClick={onClose} className="btn-subtle btn-sm">
+            Cerrar
+          </button>
+        </div>
+        <NewAppointment
+          patients={patients}
+          defaultPatientId={defaultPatientId}
+          initialDay={day}
+          initialTime={time}
+          enDialogo
+          onCreated={onClose}
+        />
       </div>
     </div>
   );
@@ -733,7 +866,9 @@ function EditModal({
       60_000,
   );
   const initialPreset = (DURATIONS as readonly number[]).includes(initialMin);
-  const [start, setStart] = useState(toDatetimeLocal(appt.starts_at));
+  const inicial = toDatetimeLocal(appt.starts_at);
+  const [day, setDay] = useState(inicial.slice(0, 10));
+  const [time, setTime] = useState(inicial.slice(11, 16));
   const [duration, setDuration] = useState(initialPreset ? initialMin : 60);
   const [customMode, setCustomMode] = useState(!initialPreset);
   const [customMin, setCustomMin] = useState(String(initialMin || 60));
@@ -770,8 +905,8 @@ function EditModal({
   }
 
   function save(force = false) {
-    if (!start) {
-      setError("Indica la fecha y hora de la sesión.");
+    if (!day || !time) {
+      setError("Elige el día y la hora de la sesión.");
       return;
     }
     if (!minutes || minutes < 5) {
@@ -780,7 +915,7 @@ function EditModal({
     }
     // El valor del input se interpreta como hora de Madrid, no como hora del
     // navegador: es la inversa exacta de `toDatetimeLocal`.
-    const startDate = fromDatetimeLocal(start);
+    const startDate = fromDatetimeLocal(`${day}T${time}`);
     if (!startDate) {
       setError("La fecha y hora no son válidas.");
       return;
@@ -861,18 +996,6 @@ function EditModal({
         )}
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <label className="block sm:col-span-2">
-            <span className="field-label">Fecha y hora de la sesión</span>
-            <input
-              type="datetime-local"
-              value={start}
-              onChange={(e) => {
-                setStart(e.target.value);
-                clearConflict();
-              }}
-              className="field"
-            />
-          </label>
           <div className="sm:col-span-2">
             <span className="field-label">Duración</span>
             <div className="flex flex-wrap gap-1.5">
@@ -929,6 +1052,22 @@ function EditModal({
                 <span className="text-sm text-ink-2">minutos</span>
               </div>
             )}
+          </div>
+          <div className="sm:col-span-2">
+            <FechaHoraSesion
+              day={day}
+              time={time}
+              minutes={minutes}
+              excludeId={appt.id}
+              onDay={(v) => {
+                setDay(v);
+                clearConflict();
+              }}
+              onTime={(v) => {
+                setTime(v);
+                clearConflict();
+              }}
+            />
           </div>
           <label className="block sm:col-span-2">
             <span className="field-label">Link de videollamada</span>

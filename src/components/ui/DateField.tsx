@@ -48,6 +48,8 @@ export function DateField({
   placeholder = "Sin definir",
   wide,
   className,
+  onChange,
+  anios = "pasado",
 }: {
   name: string;
   label?: string;
@@ -55,6 +57,13 @@ export function DateField({
   placeholder?: string;
   wide?: boolean;
   className?: string;
+  /** Aviso al elegir o borrar un día, para quien necesite el valor en vivo. */
+  onChange?: (value: string) => void;
+  /**
+   * Años que ofrece el desplegable. «pasado» (fechas de nacimiento) cuenta
+   * 120 hacia atrás; «futuro» (citas) va de dos años atrás a dos adelante.
+   */
+  anios?: "pasado" | "futuro";
 }) {
   const [value, setValue] = useState(defaultValue ?? "");
   const [open, setOpen] = useState(false);
@@ -73,14 +82,18 @@ export function DateField({
         setOpen(false);
       }
     }
+    // Escape se captura en `window` y no sigue: dentro de un diálogo, el
+    // mismo Escape cerraba también el diálogo y se perdía el formulario.
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setOpen(false);
     }
     document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
     };
   }, [open]);
 
@@ -109,13 +122,16 @@ export function DateField({
   }
 
   function selectDay(y: number, m: number, d: number) {
-    setValue(toKey(y, m, d));
+    const key = toKey(y, m, d);
+    setValue(key);
+    onChange?.(key);
     setView({ year: y, month: m });
     setOpen(false);
   }
 
   function clear() {
     setValue("");
+    onChange?.("");
     setOpen(false);
   }
 
@@ -180,6 +196,7 @@ export function DateField({
           onClear={clear}
           onToday={goToday}
           onGridKeyDown={onGridKeyDown}
+          anios={anios}
         />
       )}
     </div>
@@ -198,6 +215,7 @@ function Popover({
   onClear,
   onToday,
   onGridKeyDown,
+  anios,
 }: {
   view: { year: number; month: number };
   value: string;
@@ -210,12 +228,17 @@ function Popover({
   onClear: () => void;
   onToday: () => void;
   onGridKeyDown: (e: React.KeyboardEvent) => void;
+  anios: "pasado" | "futuro";
 }) {
   // Solo se ejecuta en cliente (el popover no se renderiza en el servidor).
   const now = new Date();
   const todayKey = toKey(now.getFullYear(), now.getMonth(), now.getDate());
   const years: number[] = [];
-  for (let y = now.getFullYear(); y >= now.getFullYear() - 120; y--) years.push(y);
+  const [desde, hasta] =
+    anios === "futuro"
+      ? [now.getFullYear() + 2, now.getFullYear() - 2]
+      : [now.getFullYear(), now.getFullYear() - 120];
+  for (let y = desde; y >= hasta; y--) years.push(y);
 
   const first = new Date(view.year, view.month, 1);
   const lead = (first.getDay() + 6) % 7; // lunes primero

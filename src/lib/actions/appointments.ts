@@ -13,7 +13,7 @@ import {
 import { revalidateAgenda, revalidatePayments, revalidateRequests } from "@/lib/revalidate";
 import { formatDateTime } from "@/lib/format";
 import { safeExternalUrl } from "@/lib/url";
-import { TZ } from "@/lib/tz";
+import { TZ, fromWallClock, ymdParts } from "@/lib/tz";
 import { occurrenceAt, type Freq } from "@/lib/recurrence";
 import type { TablesInsert } from "@/lib/types";
 
@@ -469,6 +469,80 @@ async function resolveRequestActionImpl(input: {
   revalidateAgenda();
 }
 
+/** Un tramo ocupado del día: una cita viva o un bloqueo. */
+export type FranjaOcupada = {
+  id: string;
+  kind: "appt" | "block";
+  start: string;
+  end: string;
+  label: string;
+};
+
+/**
+ * Ocupación de un día (en Madrid) para marcar las franjas del selector de hora.
+ * Es información para elegir, no la barrera: al guardar, `findConflict` vuelve
+ * a comprobarlo todo, incluida la serie completa. Mismo criterio que allí: las
+ * citas canceladas no ocupan.
+ */
+async function getDayBusyActionImpl(dayYMD: string): Promise<FranjaOcupada[]> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayYMD)) {
+    throw new ActionInputError("La fecha no es válida.");
+  }
+  const pro = await requireProfessional();
+  const [y, m, d] = ymdParts(dayYMD);
+  const from = fromWallClock(y, m, d, 0, 0).toISOString();
+  const to = fromWallClock(y, m, d + 1, 0, 0).toISOString();
+  const supabase = await createClient();
+
+  const [apptRes, blockRes] = await Promise.all([
+    allRows(supabase
+      .from("appointments")
+      .select("id, starts_at, ends_at, patients(full_name)")
+      .eq("professional_id", pro.id)
+      .neq("status", "cancelled")
+      .lt("starts_at", to)
+      .gt("ends_at", from)
+      .order("starts_at")),
+    allRows(supabase
+      .from("agenda_blocks")
+      .select("id, starts_at, ends_at, reason")
+      .eq("professional_id", pro.id)
+      .lt("starts_at", to)
+      .gt("ends_at", from)
+      .order("starts_at")),
+  ]);
+
+  const appts = (apptRes.data ?? []) as {
+    id: string;
+    starts_at: string;
+    ends_at: string;
+    patients: { full_name: string | null } | null;
+  }[];
+  const blocks = (blockRes.data ?? []) as {
+    id: string;
+    starts_at: string;
+    ends_at: string;
+    reason: string | null;
+  }[];
+
+  return [
+    ...appts.map((a) => ({
+      id: a.id,
+      kind: "appt" as const,
+      start: a.starts_at,
+      end: a.ends_at,
+      label: a.patients?.full_name ?? "Cita",
+    })),
+    ...blocks.map((b) => ({
+      id: b.id,
+      kind: "block" as const,
+      start: b.starts_at,
+      end: b.ends_at,
+      label: b.reason ? `Bloqueo, ${b.reason}` : "Bloqueo",
+    })),
+  ];
+}
+
 export async function createAppointmentAction(...args: Parameters<typeof createAppointmentActionImpl>) { return runAction(() => createAppointmentActionImpl(...args)); }
 
 export async function requestAppointmentAction(...args: Parameters<typeof requestAppointmentActionImpl>) { return runAction(() => requestAppointmentActionImpl(...args)); }
@@ -490,3 +564,5 @@ export async function createBlockAction(...args: Parameters<typeof createBlockAc
 export async function deleteBlockAction(...args: Parameters<typeof deleteBlockActionImpl>) { return runAction(() => deleteBlockActionImpl(...args)); }
 
 export async function respondAppointmentAction(...args: Parameters<typeof respondAppointmentActionImpl>) { return runAction(() => respondAppointmentActionImpl(...args)); }
+
+export async function getDayBusyAction(...args: Parameters<typeof getDayBusyActionImpl>) { return runAction(() => getDayBusyActionImpl(...args)); }
