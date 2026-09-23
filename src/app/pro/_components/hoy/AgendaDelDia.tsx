@@ -224,10 +224,10 @@ function BloqueSesion({
           <span className="font-semibold" style={{ color: proxima ? "#FFFFFF" : "var(--danger)" }}>
             Aviso pendiente
           </span>
-        ) : proxima ? (
-          `${hhmm(sesion.desde)} a ${hhmm(sesion.hasta)}`
         ) : (
-          hhmm(sesion.desde)
+          // Inicio y fin en todas: con solo el inicio, una sesión de 90 min
+          // no se distinguía de una de 60 sin medir el bloque a ojo.
+          `${hhmm(sesion.desde)} a ${hhmm(sesion.hasta)}`
         )}
       </span>
     </Link>
