@@ -1,8 +1,15 @@
 import { SignOutForm } from "@/components/SignOutForm";
+import { sinTratamiento } from "@/lib/frase-del-dia";
 
-/** Iniciales del nombre, para el avatar. Una sola letra si no hay apellido. */
+/**
+ * Iniciales del nombre, para el avatar. Una sola letra si no hay apellido.
+ *
+ * Se calculan sobre el nombre SIN el tratamiento: con «Dra. Ana Romero», tomar
+ * la primera y la última palabra daba «DR», que son la inicial del título y la
+ * del apellido. Lo que identifica a una persona es «AR».
+ */
 function iniciales(nombre: string | null, correo: string): string {
-  const partes = (nombre ?? "").trim().split(/\s+/).filter(Boolean);
+  const partes = sinTratamiento(nombre).split(/\s+/).filter(Boolean);
   if (partes.length === 0) return correo.charAt(0).toUpperCase();
   const primera = partes[0]?.charAt(0) ?? "";
   const segunda = partes.length > 1 ? (partes.at(-1)?.charAt(0) ?? "") : "";
@@ -30,6 +37,20 @@ export function SidebarPerfil({
   correo: string;
   organizacion?: string | null;
 }) {
+  /*
+   * En una consulta individual, la organización se llama como su profesional,
+   * así que la segunda línea repetía la primera palabra por palabra. Cuando
+   * coinciden se cae al correo, que es el dato que de verdad falta ahí: con qué
+   * cuenta se ha entrado. Se comparan sin el tratamiento y sin mayúsculas,
+   * porque «Dra. Ana Romero» y «Ana Romero» son la misma consulta.
+   */
+  const normaliza = (s: string) => sinTratamiento(s).toLocaleLowerCase("es");
+  const consulta =
+    organizacion && nombre && normaliza(organizacion) === normaliza(nombre)
+      ? null
+      : organizacion;
+  const segundaLinea = consulta ?? correo;
+
   return (
     <div className="flex items-center gap-2.5 px-2.5">
       <span
@@ -43,8 +64,8 @@ export function SidebarPerfil({
         <p className="truncate text-[13.5px] font-semibold text-ink">
           {nombre ?? "Profesional"}
         </p>
-        <p className="truncate text-[12px] text-ink-4" title={organizacion ?? correo}>
-          {organizacion ?? correo}
+        <p className="truncate text-[12px] text-ink-4" title={segundaLinea}>
+          {segundaLinea}
         </p>
       </div>
       <SignOutForm soloIcono />
