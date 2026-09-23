@@ -332,6 +332,17 @@ así que todo lo que toca la interfaz se comprueba leyendo ficheros con
 expresiones regulares. Eso no sustituye a mirar la pantalla. Falta también
 dispositivo físico y ver el modo oscuro de verdad.
 
+## Agenda: cita desde un hueco y selector de franjas (23-sep)
+
+Pinchar un hueco libre del calendario abre un diálogo con el formulario
+completo de nueva cita, con día y media hora ya puestos (en la vista de mes,
+solo el día). El `datetime-local` de «Nueva cita» y de «Modificar cita» pasa a
+`FechaHoraSesion` (`src/app/pro/_components/FechaHoraSesion.tsx`): día con
+`DateField` y hora en franjas de 30 min que tachan lo que choca con citas o
+bloqueos según la duración. La ocupación la da `getDayBusyAction`, con el
+criterio de `findConflict`; es ayuda para elegir, no la barrera. Sin
+migraciones. **Sin revisión visual en este entorno.**
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
