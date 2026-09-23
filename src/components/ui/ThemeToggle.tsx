@@ -62,13 +62,12 @@ export function ThemeToggle() {
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-2 px-2.5 py-1.5">
-      <span className="text-label-sm font-medium text-ink-3">Aspecto</span>
-      <div
-        role="group"
-        aria-label="Aspecto de la interfaz"
-        className="flex items-center gap-0.5 rounded-md border border-line bg-surface p-0.5"
-      >
+    // Sin caja alrededor: en la barra lateral esto va sobre el lienzo, igual
+    // que la identidad del pie, y meterlo en un panel propio rompería esa
+    // continuidad. Lo único con forma es el segmentado.
+    <div className="flex items-center justify-between gap-2 px-2.5">
+      <span className="text-[12.5px] font-medium text-ink-3">Aspecto</span>
+      <div className="segmented" role="group" aria-label="Aspecto de la interfaz">
         {OPCIONES.map(({ valor, etiqueta, Icono }) => {
           const activo = aspecto === valor;
           return (
@@ -78,11 +77,9 @@ export function ThemeToggle() {
               title={etiqueta}
               aria-pressed={activo}
               onClick={() => elegir(valor)}
-              className={`cursor-pointer rounded p-1 transition-colors ${
-                activo ? "bg-accent-soft text-accent" : "text-ink-3 hover:text-ink"
-              }`}
+              className={activo ? "text-accent" : undefined}
             >
-              <Icono size={14} strokeWidth={1.75} aria-hidden />
+              <Icono size={15} strokeWidth={1.75} aria-hidden />
               <span className="sr-only">{etiqueta}</span>
             </button>
           );

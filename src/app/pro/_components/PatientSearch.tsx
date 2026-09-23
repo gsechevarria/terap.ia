@@ -5,9 +5,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 
 /**
- * Buscador de pacientes. Actualiza el parámetro `q` en la URL (con debounce),
- * conservando el resto de filtros (estado, etiqueta). La lista la filtra el
- * servidor por nombre/correo/teléfono/profesión. El input es de control local:
+ * Buscador del listado, que filtra en sitio. No es el de la cabecera
+ * (`BuscadorCabecera`), que navega hasta aquí: son dos cosas distintas y por
+ * eso conviven.
+ *
+ * Actualiza el parámetro `q` en la URL (con debounce), conservando el resto de
+ * filtros (estado, etiqueta). La lista la filtra el servidor por
+ * nombre/correo/teléfono/profesión. El input es de control local:
  * `initialValue` solo siembra el estado inicial en el montaje.
  */
 export function PatientSearch({ initialValue }: { initialValue: string }) {
@@ -40,7 +44,7 @@ export function PatientSearch({ initialValue }: { initialValue: string }) {
   return (
     <div className="relative">
       <Search
-        className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-ink-3"
+        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3"
         strokeWidth={1.75}
         aria-hidden
       />
@@ -51,14 +55,14 @@ export function PatientSearch({ initialValue }: { initialValue: string }) {
         onChange={(e) => setValue(e.target.value)}
         placeholder="Buscar por nombre, correo, teléfono…"
         aria-label="Buscar pacientes"
-        className="field h-9 w-full pl-9 pr-8 text-sm [&::-webkit-search-cancel-button]:hidden"
+        className="field w-full pr-10 pl-9 [&::-webkit-search-cancel-button]:hidden"
       />
       {value && (
         <button
           type="button"
           onClick={clear}
           aria-label="Limpiar búsqueda"
-          className="absolute right-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-ink-3 hover:bg-wash hover:text-ink"
+          className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-lg text-ink-3 hover:bg-surface-muted hover:text-ink"
         >
           <X className="size-4" strokeWidth={1.75} />
         </button>

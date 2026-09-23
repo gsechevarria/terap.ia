@@ -75,7 +75,7 @@ function cellLabel(d: Date, opts: Intl.DateTimeFormatOptions): string {
 /* -------------------------------------------------------------- estados --- */
 
 const STATUS_LABEL: Record<string, string> = {
-  scheduled: "por confirmar",
+  scheduled: "sin confirmar",
   confirmed: "confirmada",
   cancelled: "cancelada",
   completed: "completada",
@@ -88,27 +88,30 @@ const ATTENDANCE_LABEL: Record<string, string> = {
 };
 function statusTone(status: string): StatusTone {
   if (status === "confirmed") return "accent";
-  if (status === "scheduled") return "info";
+  if (status === "scheduled") return "warn";
   return "neutral"; // completed / cancelled
 }
-/** Colores del evento según estado (borde izquierdo + fondo suave). */
+/**
+ * Aspecto del bloque según el estado, con el mismo lenguaje que la agenda de
+ * «Hoy»: confirmada en verde suave, sin confirmar sobre la hoja con borde
+ * ámbar, y lo ya pasado hundido. Ni bordes laterales de color ni sombra al
+ * pasar el ratón — la distinción la hacen el fondo y el texto, y el cambio de
+ * fondo basta para decir que el bloque se puede pulsar.
+ */
 function statusClasses(status: string): string {
   switch (status) {
     case "confirmed":
-      return "border-accent bg-accent-soft text-accent";
+      return "bg-accent-soft text-ink hover:bg-green-2";
     case "scheduled":
-      return "border-info bg-info-soft text-info";
-    case "cancelled":
-      return "border-line bg-panel text-ink-3 line-through";
-    default: // completed
-      return "border-line bg-panel text-ink-2";
+      return "border border-warning-line bg-surface text-ink hover:bg-warning-soft";
+    default: // completed / cancelled
+      return "bg-surface-muted text-ink-disabled hover:bg-surface-subtle";
   }
 }
-
-const BLOCK_STRIPES = {
-  backgroundImage:
-    "repeating-linear-gradient(45deg, var(--wash-2) 0 4px, transparent 4px 10px)",
-} as const;
+/** Lo ya pasado lleva el nombre tachado, además del fondo hundido. */
+function esPasada(status: string): boolean {
+  return status === "completed" || status === "cancelled";
+}
 
 /* ---------------------------------------------------------------- tipos --- */
 
@@ -193,24 +196,31 @@ export function AgendaCalendar({
         />
       )}
 
-      {/* Leyenda */}
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-3">
-        <LegendDot className="bg-info" label="Por confirmar" />
-        <LegendDot className="bg-accent" label="Confirmada" />
-        <LegendDot className="bg-ink-3" label="Completada / cancelada" />
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-3 w-4 rounded-sm border border-line" style={BLOCK_STRIPES} />
-          Bloqueo
-        </span>
+      {/* Leyenda. Cada muestra lleva el mismo tratamiento que su bloque, no un
+          punto de color aparte: así se reconoce sin tener que traducir. */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[12.5px] text-ink-3">
+        <LegendSwatch className="bg-accent-soft" label="Confirmada" />
+        <LegendSwatch
+          className="border border-warning-line bg-surface"
+          label="Sin confirmar"
+        />
+        <LegendSwatch className="bg-surface-muted" label="Realizada o cancelada" />
+        <LegendSwatch className="hatch" label="Bloqueo" />
       </div>
 
       {/* Popup de vista previa */}
       {popup && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setPopup(null)} />
+          {/* Velo para cerrar pinchando fuera. Es comodidad de ratón y nada
+              más: por teclado se cierra con Escape (ver el efecto de arriba),
+              así que va oculto al lector de pantalla en vez de anunciarse como
+              un control suelto sin nombre. */}
+          <div aria-hidden className="fixed inset-0 z-30" onClick={() => setPopup(null)} />
+          {/* Radio 12 y borde de 1 px, sin sombra: lo que separa el diálogo de
+              lo que hay debajo es el borde, no una nube gris. */}
           <div
             role="dialog"
-            className="card fixed z-40 w-[19rem] p-4 shadow-[0_16px_48px_-16px_rgba(15,15,15,0.35)]"
+            className="fixed z-40 w-[19rem] rounded-3xl border border-line bg-surface p-4"
             style={{ left: popup.x, top: popup.y }}
           >
             {popup.kind === "appt" ? (
@@ -246,10 +256,10 @@ export function AgendaCalendar({
   );
 }
 
-function LegendDot({ className, label }: { className: string; label: string }) {
+function LegendSwatch({ className, label }: { className: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={`size-2 rounded-full ${className}`} />
+      <span aria-hidden className={`h-3 w-4 rounded-xs ${className}`} />
       {label}
     </span>
   );
@@ -304,11 +314,11 @@ function MonthGrid({
     <div className="card overflow-x-auto">
       {/* Sin ancho mínimo: el mes cabe entero a cualquier anchura. */}
       <div>
-        <div className="grid grid-cols-7 border-b border-line">
+        <div className="grid grid-cols-7 border-b border-line bg-surface-subtle">
           {["lun", "mar", "mié", "jue", "vie", "sáb", "dom"].map((d) => (
             <div
               key={d}
-              className="px-2 py-1.5 text-center text-[11px] font-medium text-ink-3"
+              className="px-2 py-2 text-center text-[12px] font-medium text-ink-3"
             >
               {d}
             </div>
@@ -326,16 +336,17 @@ function MonthGrid({
             return (
               <div
                 key={k}
-                className={`min-h-[6.5rem] p-1.5 ${inMonth ? "bg-surface" : "bg-surface-2"}`}
+                className={`min-h-[6.5rem] p-1.5 ${inMonth ? "bg-surface" : "bg-surface-subtle"}`}
               >
                 <Link
                   href={`/pro/agenda?view=day&date=${k}`}
-                  className={`mb-1 inline-flex size-6 items-center justify-center rounded-full text-xs transition-colors hover:bg-wash ${
+                  aria-current={isToday ? "date" : undefined}
+                  className={`mb-1 inline-flex size-6 items-center justify-center rounded-xl text-[12px] transition-colors hover:bg-surface-muted ${
                     isToday
-                      ? "bg-accent font-semibold text-accent-ink hover:bg-accent"
+                      ? "bg-accent-soft font-semibold text-accent"
                       : inMonth
                         ? "font-medium text-ink"
-                        : "text-ink-3"
+                        : "text-ink-4"
                   }`}
                 >
                   {cell.getUTCDate()}
@@ -346,10 +357,9 @@ function MonthGrid({
                       key={b.id}
                       type="button"
                       onClick={(e) => onOpen(e, { kind: "block", block: b })}
-                      className="w-full cursor-pointer truncate rounded-sm border border-line px-1 py-px text-left text-[10px] text-ink-2"
-                      style={BLOCK_STRIPES}
+                      className="hatch w-full cursor-pointer truncate rounded-md px-1.5 py-px text-left text-[10.5px] text-ink-4"
                     >
-                      Bloqueo{b.reason ? ` · ${b.reason}` : ""}
+                      Bloqueo{b.reason ? `, ${b.reason}` : ""}
                     </button>
                   ))}
                   {dayAppts.slice(0, MAX - Math.min(dayBlocks.length, 1)).map((a) => (
@@ -357,17 +367,20 @@ function MonthGrid({
                       key={a.id}
                       type="button"
                       onClick={(e) => onOpen(e, { kind: "appt", appt: a })}
-                      className={`w-full cursor-pointer truncate rounded-sm border-l-2 px-1 py-px text-left text-[10px] font-medium ${statusClasses(a.status)}`}
+                      className={`w-full cursor-pointer truncate rounded-md px-1.5 py-px text-left text-[10.5px] transition-colors ${statusClasses(a.status)}`}
                     >
-                      {formatTime(a.starts_at)} {a.patientName ?? "—"}
+                      {formatTime(a.starts_at)}{" "}
+                      <span className={esPasada(a.status) ? "line-through" : "font-medium"}>
+                        {a.patientName ?? "—"}
+                      </span>
                     </button>
                   ))}
                   {extra > 0 && (
                     <Link
                       href={`/pro/agenda?view=day&date=${k}`}
-                      className="px-1 text-[10px] text-ink-3 hover:text-ink"
+                      className="px-1.5 text-[10.5px] text-accent hover:underline"
                     >
-                      +{extra} más
+                      {extra} más
                     </Link>
                   )}
                 </div>
@@ -456,10 +469,13 @@ function TimeGrid({
               <Link
                 key={k}
                 href={`/pro/agenda?view=day&date=${k}`}
-                className="border-l border-line px-2 py-2 text-center transition-colors hover:bg-wash"
+                aria-current={isToday ? "date" : undefined}
+                className={`border-l border-line px-2 py-2 text-center transition-colors hover:bg-surface-muted ${
+                  isToday ? "bg-accent-soft" : ""
+                }`}
               >
                 <span
-                  className={`block truncate text-xs capitalize ${isToday ? "font-semibold text-accent" : "text-ink-2"}`}
+                  className={`block truncate text-[12.5px] capitalize ${isToday ? "font-semibold text-accent" : "text-ink-2"}`}
                 >
                   {cellLabel(c, {
                     weekday: "short",
@@ -481,7 +497,7 @@ function TimeGrid({
             {hours.map((h) => (
               <span
                 key={h}
-                className="absolute right-2 text-[10px] text-ink-3"
+                className="absolute right-2 text-[11px] text-ink-4"
                 style={{ top: (h - HOUR_START) * HOUR_PX - 6 }}
               >
                 {h > HOUR_START ? `${String(h).padStart(2, "0")}:00` : ""}
@@ -511,7 +527,7 @@ function TimeGrid({
             return (
               <div
                 key={k}
-                className={`relative border-l border-line ${isToday ? "bg-accent-soft/20" : ""}`}
+                className={`relative border-l border-line ${isToday ? "bg-accent-soft/30" : ""}`}
                 style={{ height: GRID_H }}
               >
                 {/* Líneas de hora */}
@@ -520,22 +536,21 @@ function TimeGrid({
                     <div
                       key={h}
                       aria-hidden
-                      className="absolute inset-x-0 border-t border-line/70"
+                      className="absolute inset-x-0 border-t border-line-soft"
                       style={{ top: (h - HOUR_START) * HOUR_PX }}
                     />
                   ) : null,
                 )}
-                {/* Bloqueos */}
+                {/* Bloqueos: trama, no gris plano. */}
                 {dayBlocks.map(({ b, s, e }) => (
                   <button
                     key={b.id}
                     type="button"
                     onClick={(ev) => onOpen(ev, { kind: "block", block: b })}
-                    className="absolute inset-x-0.5 cursor-pointer rounded-sm border border-line text-[10px] text-ink-2"
+                    className="hatch absolute inset-x-0.5 cursor-pointer rounded-md px-1.5 text-left text-[10.5px] text-ink-4"
                     style={{
                       top: ((s - dayStartMs) / 3600_000) * HOUR_PX,
                       height: Math.max(((e - s) / 3600_000) * HOUR_PX, 14),
-                      ...BLOCK_STRIPES,
                     }}
                   >
                     Bloqueo
@@ -547,7 +562,7 @@ function TimeGrid({
                     key={appt.id}
                     type="button"
                     onClick={(ev) => onOpen(ev, { kind: "appt", appt })}
-                    className={`absolute cursor-pointer overflow-hidden rounded-sm border-l-2 px-1.5 py-0.5 text-left text-[11px] leading-tight font-medium transition-shadow hover:shadow-[0_4px_12px_-4px_rgba(15,15,15,0.3)] ${statusClasses(appt.status)}`}
+                    className={`absolute cursor-pointer overflow-hidden rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight transition-colors ${statusClasses(appt.status)}`}
                     style={{
                       top,
                       height,
@@ -555,12 +570,19 @@ function TimeGrid({
                       width: `calc(${widthPct}% - 4px)`,
                     }}
                   >
-                    <span className="block truncate">
+                    <span
+                      className={`block truncate ${esPasada(appt.status) ? "line-through" : "font-semibold"}`}
+                    >
                       {appt.patientName ?? "—"}
                     </span>
                     {height >= 34 && (
-                      <span className="block truncate text-[10px] opacity-80">
+                      <span className="block truncate text-[10.5px]">
                         {formatTime(appt.starts_at)} – {formatTime(appt.ends_at)}
+                        {/* El color no puede ir solo: el bloque ámbar dice
+                            además, con palabras, qué le falta a la cita. */}
+                        {appt.status === "scheduled" && (
+                          <span className="text-warning-ink">, sin confirmar</span>
+                        )}
                       </span>
                     )}
                   </button>
@@ -575,8 +597,8 @@ function TimeGrid({
                       className="absolute inset-x-0 z-10"
                       style={{ top: ((nowMin - HOUR_START * 60) / 60) * HOUR_PX }}
                     >
-                      <div className="h-px bg-danger" />
-                      <div className="-mt-[3px] ml-0 size-1.5 rounded-full bg-danger" />
+                      <div className="h-0.5 bg-danger" />
+                      <div className="-mt-[5px] ml-0 size-2 rounded-full bg-danger" />
                     </div>
                   )}
               </div>
@@ -615,13 +637,13 @@ function ApptPreview({
       <p className="text-sm text-ink-2">
         {formatTime(appt.starts_at)} – {formatTime(appt.ends_at)}
         {appt.attendance !== "pending" && (
-          <span className="ml-2 text-xs text-ink-3">
-            · {ATTENDANCE_LABEL[appt.attendance] ?? appt.attendance}
+          <span className="ml-2 text-[12.5px] text-ink-3">
+            {ATTENDANCE_LABEL[appt.attendance] ?? appt.attendance}
           </span>
         )}
       </p>
       {appt.notes && (
-        <p className="mt-2 line-clamp-3 rounded bg-panel p-2 text-xs text-ink-2">
+        <p className="mt-2 line-clamp-3 rounded-md bg-surface-muted p-2.5 text-[12.5px] text-ink-2">
           {appt.notes}
         </p>
       )}
@@ -672,7 +694,7 @@ function BlockPreview({
       <p className="text-sm font-semibold">Bloqueo</p>
       {error && <p role="alert" className="text-danger">{error}</p>}
       <p className="mt-1 text-sm text-ink-2">
-        {fmt(block.starts_at)} → {fmt(block.ends_at)}
+        De {fmt(block.starts_at)} a {fmt(block.ends_at)}
       </p>
       {block.reason && <p className="mt-1 text-sm text-ink-2">{block.reason}</p>}
       <div className="mt-3 border-t border-line pt-3">
@@ -803,13 +825,17 @@ function EditModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25 p-4"
       onClick={onClose}
     >
+      {/* Radio 12, que es el del diálogo, y no el 10 de la tarjeta. No usa
+          `.modal` porque esa clase lleva `overflow-hidden` y aquí hace falta
+          `overflow-y-auto`: el formulario es más alto que la pantalla en un
+          móvil. Lo que lo separa del fondo es el borde y el velo, no sombra. */}
       <div
         ref={dialogRef}
         tabIndex={-1}
         role="dialog"
         aria-label="Modificar cita"
         aria-modal
-        className="card max-h-[90dvh] w-full max-w-md overflow-y-auto p-6"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-line bg-surface p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">
@@ -827,7 +853,7 @@ function EditModal({
             las repeticiones en el horario antiguo, sin aviso. Editar la serie
             completa está pendiente. */}
         {esDeSerie && (
-          <p className="mt-3 rounded bg-info-soft p-2.5 text-xs text-info">
+          <p className="mt-3 rounded-md bg-info-soft p-2.5 text-[12.5px] text-info">
             Esta cita forma parte de una serie. Los cambios se aplican{" "}
             <strong className="font-semibold">solo a esta cita</strong>; las
             demás repeticiones se quedan como están.

@@ -95,7 +95,7 @@ async function cabeceras() {
 // --- Rutas privadas sin sesión ----------------------------------------------
 
 const PRIVADAS = [
-  "/pro", "/pro/agenda", "/pro/pagos", "/pro/analitica", "/pro/solicitudes",
+  "/pro", "/pro/patients", "/pro/agenda", "/pro/pagos", "/pro/analitica", "/pro/solicitudes",
   "/pro/contabilidad", "/pro/contabilidad/gastos", "/pro/ajustes",
   "/app", "/app/appointments", "/app/appointments/new", "/app/diary",
   "/app/resources", "/app/more", "/app/settings",

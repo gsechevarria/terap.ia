@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { getProfessionalPayments } from "@/lib/queries/payments";
 import { formatCurrency } from "@/lib/format";
 import { BarChart } from "@/app/pro/_components/BarChart";
@@ -46,8 +45,8 @@ export default async function PaymentsOverviewPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="flex items-center justify-between gap-4">
+    <div className="flex flex-col gap-[22px]">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="page-title">Pagos</h1>
         <div className="flex items-center gap-2">
           <Link href="/pro/pagos/historico" className="btn-ghost">
@@ -59,128 +58,129 @@ export default async function PaymentsOverviewPage() {
         </div>
       </div>
 
-      {/* Tiles clicables → histórico filtrado */}
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <TileLink
+      {/* Las cuatro cifras, sin caja: separadas por espacio, no por bordes. */}
+      <section className="grid grid-cols-1 gap-x-7 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+        <CifraEnlace
           href="/pro/pagos/historico?status=paid"
-          label="Cobrado (total)"
-        >
-          {formatCurrency(history.totalPaidCents)}
-        </TileLink>
-        <TileLink
+          rotulo="Cobrado en total"
+          valor={formatCurrency(history.totalPaidCents)}
+          pie={`${history.paidCount} ${history.paidCount === 1 ? "pago" : "pagos"}`}
+        />
+        <CifraEnlace
           href="/pro/pagos/historico?status=pending"
-          label="Pendiente (deuda)"
-          tone="warn"
-        >
-          {formatCurrency(history.totalPendingCents)}
-        </TileLink>
-        <TileLink
+          rotulo="Pendiente de cobro"
+          valor={formatCurrency(history.totalPendingCents)}
+          pie={`${history.pendingCount} ${history.pendingCount === 1 ? "pago" : "pagos"} sin cobrar`}
+        />
+        <CifraEnlace
           href={`/pro/pagos/historico?status=paid&from=${thisRange.from}&to=${thisRange.to}`}
-          label="Cobrado este mes"
-        >
-          {formatCurrency(thisMonthPaid)}
-        </TileLink>
-        <TileLink
+          rotulo="Cobrado este mes"
+          valor={formatCurrency(thisMonthPaid)}
+          pie={`en ${monthLabelLong(thisMonthKey)}`}
+        />
+        <CifraEnlace
           href="/pro/pagos/historico?status=pending"
-          label="Pacientes con deuda"
-        >
-          {debtors}
-        </TileLink>
-      </div>
+          rotulo="Pacientes con deuda"
+          valor={String(debtors)}
+          pie="con algún pago pendiente"
+        />
+      </section>
 
-      {/* Analítica */}
       {history.byMonth.length > 0 && (
-        <div className="mt-6 grid gap-4 md:grid-cols-5">
-          <section className="card p-4 md:col-span-3">
-            <h2 className="section-label mb-3">Ingresos por mes</h2>
-            <BarChart
-              ariaLabel="Ingresos por mes"
-              valueLabel={(n) => formatCurrency(n)}
-              data={[...history.byMonth]
-                .reverse()
-                .map((m) => ({
+        <div className="flex flex-col gap-8 border-t border-line pt-[22px] lg:flex-row">
+          <section className="min-w-0 flex-1">
+            <h2 className="section-title">Ingresos por mes</h2>
+            <p className="mt-0.5 text-[13px] text-ink-3">
+              Solo lo que consta como cobrado.
+            </p>
+            <div className="mt-4">
+              <BarChart
+                ariaLabel="Ingresos por mes"
+                valueLabel={(n) => formatCurrency(n)}
+                data={[...history.byMonth].reverse().map((m) => ({
                   label: monthLabelShort(m.month),
                   value: m.paidCents,
                 }))}
-            />
+              />
+            </div>
           </section>
-          <section className="card p-4 md:col-span-2">
-            <h2 className="section-label mb-3">Cobrado por método</h2>
-            <MethodBreakdown rows={history.byMethod} />
+          <section className="w-full lg:w-[300px] lg:shrink-0">
+            <h2 className="section-title">Cobrado por método</h2>
+            <div className="mt-4">
+              <MethodBreakdown rows={history.byMethod} />
+            </div>
           </section>
         </div>
       )}
 
-      <h2 className="section-label mt-10 mb-2">Detalle por mes</h2>
-      {history.byMonth.length === 0 ? (
-        <p className="mt-2 text-sm text-ink-2">Sin cobros registrados.</p>
-      ) : (
-        <div className="card overflow-x-auto">
-          <table className="table-base">
-            <thead>
-              <tr>
-                <th>Mes</th>
-                <th>Pagos</th>
-                <th className="text-right">Ingresos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.byMonth.map((m) => (
-                <tr key={m.month} className="row-hover last:[&>td]:border-b-0">
-                  <td className="capitalize">
-                    <Link href={monthHref(m.month)} className="hover:underline">
-                      {monthLabelLong(m.month)}
-                    </Link>
-                  </td>
-                  <td>{m.count}</td>
-                  <td className="text-right font-medium tabular-nums">
-                    {formatCurrency(m.paidCents)}
-                  </td>
+      <section className="border-t border-line pt-[22px]">
+        <h2 className="section-title">Detalle por mes</h2>
+        {history.byMonth.length === 0 ? (
+          <p className="py-3 text-[13.5px] text-ink-3">
+            Todavía no hay ningún cobro registrado. Los pagos se anotan desde la
+            ficha del paciente, en la pestaña Pagos.
+          </p>
+        ) : (
+          <div className="table-wrap mt-3 overflow-x-auto">
+            <table className="table-base">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th>Pagos</th>
+                  <th className="text-right">Ingresos</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {history.byMonth.map((m) => (
+                  <tr key={m.month} className="row-hover">
+                    <td className="capitalize">
+                      <Link
+                        href={monthHref(m.month)}
+                        className="font-medium hover:text-accent"
+                      >
+                        {monthLabelLong(m.month)}
+                      </Link>
+                    </td>
+                    <td className="text-ink-2">{m.count}</td>
+                    <td className="mono text-right font-medium">
+                      {formatCurrency(m.paidCents)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
-      <p className="mt-6 text-xs text-ink-3">
+      <p className="text-[12.5px] text-ink-4">
         Export para la gestoría. terap.ia no emite facturas.
       </p>
     </div>
   );
 }
 
-function TileLink({
+/**
+ * Cifra sin caja: rótulo, número y pie. Sigue siendo un enlace al histórico ya
+ * filtrado —quitarle la tarjeta no la convierte en texto muerto—, y el foco se
+ * ve por el contorno de `:focus-visible` del sistema.
+ */
+function CifraEnlace({
   href,
-  label,
-  tone,
-  children,
+  rotulo,
+  valor,
+  pie,
 }: {
   href: string;
-  label: string;
-  tone?: "warn";
-  children: ReactNode;
+  rotulo: string;
+  valor: string;
+  pie: string;
 }) {
   return (
-    <Link
-      href={href}
-      className="card group px-4 py-3 transition-colors hover:border-line-strong hover:bg-wash"
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-          {label}
-        </span>
-        <span className="text-ink-3 opacity-0 transition-opacity group-hover:opacity-100">
-          →
-        </span>
-      </div>
-      <div
-        className={`mt-0.5 text-xl font-semibold tracking-[-0.01em] ${
-          tone === "warn" ? "text-warn" : ""
-        }`}
-      >
-        {children}
-      </div>
+    <Link href={href} className="group block">
+      <div className="text-[13px] text-ink-3">{rotulo}</div>
+      <div className="figure mt-1 group-hover:text-accent">{valor}</div>
+      <div className="mt-0.5 text-[12.5px] text-ink-2">{pie}</div>
     </Link>
   );
 }

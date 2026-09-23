@@ -23,12 +23,12 @@ export function ErrorState({
 }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-start gap-4 py-16">
-      <span className="flex size-9 items-center justify-center rounded-lg bg-danger-soft text-danger">
+      <span className="flex size-9 items-center justify-center rounded-xl bg-danger-soft text-danger">
         <TriangleAlert className="size-5" strokeWidth={2} aria-hidden />
       </span>
       <div>
-        <h1 className="text-lg font-semibold">Algo ha fallado</h1>
-        <p className="mt-1.5 text-sm leading-relaxed text-ink-2">
+        <h1 className="text-headline-lg font-semibold text-ink">Algo ha fallado</h1>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-ink-2">
           No hemos podido cargar esta página. No se ha perdido nada de lo que ya
           estaba guardado. Puedes reintentarlo; si vuelve a ocurrir, avísanos.
         </p>
@@ -43,11 +43,11 @@ export function ErrorState({
         </Link>
       </div>
       {error.digest && (
-        <details className="mt-2 text-xs text-ink-3">
+        <details className="mt-2 text-[12.5px] text-ink-3">
           <summary className="cursor-pointer hover:text-ink">
             Referencia para soporte
           </summary>
-          <code className="mt-1 block font-mono break-all">{error.digest}</code>
+          <code className="mono mt-1 block break-all">{error.digest}</code>
         </details>
       )}
     </div>

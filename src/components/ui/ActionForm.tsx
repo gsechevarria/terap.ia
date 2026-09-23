@@ -22,7 +22,7 @@ export function ActionForm({ action, children, className }: {
       finally { sending.current = false; }
     });
   }}>
-    {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+    {error && <p role="alert" className="text-[13px] text-danger">{error}</p>}
     <fieldset disabled={pending} className="contents">{children}</fieldset>
   </form>;
 }

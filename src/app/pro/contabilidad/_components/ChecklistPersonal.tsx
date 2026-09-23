@@ -75,7 +75,7 @@ export function ChecklistPersonal({
           de la renta personal.
         </p>
         {sinResponder.length > 0 && (
-          <p className="mt-3 rounded-xl bg-surface-2 px-4 py-2.5 text-[12px] text-ink-2">
+          <p className="mt-3 rounded-md bg-surface-muted px-4 py-2.5 text-[12.5px] text-ink-2">
             {sinResponder.length} sin responder. Dejarlo así es válido: el
             expediente no se presentará como completo, que es lo correcto.
           </p>
@@ -111,7 +111,7 @@ export function ChecklistPersonal({
                     className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
                       aplica === true
                         ? "border-accent/30 bg-accent-soft text-accent"
-                        : "border-line bg-surface-2 text-ink-2 hover:text-ink"
+                        : "border-line bg-surface-subtle text-ink-2 hover:text-ink"
                     }`}
                   >
                     Aplica
@@ -124,7 +124,7 @@ export function ChecklistPersonal({
                     className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
                       aplica === false
                         ? "border-line-strong bg-sunken text-ink"
-                        : "border-line bg-surface-2 text-ink-2 hover:text-ink"
+                        : "border-line bg-surface-subtle text-ink-2 hover:text-ink"
                     }`}
                   >
                     No aplica
@@ -138,7 +138,7 @@ export function ChecklistPersonal({
                       className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
                         r?.aportado
                           ? "border-success/30 bg-success-soft text-success"
-                          : "border-warn/30 bg-warn-soft text-warn"
+                          : "border-warning-line bg-warning-soft text-warning-ink"
                       }`}
                     >
                       {r?.aportado ? "Aportado" : "Falta aportar"}

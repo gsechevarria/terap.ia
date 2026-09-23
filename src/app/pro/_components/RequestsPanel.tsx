@@ -11,13 +11,26 @@ import {
   toDatetimeLocal,
   fromDatetimeLocal,
 } from "@/lib/format";
-import { Status } from "@/components/ui/Status";
 import type { PendingRequest } from "@/lib/queries/appointment-requests";
 
+/**
+ * Los tres tipos de solicitud, con su icono.
+ *
+ * Ninguno lleva color propio, y la anulación menos que ninguno: una solicitud
+ * es trabajo pendiente de decidir, no un riesgo. El rojo de esta aplicación
+ * está reservado a lo clínico, así que lo que distingue un tipo de otro es el
+ * icono y la palabra — que es además lo único que lee quien no ve el color.
+ */
 const KIND = {
-  new: { label: "Cita nueva", Icon: CalendarPlus, tone: "accent" as const },
-  reschedule: { label: "Cambio de hora", Icon: CalendarClock, tone: "warn" as const },
-  cancel: { label: "Anulación", Icon: CalendarX, tone: "danger" as const },
+  new: { label: "Cita nueva", Icon: CalendarPlus },
+  reschedule: { label: "Cambio de hora", Icon: CalendarClock },
+  cancel: { label: "Anulación", Icon: CalendarX },
+};
+
+/** Cómo se cerró una solicitud ya resuelta. El color acompaña al texto, no informa solo. */
+const RESUELTA: Record<string, { texto: string; clase: string }> = {
+  accepted: { texto: "Aceptada", clase: "text-success" },
+  declined: { texto: "Rechazada", clase: "text-ink-3" },
 };
 
 export function RequestsPanel({
@@ -30,8 +43,10 @@ export function RequestsPanel({
   if (pending.length === 0 && resolved.length === 0) {
     return (
       <div className="empty">
-        <p className="text-sm">Aquí llegarán las peticiones de sus pacientes.</p>
-        <p className="mt-1 text-xs text-ink-3">
+        <p className="text-[13.5px] text-ink">
+          Aquí llegarán las peticiones de tus pacientes.
+        </p>
+        <p className="mt-1 text-[12.5px] text-ink-3">
           Desde su aplicación pueden pedir una cita nueva, proponer otro horario
           o anular una. Tú decides siempre.
         </p>
@@ -40,10 +55,16 @@ export function RequestsPanel({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-7">
       <section className="flex flex-col gap-3">
+        <h2 className="section-title">
+          Por decidir{" "}
+          <span className="font-normal text-ink-4">
+            {pending.length} {pending.length === 1 ? "solicitud" : "solicitudes"}
+          </span>
+        </h2>
         {pending.length === 0 ? (
-          <p className="text-sm text-ink-2">
+          <p className="text-[13.5px] text-ink-3">
             No tienes solicitudes por decidir.
           </p>
         ) : (
@@ -52,43 +73,62 @@ export function RequestsPanel({
       </section>
 
       {resolved.length > 0 && (
-        <details>
-          <summary className="cursor-pointer text-sm text-ink-3 hover:text-ink">
-            Resueltas ({resolved.length})
-          </summary>
-          <ul className="card mt-2 divide-y divide-line">
-            {resolved.map((r) => (
-              <li
-                key={r.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm"
-              >
-                <span className="font-medium">{r.patientName ?? "Paciente"}</span>
-                <span className="text-ink-2">{KIND[r.kind].label}</span>
-                {r.preferred_start && (
-                  <span className="text-ink-3">
-                    {formatDateTime(r.preferred_start)}
-                  </span>
-                )}
-                <span className="ml-auto">
-                  {r.status === "accepted" ? (
-                    <Status tone="success">aceptada</Status>
-                  ) : r.status === "declined" ? (
-                    <Status tone="neutral">rechazada</Status>
-                  ) : (
-                    <Status tone="neutral">retirada</Status>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </details>
+        <section className="border-t border-line pt-6">
+          <details>
+            <summary className="cursor-pointer text-[13.5px] text-ink-3 hover:text-ink">
+              Resueltas ({resolved.length})
+            </summary>
+            <div className="table-wrap mt-3">
+              <table className="table-base">
+                <thead>
+                  <tr>
+                    <th>Paciente</th>
+                    <th>Solicitud</th>
+                    <th>Horario pedido</th>
+                    <th>Resultado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resolved.map((r) => {
+                    // Lo que no es aceptada ni rechazada lo retiró el propio
+                    // paciente: no es una decisión del profesional.
+                    const fin = RESUELTA[r.status] ?? {
+                      texto: "Retirada",
+                      clase: "text-ink-3",
+                    };
+                    return (
+                      <tr key={r.id}>
+                        <td className="font-medium">
+                          {r.patientName ?? "Paciente"}
+                        </td>
+                        <td className="text-ink-2">{KIND[r.kind].label}</td>
+                        <td className="text-ink-2">
+                          {r.preferred_start ? (
+                            formatDateTime(r.preferred_start)
+                          ) : (
+                            <span className="text-ink-3">Sin horario</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`font-medium ${fin.clase}`}>
+                            {fin.texto}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </section>
       )}
     </div>
   );
 }
 
 function RequestCard({ req }: { req: PendingRequest }) {
-  const { label, Icon, tone } = KIND[req.kind];
+  const { label, Icon } = KIND[req.kind];
   const { run, pending, error } = useAction();
   // Sin abrir nada, aceptar usa el horario que pidió el paciente. El desplegable
   // solo aparece cuando el profesional quiere corregirlo o explicar un "no".
@@ -135,22 +175,22 @@ function RequestCard({ req }: { req: PendingRequest }) {
   }
 
   return (
-    <article className="card p-4">
+    <article className="card p-4 sm:p-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Icon className="size-4 shrink-0 text-ink-2" strokeWidth={1.75} aria-hidden />
+        <Icon className="size-4 shrink-0 text-ink-3" strokeWidth={1.75} aria-hidden />
         <Link
           href={`/pro/patients/${req.patient_id}`}
-          className="text-sm font-medium hover:underline"
+          className="text-[13.5px] font-semibold hover:underline"
         >
           {req.patientName ?? "Paciente"}
         </Link>
-        <Status tone={tone}>{label}</Status>
-        <span className="ml-auto text-xs text-ink-3">
+        <span className="text-[13px] text-ink-2">{label}</span>
+        <span className="ml-auto text-[12.5px] text-ink-3">
           pedida el {formatDateTime(req.created_at)}
         </span>
       </div>
 
-      <dl className="mt-3 flex flex-col gap-1 text-sm">
+      <dl className="mt-3 flex flex-col gap-1 text-[13.5px]">
         {req.kind !== "new" && req.appointmentStart && (
           <div className="flex gap-2">
             <dt className="text-ink-3">Cita actual:</dt>
@@ -167,7 +207,7 @@ function RequestCard({ req }: { req: PendingRequest }) {
             <dd className="font-medium">
               {formatDateTime(req.preferred_start)}
               <span className="ml-1 font-normal text-ink-3">
-                · {req.duration_min} min
+                , {req.duration_min} min
               </span>
             </dd>
           </div>
@@ -181,13 +221,13 @@ function RequestCard({ req }: { req: PendingRequest }) {
       </dl>
 
       {req.note && (
-        <p className="mt-2 rounded-xl bg-wash px-3 py-2 text-sm whitespace-pre-wrap text-ink-2">
+        <p className="mt-2.5 rounded-lg bg-surface-muted px-3 py-2 text-[13.5px] whitespace-pre-wrap text-ink-2">
           “{req.note}”
         </p>
       )}
 
       {mode === "reschedule" && (
-        <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
+        <div className="mt-3.5 flex flex-col gap-2 border-t border-line pt-3.5">
           <label className="field-label" htmlFor={`when-${req.id}`}>
             Nuevo horario
           </label>
@@ -198,14 +238,14 @@ function RequestCard({ req }: { req: PendingRequest }) {
             onChange={(e) => setWhen(e.target.value)}
             className="field"
           />
-          <p className="text-xs text-ink-3">
+          <p className="text-[12.5px] text-ink-3">
             Se avisará al paciente del horario definitivo.
           </p>
         </div>
       )}
 
       {mode === "decline" && (
-        <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
+        <div className="mt-3.5 flex flex-col gap-2 border-t border-line pt-3.5">
           <label className="field-label" htmlFor={`note-${req.id}`}>
             Motivo (opcional, lo verá el paciente)
           </label>
@@ -220,9 +260,9 @@ function RequestCard({ req }: { req: PendingRequest }) {
         </div>
       )}
 
-      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      {error && <p className="mt-3 text-[13.5px] text-danger">{error}</p>}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mt-3.5 flex flex-wrap items-center gap-2">
         {mode === "idle" && (
           <>
             <button

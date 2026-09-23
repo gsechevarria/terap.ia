@@ -282,6 +282,56 @@ Procedimiento completo —pruebas, migración, rollback y orden de despliegue—
 [docs/ORGANIZACIONES-Y-REGISTRO.md](docs/ORGANIZACIONES-Y-REGISTRO.md).
 Informe previo y verificación posterior: `npm run informe:organizaciones`.
 
+## Rediseño del panel del profesional (22-sep-2026) — SIN DESPLEGAR
+
+Rama `feat/rediseno-hoy-sistema-visual`. Sistema visual nuevo en `/pro`, a
+partir de la maqueta aprobada `docs/design/referencia-hoy.html`. **Ni una
+migración: no se ha tocado el esquema, ni la RLS, ni una función SQL, ni el
+flujo de autenticación.** `/app` y la portada quedan como estaban.
+
+La referencia es **[docs/DESIGN.md](docs/DESIGN.md)**, que trae tokens, escala
+tipográfica, radios, clases, reglas anti-plantilla, anatomía del shell, la tabla
+de contraste y lo que quedó sin comprobar.
+
+- **Tokens reasignados, no renombrados**, así que las más de cien apariciones de
+  `text-ink-3` heredan el contraste corregido sin tocar cien ficheros. Hoja
+  blanca sobre lienzo `#E9ECE8`, y de ahí sale la regla de que **no hay ni una
+  sombra** en el sistema.
+- **Familia única Schibsted Grotesk** con `next/font`. Fuera Inter y JetBrains
+  Mono; el ancho de dígito fijo lo da ahora `tabular-nums` en el `body`.
+- **`/pro` pasa a ser «Hoy»** y el listado de pacientes se mueve a
+  `/pro/patients`, añadido ya a las rutas privadas de
+  `verificar-produccion.mjs`.
+- **`npm run test:contraste`** (`scripts/contraste-tokens.mjs`) lee los tokens
+  del propio `globals.css` y mide **66 pares en los dos temas: todos AA**. Salió
+  con código 1 la primera vez, que es para lo que está.
+- **Modo oscuro conservado**, con paleta propia verificada. Efecto colateral
+  aceptado y anotado: la app del paciente en oscuro hereda los neutros nuevos,
+  porque su `patient.css` mapea sus tokens a los de `globals.css`.
+
+**Nada quedó tras una bandera**, y es deliberado: en la CI el `build` solo recibe
+tres variables de entorno, así que una `NEXT_PUBLIC_FEATURE_*` nueva llega
+`undefined` y lo único que se compila y se typechequea es la rama apagada. Los
+bloques sin datos dicen en voz alta lo que les falta, que era la otra opción
+prevista.
+
+**Lo que la maqueta pide y el esquema no tiene** —y por tanto no se ha
+inventado—: horario o disponibilidad del profesional (de ahí que la jornada no
+tenga denominador «de 8 h disponibles»), lista de espera, frecuencia acordada
+por paciente, sala y estado «enlace enviado». Además, `late_cancel` es una
+etiqueta que se marca a mano, no una regla de 24 h, y el rótulo lo dice así.
+
+Verificado: lint, typecheck, build, **224 pruebas** (11 nuevas) y los 66 pares de
+contraste. Auditado el diff completo: los `href` son idénticos uno a uno, no se
+tocó ningún fichero fuera de alcance y los atributos de accesibilidad salen
+ganando.
+
+⚠️ **Sin revisión visual y sin desplegar.** No hay navegador en este entorno: en
+este repositorio vitest corre en Node y **ningún test renderiza componentes**,
+así que todo lo que toca la interfaz se comprueba leyendo ficheros con
+expresiones regulares. Eso no sustituye a mirar la pantalla. Falta también
+dispositivo físico y ver el modo oscuro de verdad.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
@@ -1510,92 +1560,125 @@ npm audit --audit-level=low
 <!-- Reglas del agente para esta versión de Next.js -->
 
 ## UI/Diseño
-- Skill instalada: .claude/skills/frontend-design (usar en sesiones de dashboard y PWA)
-- Dirección estética: estilo Notion — fondo blanco #FFFFFF, texto #37352F, bordes #E9E9E7, radios 3-4px, tipografía de sistema, jerarquía por peso/tamaño, sombras mínimas, controles en hover
-- Diferenciación: menos densidad que Notion; estados clínicos (alertas PHQ-9/GAD-7) visibles de un vistazo sin interacción
-- **Rediseño completo aplicado (jul 2026):** sistema de tokens en `globals.css`
-  (`:root` + `@theme inline`): `canvas/panel/wash/line/ink/ink-2/ink-3/accent/
-  danger/warn/info` (+variantes `-soft`), modo oscuro automático vía
-  `prefers-color-scheme` (las vistas NO usan `dark:`; usan los tokens).
-  Clases base en `@layer components`: `btn-primary/ghost/subtle/danger`,
-  `btn-sm`, `field`, `field-label`, `card`, `chip`, `page-title`,
-  `section-label`, `row-hover`, `table-base`. Acento verde calmado
-  (#0F7B6C claro / #4F9D8B oscuro). Tipografía 100% de sistema (sin Geist).
-  Nota Tailwind v4: `@apply` no compone clases propias — la base de los
-  botones se comparte por grupo de selectores.
-- **Portada `/` (15-sep):** landing aprobada por el usuario, entregada aparte
-  como página estática y transcrita a JSX en `src/app/page.tsx`. Sustituye a la
-  anterior (hero + maqueta `AppWindow` + grid de funcionalidades), que ya no
-  existe. **No sigue los tokens del resto de la aplicación**: trae su propia
-  paleta, su propia geometría y sus propias tipografías, y así debe quedarse.
-  Detalle y reglas de mantenimiento en el bloque de ESTADO ACTUAL.
-- **Agenda con calendario (jul 2026):** `/pro/agenda` = calendario con vistas
-  **día/semana/mes** (query params `?view=&date=`, navegación ‹ Hoy › por
-  links server-rendered; ventana temporal resuelta en `src/lib/agenda-window.ts`,
-  datos por rango con `getProfessionalAgendaRange`). Componente cliente
-  `AgendaCalendar.tsx`: grid mensual (chips + "+N más"), rejilla horaria 7-21 h
-  (solapes por carriles, línea de "ahora", bloqueos rayados), **popup** al
-  pinchar una cita (vista previa + Ver paciente + Modificar) y **modal de
-  edición** (horario, video, notas, asistencia, cancelar/eliminar).
-  `AppointmentItem`/`BlockItem` eliminados (sustituidos por el calendario).
-  Distribución: calendario a la izquierda; columna derecha con "Nueva cita",
-  botón **"Ver todas las citas"** → `/pro/agenda/citas` (listado completo
-  pasadas+futuras con filtros GET por cuándo/estado/paciente,
-  `listProfessionalAppointments`) y "Nuevo bloqueo" plegado en `<details>`.
-- Nav del panel con estado activo: `src/app/pro/_components/ProNav.tsx` (client).
-  **Sidebar izquierda en escritorio** (`ProNav`, layout en rejilla
-  `md:flex-row` con `<aside md:w-56>` fija + wordmark arriba y email/cerrar
-  sesión abajo); en móvil, barra superior con nav horizontal (`ProNavMobile`).
-- Acciones secundarias en listas aparecen en hover/focus (patrón Notion,
-  `group-hover` + `group-focus-within`).
-- **Refactor de sistema visual (jul 2026, revisado en artifact):** neutros a
-  **zinc frío** (canvas `#FBFBFA`, ink `#1F1F23`, `line-strong` para bordes de
-  control, `sunken` para hundidos); radios **6/10/12** (inputs 6, cards 10,
-  modales 12); semánticos **desaturados** + `success` propio distinto del acento;
-  `page-title` a peso **600**. Nuevas clases: `btn-lg`, `tabs/tab/tab-active`,
-  `modal/modal-header/-body/-footer`, `toast`, `empty`, `skeleton`, y el sistema
-  de **estados** `st` (punto+etiqueta) con `dot d-{tone}` (+`halo`) y `st-solid`
-  (crítico, único con relleno). Componente `src/components/ui/Status.tsx`
-  (`Status` + `StatusCritical`) usado en dashboard, ficha, agenda (popup), citas,
-  citas del paciente y tareas.
-- **Iconos: `lucide-react`** (dependencia) a grosor/tamaño uniforme (16 denso /
-  ~20 PWA). **Sin emojis en la UI:** el `MoodLogger` y la maqueta de la landing
-  usan caras Lucide (`Angry/Frown/Meh/Smile/Laugh`). Nav, botones clave (`Plus`),
-  cabeceras y alertas (`TriangleAlert`) con iconos Lucide.
-- **Tareas — fecha límite visible (jul 2026):** en `TasksPanel` la fecha dejó de
-  ser texto gris al pie; ahora es una etiqueta con icono `CalendarDays` coloreada
-  por urgencia (vencida = `danger-soft`+`· vencida`; próxima ≤2 días = `warn-soft`;
-  resto neutra). "Hoy"/"pronto" se resuelven tras montar (mismo patrón que el
-  "ahora" de `AgendaCalendar`) para no romper la hidratación.
-- **Contabilidad (jul 2026):** nueva sección en el nav (`Calculator`) bajo
-  `/pro/contabilidad` con la estética de tokens del proyecto: tarjeta grande de la
-  estimación del modelo 130, tiles, tablas `table-base`, formularios con `field`/
-  `field-label`, y un componente `DescargoFiscal` (banner `Info`, no descartable)
-  presente en todas las vistas fiscales. Sin emojis (iconos Lucide).
-- **Pagos — histórico + analítica (jul 2026):** query `getProfessionalPayments`
-  (`src/lib/queries/payments.ts`) con filtros (rango de fechas, estado, método,
-  paciente) y agregados (`byMethod`, `byMonth`, totales/conteos) sobre el conjunto
-  filtrado; fecha efectiva = `paid_at ?? created_at`, filtro de rango en JS para
-  ser consistente con lo mostrado. Nueva página **`/pro/pagos/historico`** (mismo
-  patrón GET/presets que `/pro/agenda/citas`): filtros, tiles de resumen (cobrado/
-  pendiente/nº/importe medio), **BarChart** de ingresos por mes + **`MethodBreakdown`**
-  (barras por método), tabla paginada (25) y **Exportar CSV respetando filtros**
-  (`/pro/pagos/export` ahora lee searchParams). `/pro/pagos` rediseñada: tiles
-  clicables (Cobrado→histórico?status=paid, Pendiente→pending, Cobrado este mes,
-  Pacientes con deuda), analítica (BarChart+MethodBreakdown) y tabla "Detalle por
-  mes" con meses enlazados al histórico. Se eliminó `getAllPaymentsForExport`
-  (lo sustituye la nueva query). Sigue sin facturar.
-- **Selector de fecha propio (jul 2026):** `src/components/ui/DateField.tsx`
-  (client) sustituye al calendario nativo de `<input type="date">` (que **no es
-  estilizable** por CSS). Disparador con estética `.field` + calendario emergente
-  con los tokens de la app: navegación de mes (‹ ›), **saltos rápidos de mes/año**
-  por `<select>` (año: 120 atrás — cómodo para fechas de nacimiento), semana
-  lunes-primero, día seleccionado en `accent`, "hoy" con anillo, acciones
-  Borrar/Hoy. Cierre por click-fuera/Escape y navegación con flechas (roving
-  `tabIndex`). Envía el valor por un `<input type="hidden">` (YYYY-MM-DD), así que
-  funciona dentro de cualquier `<form>`. El popover **solo se renderiza al abrir**
-  (client), por lo que usar `new Date()` para "hoy" no rompe la hidratación. Usado
-  en el alta de paciente y en la pestaña Información de la ficha.
+
+> **La referencia es [docs/DESIGN.md](docs/DESIGN.md).** Cualquier pantalla nueva
+> del panel se hace con lo que hay ahí: tokens, escala tipográfica, radios,
+> clases del sistema, reglas anti-plantilla y anatomía del shell. Lo de abajo es
+> el registro de decisiones; cuando discrepe con `docs/DESIGN.md`, manda
+> `docs/DESIGN.md`, y cuando `docs/DESIGN.md` discrepe con `globals.css`, manda
+> `globals.css`.
+
+**Tres sistemas visuales que NO se unifican**, y no es pereza: Next conserva el
+CSS ya cargado al navegar por cliente, así que un selector desnudo en cualquiera
+de los tres repinta a los otros. Ya ha pasado dos veces.
+
+| Área | Dónde vive | Aislamiento |
+|---|---|---|
+| Panel del profesional (`/pro`) | `src/app/globals.css` | tokens en `:root`, clases en `@layer components` |
+| App del paciente (`/app`) | `src/app/app/_ui/patient.css` | prefijo `.tp-app`, vigilado por `src/lib/patient-css.test.ts` |
+| Portada (`/`) | `src/app/_landing/landing.css` | prefijo `.lp-terap`, `html` pasa a `:root:has(.lp-terap)` |
+
+### Rediseño del panel (22-sep-2026)
+
+Dirección nueva, a partir de la maqueta aprobada `docs/design/referencia-hoy.html`.
+Sustituye a «Calma Orgánica & Soft Surfaces» y al mockup de Stitch **solo en
+`/pro`**: la app del paciente y la portada no se han tocado.
+
+- **Una hoja blanca sobre un lienzo que no lo es** (`--canvas` `#E9ECE8`). De ahí
+  sale todo lo demás, incluida la regla de que **no hay ni una sombra** en el
+  sistema: si el fondo no es blanco, la hoja ya se separa sola y no hace falta
+  elevarla. Lo que separa es el color de fondo y la línea de 1 px.
+- **Tokens reasignados, no renombrados.** `--ink-3` aparece en más de cien
+  sitios; cambiar su valor corrige el contraste en todos a la vez. Los nombres
+  viejos (`--surface-2`, `--panel`, `--sunken`, `--ink-faint`, `--warn`) siguen
+  vivos como alias.
+- **Familia única Schibsted Grotesk** con `next/font`, que la auto-hospeda en el
+  build: la CSP sigue con `font-src 'self'` y la IP del profesional no viaja a
+  Google. Se retiran Inter y JetBrains Mono. **La monoespaciada no se sustituye**
+  porque lo que hacía falta de ella era el ancho de dígito fijo, y eso lo da
+  `font-variant-numeric: tabular-nums` en el `body`. La clase `.mono` sobrevive y
+  ahora solo asegura eso.
+- **Radios con jerarquía**: 14 hoja · 12 tarjeta de próxima sesión y diálogos ·
+  10 tabla y tarjetas · 8 controles de cabecera · 7 botones del contenido · 6
+  bloques de agenda · 3 barras de gráfica · 2 leyendas.
+- **Modo oscuro: se conserva**, con paleta propia verificada. No se desactivó
+  porque el conmutador ya existía y quitarlo era una regresión.
+  ⚠️ Efecto colateral aceptado: el bloque `.dark .tp-app` de `patient.css` mapea
+  sus tokens a los de `globals.css`, así que **la app del paciente en modo oscuro
+  hereda los neutros nuevos**. Es solo cambio de tono (de zinc frío a verde
+  frío), todos los valores están verificados a AA, y congelarlo habría exigido
+  editar `patient.css`, que es justo lo que se quería no tocar.
+- **Contraste comprobado por código.** `npm run test:contraste`
+  (`scripts/contraste-tokens.mjs`) **lee los tokens del propio `globals.css`** y
+  mide 66 pares reales en los dos temas. Sale con código 1 si alguno baja de AA.
+  Encontró un fallo de verdad al escribirlo: el oscuro iba a quedar con un par
+  en 4,4995:1.
+  Dos desviaciones respecto a la paleta especificada, ambas por contraste:
+  `--ink-4` #66706B a #626C67 (el original da 4,30:1 sobre el lienzo, que es
+  donde van los contadores de la barra lateral) y `--ink-disabled` #8A928E a
+  #6A706D (3,19:1 sobre blanco, y ahí no hay solo un tachado decorativo: está el
+  nombre del paciente).
+- **Shell**: barra lateral de 236 px directamente sobre el lienzo, sin panel ni
+  borde, con tres grupos separados por línea y **sin títulos de grupo**; hoja de
+  radio 14 con cabecera de 60 px (fecha larga, buscador de 300 px con `Ctrl K`,
+  señal de avisos y «Nueva cita»). Por debajo de 1024 px la barra pasa a cajón
+  (`CajonNavegacion`, que reutiliza el mismo `ProNav`, no una copia).
+- **La franja reglamentaria** pasa a banda oscura de 30 px. Su lógica de cuándo
+  se muestra **no cambia**: sigue colgando de `NEXT_PUBLIC_DEMO_MODE`. Va oscura
+  en los dos temas con `--banner-bg` y no con `--ink-1`, que en oscuro es casi
+  blanco.
+
+### `/pro` es ahora «Hoy»
+
+El listado de pacientes se movió a **`/pro/patients`** y `/pro` pasa a ser la
+pantalla de inicio. `ProNav` tiene entrada propia para cada una, los enlaces de
+vuelta se repuntaron y `/pro/patients` se añadió a las rutas privadas que
+comprueba `scripts/verificar-produccion.mjs`.
+
+«Hoy» se resuelve **entera en el servidor**; el único trozo de cliente es la
+línea de «ahora» de la agenda. El instante se calcula una vez en la página y
+baja como dato, para que ningún bloque llame a `new Date()` por su cuenta.
+
+**Lo que NO se ha inventado.** La maqueta pide datos que el esquema no tiene, y
+ninguno se ha rellenado con supuestos ni escondido tras una bandera —en CI el
+`build` no recibe las `NEXT_PUBLIC_` nuevas, así que una bandera solo habría
+compilado la rama apagada—. Cada bloque afectado lo dice en voz alta:
+
+| Falta en el esquema | Consecuencia visible |
+|---|---|
+| Horario o disponibilidad del profesional | La jornada se dibuja entre la primera y la última hora **ocupadas**, y NO hay denominador «de 8 h disponibles». La semana dice horas reservadas. La gráfica de ocupación no lleva la línea del máximo |
+| Lista de espera | El hueco liberado no ofrece «lista de espera (N)»; ofrece proponer cita |
+| Frecuencia acordada por paciente | «Sin próxima cita» no tiene columna de frecuencia y «hace N días» va en tinta neutra, no en ámbar contra un umbral inventado |
+| Sala o despacho | La tarjeta de próxima sesión dice sesión, número y modalidad; la modalidad sí se deriva del enlace de videollamada |
+| Estado «enlace enviado» | No se marca |
+
+Dos matices más que cambian lo que se puede **afirmar**: `attendance` con valor
+`late_cancel` es una etiqueta que se marca a mano en el modal de asistencia —no
+hay regla que compare la hora de cancelación con la de la cita—, así que el
+rótulo dice «cancelaciones que marcaste como tardías»; y la cascada de tarifas
+de `src/lib/queries/hoy.ts` replica exactamente la de
+`settle_attended_appointment`, incluido que no filtra por `session_type`.
+
+La barra lateral **no tiene** entradas para «Mensajes», «Escalas», «Diario
+emocional», «Tareas», «Alertas» ni «Documentos», que sí están en la maqueta: en
+esta aplicación viven dentro de la ficha del paciente y no tienen ruta propia.
+Un menú con enlaces muertos es peor que un menú corto.
+
+### Lo que sigue vigente de antes
+
+- **Iconos: `lucide-react`**, tamaño y trazo uniformes (17 px y trazo 1,7 en la
+  barra lateral). **Sin emojis en la interfaz.**
+- **Agenda con calendario** día/semana/mes por query params (`?view=&date=`),
+  ventana resuelta en `src/lib/agenda-window.ts`.
+- **Selector de fecha propio** (`src/components/ui/DateField.tsx`): el calendario
+  nativo de `<input type="date">` no es estilizable. Conserva la navegación por
+  teclado y el roving `tabIndex`.
+- **Skill instalada:** `.claude/skills/frontend-design`.
+- **Las pantallas de entrada van siempre en claro**, por la clase
+  `pantalla-acceso` y la regla `:root:has(.pantalla-acceso)` de `globals.css`.
+  Lo vigila `src/lib/pantallas-claras.test.ts`.
+
+
 @AGENTS.md
 
 

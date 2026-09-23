@@ -74,7 +74,7 @@ export default async function EstadoRegistroPage() {
           titulo="Tu solicitud está en revisión"
           texto="Una persona revisa los datos de colegiación antes de habilitar la cuenta. Te avisaremos por correo en cuanto esté."
         >
-          <p className="text-xs leading-relaxed text-ink-3">
+          <p className="text-[12.5px] leading-relaxed text-ink-3">
             Mientras tanto no puedes abrir expedientes ni invitar pacientes.
             Confirmar tu correo no acredita la colegiación: son cosas distintas
             y esta es la segunda.
@@ -82,7 +82,7 @@ export default async function EstadoRegistroPage() {
         </Bloque>
       )}
 
-      <dl className="card flex flex-col gap-3 p-5 text-sm">
+      <dl className="card flex flex-col gap-3 p-5 text-[13.5px]">
         <Dato termino="Cuenta" valor={user.email ?? "—"} />
         <Dato termino="Nombre" valor={contexto.full_name ?? "—"} />
         <Dato
@@ -96,7 +96,10 @@ export default async function EstadoRegistroPage() {
       </dl>
 
       <div className="flex items-center justify-between gap-3">
-        <Link href="/registro" className="text-sm text-ink-3 hover:text-ink">
+        <Link
+          href="/registro"
+          className="text-[13px] text-ink-3 transition-colors hover:text-ink"
+        >
           Corregir mis datos
         </Link>
         <SignOutForm />
@@ -121,7 +124,7 @@ function Bloque({
   const fondo = {
     info: "bg-info-soft text-info",
     success: "bg-success-soft text-success",
-    warn: "bg-warn-soft text-warn",
+    warn: "bg-warning-soft text-warning-ink",
     danger: "bg-danger-soft text-danger",
   }[tono];
   return (
@@ -129,8 +132,8 @@ function Bloque({
       <span className={`grid size-11 place-items-center rounded-2xl ${fondo}`}>
         <Icono size={22} strokeWidth={1.75} aria-hidden />
       </span>
-      <h1 className="page-title">{titulo}</h1>
-      <p className="text-sm leading-relaxed text-ink-2">{texto}</p>
+      <h1 className="text-headline-xl font-semibold text-ink">{titulo}</h1>
+      <p className="text-[13.5px] leading-relaxed text-ink-2">{texto}</p>
       {children}
     </section>
   );

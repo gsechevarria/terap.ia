@@ -48,7 +48,7 @@ export function SkeletonTiles({ count = 4 }: { count?: number }) {
 /** Lista o tabla de filas. */
 export function SkeletonRows({ count = 6 }: { count?: number }) {
   return (
-    <div className="card divide-y divide-line">
+    <div className="card divide-y divide-line-soft">
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="flex items-center justify-between gap-4 px-4 py-3.5">
           <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -64,5 +64,5 @@ export function SkeletonRows({ count = 6 }: { count?: number }) {
 
 /** Bloque grande (gráfica, calendario). */
 export function SkeletonBlock({ className = "h-72" }: { className?: string }) {
-  return <div className={`skeleton ${className} w-full rounded-lg`} />;
+  return <div className={`skeleton ${className} w-full rounded-2xl`} />;
 }

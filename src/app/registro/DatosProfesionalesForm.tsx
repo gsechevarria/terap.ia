@@ -43,7 +43,7 @@ export function DatosProfesionalesForm({ nombreSugerido }: { nombreSugerido: str
     <form onSubmit={enviar} className="flex flex-col gap-5">
       <fieldset className="card flex flex-col gap-3 p-5">
         <legend className="sr-only">Tipo de consulta</legend>
-        <p className="font-semibold">¿Cómo trabajas?</p>
+        <p className="section-title">¿Cómo trabajas?</p>
         <div className="grid gap-2 sm:grid-cols-2">
           <Opcion
             activo={tipo === "solo"}
@@ -90,7 +90,7 @@ export function DatosProfesionalesForm({ nombreSugerido }: { nombreSugerido: str
               placeholder="Centro de Psicología Aurora"
               required
             />
-            <p className="mt-1.5 text-xs text-ink-3">
+            <p className="mt-1.5 text-[12.5px] text-ink-3">
               Es lo que verán tus pacientes en la invitación.
             </p>
           </div>
@@ -122,13 +122,17 @@ export function DatosProfesionalesForm({ nombreSugerido }: { nombreSugerido: str
             />
           </div>
         </div>
-        <p className="text-xs leading-relaxed text-ink-3">
+        <p className="text-[12.5px] leading-relaxed text-ink-3">
           Estos datos los revisa una persona antes de habilitar tu cuenta. Hasta
           entonces no podrás abrir expedientes ni invitar pacientes.
         </p>
       </div>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && (
+        <p role="alert" className="text-[13.5px] text-danger-ink">
+          {error}
+        </p>
+      )}
 
       <button type="submit" disabled={pending} className="btn-primary btn-lg">
         {pending ? "Enviando…" : "Enviar solicitud"}
@@ -158,12 +162,12 @@ function Opcion({
       className={`flex cursor-pointer flex-col gap-1.5 rounded-2xl border p-4 text-left transition-colors ${
         activo
           ? "border-accent bg-accent-soft"
-          : "border-line-strong hover:bg-surface-2"
+          : "border-line-strong hover:bg-surface-subtle"
       }`}
     >
       <Icono size={20} strokeWidth={1.75} aria-hidden className={activo ? "text-accent" : "text-ink-3"} />
       <span className="font-medium">{titulo}</span>
-      <span className="text-xs text-ink-2">{detalle}</span>
+      <span className="text-[12.5px] text-ink-2">{detalle}</span>
     </button>
   );
 }

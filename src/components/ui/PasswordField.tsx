@@ -65,7 +65,7 @@ export function PasswordField({
           aria-pressed={visible}
           // `-translate-y-1/2` sobre `top-1/2` lo centra sea cual sea el alto
           // del campo, que cambia con el tamaño de fuente del navegador.
-          className="absolute top-1/2 right-1.5 -translate-y-1/2 cursor-pointer rounded-md p-1.5 text-ink-3 transition-colors hover:bg-wash hover:text-ink"
+          className="absolute top-1/2 right-1.5 -translate-y-1/2 cursor-pointer rounded-md p-1.5 text-ink-3 transition-colors hover:bg-surface-muted hover:text-ink"
         >
           {visible ? (
             <EyeOff size={16} strokeWidth={1.75} aria-hidden />
@@ -75,7 +75,7 @@ export function PasswordField({
         </button>
       </div>
       {ayuda && (
-        <p id={idAyuda} className="mt-1.5 text-[11px] text-ink-3">
+        <p id={idAyuda} className="mt-1.5 text-[12.5px] text-ink-3">
           {ayuda}
         </p>
       )}

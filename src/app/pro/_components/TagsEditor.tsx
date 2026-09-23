@@ -57,7 +57,7 @@ export function TagsEditor({
         onChange={(e) => setValue(e.target.value)}
         placeholder="ansiedad, quincenal"
         aria-label="Etiquetas separadas por comas"
-        className="field h-7 w-auto px-2 py-1 text-xs"
+        className="field w-auto"
       />
       <button
         type="button"
@@ -77,7 +77,7 @@ export function TagsEditor({
       >
         Cancelar
       </button>
-      {error && <p className="w-full text-xs text-danger">{error}</p>}
+      {error && <p className="w-full text-[12.5px] text-danger">{error}</p>}
     </div>
   );
 }

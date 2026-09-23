@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   getPatientsForSelect,
   getProfessionalAgendaRange,
@@ -46,45 +47,41 @@ export default async function AgendaPage({
           19rem de aside, al calendario le quedaban ~824 px, por debajo de lo que
           necesitan siete días. La semana se cortaba a CUALQUIER anchura de
           ventana, porque el tope no depende de la pantalla. */}
-      <div className="mt-5 grid items-start gap-6 xl:grid-cols-[1fr_19rem]">
+      <div className="mt-6 grid items-start gap-7 xl:grid-cols-[1fr_19rem]">
         {/* Izquierda: toolbar + calendario */}
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <Link
                 href={href(w.view, w.prevYMD)}
                 aria-label="Anterior"
-                className="btn-ghost h-7 w-7 px-0"
+                className="btn-ghost size-8 rounded-xl px-0"
               >
-                ‹
+                <ChevronLeft className="size-4" strokeWidth={1.75} aria-hidden />
               </Link>
               <Link
                 href={href(w.view, w.todayYMD)}
-                className="btn-ghost h-7 px-2.5 text-xs"
+                className="btn-ghost btn-sm rounded-xl"
               >
                 Hoy
               </Link>
               <Link
                 href={href(w.view, w.nextYMD)}
                 aria-label="Siguiente"
-                className="btn-ghost h-7 w-7 px-0"
+                className="btn-ghost size-8 rounded-xl px-0"
               >
-                ›
+                <ChevronRight className="size-4" strokeWidth={1.75} aria-hidden />
               </Link>
-              <span className="ml-2 text-sm font-semibold capitalize">
+              <span className="ml-2 text-[15px] font-semibold capitalize">
                 {w.label}
               </span>
             </div>
-            <div className="flex rounded-lg bg-surface-2 p-0.5">
+            <div className="segmented" role="group" aria-label="Vista del calendario">
               {VIEWS.map((v) => (
                 <Link
                   key={v.key}
                   href={href(v.key, w.dateYMD)}
-                  className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors duration-150 ${
-                    w.view === v.key
-                      ? "border border-line bg-surface text-ink"
-                      : "text-ink-2 hover:text-ink"
-                  }`}
+                  aria-current={w.view === v.key ? "page" : undefined}
                 >
                   {v.label}
                 </Link>
@@ -102,17 +99,19 @@ export default async function AgendaPage({
           </div>
         </div>
 
-        {/* Derecha: nueva cita + acceso al listado completo */}
-        <aside className="flex flex-col gap-3">
+        {/* Derecha: nueva cita + acceso al listado completo. El bloqueo va
+            plegado y separado por una línea, no en otra tarjeta: tres cajas
+            apiladas dicen que las tres cosas pesan lo mismo, y no es el caso. */}
+        <aside className="flex flex-col gap-4">
           <NewAppointment patients={patients} defaultPatientId={patient} />
           <Link href="/pro/agenda/citas" className="btn-ghost w-full">
             Ver todas las citas
           </Link>
-          <details className="card bg-panel">
-            <summary className="cursor-pointer list-none px-4 py-3 text-xs font-semibold tracking-wide text-ink-3 uppercase transition-colors hover:text-ink">
-              Nuevo bloqueo (vacaciones / no disponible)
+          <details className="border-t border-line pt-4">
+            <summary className="cursor-pointer list-none text-[13.5px] font-medium text-ink-2 transition-colors hover:text-ink">
+              Bloquear una franja para vacaciones o ausencias
             </summary>
-            <div className="px-4 pb-4">
+            <div className="mt-3">
               <NewBlock />
             </div>
           </details>

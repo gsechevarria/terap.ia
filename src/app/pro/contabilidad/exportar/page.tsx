@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileSpreadsheet, FileText, FileDown } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, FileText, FileDown } from "lucide-react";
 import { DescargoFiscal } from "../_components/DescargoFiscal";
 
 export default function ExportarPage() {
@@ -9,17 +9,21 @@ export default function ExportarPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link href="/pro/contabilidad" className="text-sm text-ink-3 hover:text-ink">
-        ← Contabilidad
+      <Link
+        href="/pro/contabilidad"
+        className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 transition-colors hover:text-ink"
+      >
+        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
+        Contabilidad
       </Link>
       <h1 className="page-title mt-3">Exportar</h1>
-      <p className="mt-1 text-sm text-ink-2">
+      <p className="mt-1.5 text-[13.5px] text-ink-2">
         Genera los libros registro y el resumen del periodo para tu gestor.
       </p>
 
-      <DescargoFiscal className="mt-4" />
+      <DescargoFiscal className="mt-5" />
 
-      <form method="get" action="/pro/contabilidad/export" className="card mt-5 p-4">
+      <form method="get" action="/pro/contabilidad/export" className="mt-7">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="field-label">Ejercicio</span>
@@ -43,7 +47,7 @@ export default function ExportarPage() {
           </label>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap gap-2">
           <button
             type="submit"
             name="formato"
@@ -61,21 +65,29 @@ export default function ExportarPage() {
         </div>
       </form>
 
-      <div className="mt-5 space-y-2 text-sm text-ink-2">
-        <p>
-          <span className="font-medium text-ink">Excel</span> — tres hojas de
-          libros registro (ingresos, gastos, bienes de inversión) + hoja resumen
-          con la estimación del modelo 130, cuadradas para importar.
-        </p>
-        <p>
-          <span className="font-medium text-ink">PDF</span> — resumen legible del
-          periodo para ti.
-        </p>
-        <p>
-          <span className="font-medium text-ink">CSV</span> — mismos libros con
-          separador «;» para gestorías con software propio.
-        </p>
-      </div>
+      <section className="mt-7 border-t border-line pt-6">
+        <h2 className="section-title">Qué lleva cada formato</h2>
+        <dl className="mt-3 text-[13.5px] text-ink-2">
+          <div className="border-b border-line-soft py-2.5">
+            <dt className="font-medium text-ink">Excel</dt>
+            <dd className="mt-0.5">
+              Tres hojas de libros registro (ingresos, gastos, bienes de
+              inversión) más la hoja resumen con la estimación del modelo 130,
+              cuadradas para importar.
+            </dd>
+          </div>
+          <div className="border-b border-line-soft py-2.5">
+            <dt className="font-medium text-ink">PDF</dt>
+            <dd className="mt-0.5">Resumen legible del periodo para ti.</dd>
+          </div>
+          <div className="py-2.5">
+            <dt className="font-medium text-ink">CSV</dt>
+            <dd className="mt-0.5">
+              Mismos libros con separador «;» para gestorías con software propio.
+            </dd>
+          </div>
+        </dl>
+      </section>
     </div>
   );
 }

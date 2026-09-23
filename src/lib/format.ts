@@ -27,6 +27,35 @@ export function formatDateTime(iso: string | null | undefined): string {
   });
 }
 
+/**
+ * Fecha larga con el día de la semana: «Martes, 22 de septiembre».
+ *
+ * Va en la cabecera del panel, donde el año sobra —nadie necesita que le
+ * recuerden en qué año está trabajando— y el día de la semana sí importa,
+ * porque la consulta se organiza por días de la semana.
+ */
+export function formatFechaLarga(iso: string): string {
+  const texto = new Date(iso).toLocaleDateString("es-ES", {
+    timeZone: TZ,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  // `es-ES` devuelve «martes, 22 de septiembre»; en español el día de la semana
+  // va en minúscula, pero aquí encabeza la frase.
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+/** Minutos legibles: «1 h 30 min», «45 min», «2 h». */
+export function formatDuracion(minutos: number): string {
+  const m = Math.max(0, Math.round(minutos));
+  const horas = Math.floor(m / 60);
+  const resto = m % 60;
+  if (horas === 0) return `${resto} min`;
+  if (resto === 0) return `${horas} h`;
+  return `${horas} h ${resto} min`;
+}
+
 /** Solo la hora, 'HH:MM' en la zona del profesional. */
 export function formatTime(iso: string | null | undefined): string {
   if (!iso) return "—";

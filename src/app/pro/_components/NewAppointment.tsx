@@ -120,8 +120,8 @@ export function NewAppointment({
   }
 
   return (
-    <div className="card bg-panel p-4">
-      <h3 className="section-label">Nueva cita</h3>
+    <div className="tinted p-4">
+      <h3 className="section-title">Nueva cita</h3>
       <div className="mt-3 grid gap-2.5">
         <label className="block">
           <span className="field-label">Paciente</span>
@@ -145,7 +145,7 @@ export function NewAppointment({
         </label>
 
         {sinCuenta && (
-          <p className="rounded-lg bg-warn-soft px-3 py-2 text-[12px] text-warn">
+          <p className="rounded-md bg-warning-soft px-3 py-2 text-[12.5px] text-warning-ink">
             Este paciente no tiene cuenta en la aplicación: la cita quedará en su
             agenda, pero él no la verá ni recibirá aviso. Genérele una invitación
             desde su ficha si quiere que la reciba.
@@ -156,7 +156,7 @@ export function NewAppointment({
             asistencia, que es cuando la sesión se ha celebrado; marcarlo aquí
             sirve para que el servidor no deje agendar contra un bono que no
             existe, o que no da para toda la serie. */}
-        <div className="rounded-lg border border-line bg-surface-2 p-2.5">
+        <div className="rounded-md bg-surface-muted p-2.5">
           <label className="flex items-center gap-2.5 text-[13px] font-medium text-ink">
             <input
               type="checkbox"
@@ -303,8 +303,8 @@ export function NewAppointment({
       )}
 
       {conflict ? (
-        <div role="alert" className="mt-3 rounded-2xl border border-warn/30 bg-warn-soft p-3">
-          <div className="flex items-start gap-2 text-sm text-warn">
+        <div role="alert" className="mt-3 rounded-md bg-warning-soft p-3">
+          <div className="flex items-start gap-2 text-[13.5px] text-warning-ink">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} aria-hidden />
             <p>{conflict}</p>
           </div>

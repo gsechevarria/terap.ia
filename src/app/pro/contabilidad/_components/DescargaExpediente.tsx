@@ -20,7 +20,7 @@ const CONTENIDO = [
   },
   {
     icono: FileText,
-    nombre: "manifiesto.json · advertencias.txt · indice.txt",
+    nombre: "manifiesto.json, advertencias.txt, indice.txt",
     texto:
       "Fecha, ejercicio, versión de las reglas aplicadas y todo lo que queda fuera de las cifras.",
   },
@@ -74,12 +74,12 @@ export function DescargaExpediente({
       </ul>
 
       {incompleto && (
-        <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-warn/30 bg-warn-soft px-4 py-3 text-[13px] text-ink">
+        <div className="mt-4 flex items-start gap-2.5 rounded-md bg-warning-soft px-4 py-3 text-[13.5px] text-ink">
           <CircleAlert
             size={16}
             strokeWidth={1.75}
             aria-hidden
-            className="mt-0.5 shrink-0 text-warn"
+            className="mt-0.5 shrink-0 text-warning-ink"
           />
           <div className="min-w-0">
             <p>

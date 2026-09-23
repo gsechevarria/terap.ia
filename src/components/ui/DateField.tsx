@@ -13,6 +13,10 @@ import { formatDate } from "@/lib/format";
  *
  * El calendario solo se renderiza cuando está abierto (tras un click en
  * cliente), así que usar `new Date()` para "hoy" no rompe la hidratación.
+ *
+ * El emergente NO lleva sombra: lo separa del contenido su borde de 1 px y el
+ * blanco de `--surface` contra lo que tenga debajo, que es la regla del sistema
+ * visual entero. El único anillo que queda es el del foco y el que marca hoy.
  */
 
 const MONTHS = [
@@ -224,7 +228,7 @@ function Popover({
     <div
       role="dialog"
       aria-label="Elegir fecha"
-      className="absolute top-full left-0 z-30 mt-1.5 w-72 max-w-[90vw] rounded-lg border border-line bg-canvas p-3 shadow-lg"
+      className="absolute top-full left-0 z-30 mt-1.5 w-72 max-w-[90vw] rounded-2xl border border-line bg-surface p-3"
     >
       {/* Cabecera: mes/año con navegación */}
       <div className="mb-2 flex items-center gap-1">
@@ -232,7 +236,7 @@ function Popover({
           type="button"
           onClick={onPrev}
           aria-label="Mes anterior"
-          className="flex size-7 shrink-0 items-center justify-center rounded text-ink-2 hover:bg-wash hover:text-ink"
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg text-ink-2 hover:bg-surface-muted hover:text-ink"
         >
           <ChevronLeft className="size-4" strokeWidth={2} />
         </button>
@@ -241,7 +245,7 @@ function Popover({
             value={view.month}
             onChange={(e) => onMonth(Number(e.target.value))}
             aria-label="Mes"
-            className="rounded border border-line-strong bg-canvas px-1.5 py-1 text-sm text-ink capitalize outline-none focus:border-accent"
+            className="rounded-lg border border-line-strong bg-surface px-1.5 py-1 text-[13.5px] text-ink capitalize outline-none focus:border-accent"
           >
             {MONTHS.map((m, i) => (
               <option key={m} value={i} className="capitalize">
@@ -253,7 +257,7 @@ function Popover({
             value={view.year}
             onChange={(e) => onYear(Number(e.target.value))}
             aria-label="Año"
-            className="rounded border border-line-strong bg-canvas px-1.5 py-1 text-sm text-ink outline-none focus:border-accent"
+            className="rounded-lg border border-line-strong bg-surface px-1.5 py-1 text-[13.5px] text-ink outline-none focus:border-accent"
           >
             {years.map((y) => (
               <option key={y} value={y}>
@@ -266,7 +270,7 @@ function Popover({
           type="button"
           onClick={onNext}
           aria-label="Mes siguiente"
-          className="flex size-7 shrink-0 items-center justify-center rounded text-ink-2 hover:bg-wash hover:text-ink"
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg text-ink-2 hover:bg-surface-muted hover:text-ink"
         >
           <ChevronRight className="size-4" strokeWidth={2} />
         </button>
@@ -277,7 +281,7 @@ function Popover({
         {WEEKDAYS.map((w, i) => (
           <div
             key={i}
-            className="text-center text-[10px] font-medium tracking-wide text-ink-3 uppercase"
+            className="text-center text-[11.5px] font-medium text-ink-4"
           >
             {w}
           </div>
@@ -296,9 +300,9 @@ function Popover({
             cls = "bg-accent font-semibold text-accent-ink";
           } else {
             cls = inMonth
-              ? "text-ink hover:bg-wash"
-              : "text-ink-3 hover:bg-wash";
-            if (isToday) cls += " ring-1 ring-accent/50";
+              ? "text-ink hover:bg-surface-muted"
+              : "text-ink-3 hover:bg-surface-muted";
+            if (isToday) cls += " ring-1 ring-accent";
           }
           return (
             <button
@@ -308,7 +312,7 @@ function Popover({
               tabIndex={key === focusKey ? 0 : -1}
               aria-pressed={selected}
               onClick={() => onSelect(d.getFullYear(), d.getMonth(), d.getDate())}
-              className={`flex h-8 w-full items-center justify-center rounded text-sm transition-colors duration-100 ${cls}`}
+              className={`flex h-8 w-full items-center justify-center rounded-md text-[13.5px] transition-colors duration-100 ${cls}`}
             >
               {d.getDate()}
             </button>
@@ -321,14 +325,14 @@ function Popover({
         <button
           type="button"
           onClick={onClear}
-          className="rounded px-1.5 py-0.5 text-xs text-ink-3 hover:bg-wash hover:text-ink"
+          className="rounded-lg px-2 py-1 text-[12.5px] text-ink-3 hover:bg-surface-muted hover:text-ink"
         >
           Borrar
         </button>
         <button
           type="button"
           onClick={onToday}
-          className="rounded px-1.5 py-0.5 text-xs font-medium text-accent hover:bg-accent-soft"
+          className="rounded-lg px-2 py-1 text-[12.5px] font-medium text-accent hover:bg-accent-soft"
         >
           Hoy
         </button>

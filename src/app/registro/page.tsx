@@ -38,7 +38,10 @@ export default async function RegistroPage() {
 
   return (
     <main className="pantalla-acceso mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-5 py-10">
-      <Link href="/acceso" className="inline-flex items-center gap-2 text-sm text-ink-3 hover:text-ink">
+      <Link
+        href="/acceso"
+        className="inline-flex items-center gap-2 text-[13px] text-ink-3 transition-colors hover:text-ink"
+      >
         <ArrowLeft size={16} strokeWidth={1.8} aria-hidden />
         Volver
       </Link>
@@ -46,13 +49,13 @@ export default async function RegistroPage() {
       <div className="flex flex-col gap-3">
         <Brandmark height={48} />
         <h1 className="page-title">Crea tu espacio en Terap</h1>
-        <p className="text-sm leading-relaxed text-ink-2">
+        <p className="text-body-lg text-ink-2">
           Para una consulta individual o para un centro con varios
           profesionales.
         </p>
       </div>
 
-      <ol className="flex items-center gap-2 text-label-sm" aria-label="Pasos del alta">
+      <ol className="flex items-center gap-2 text-[12.5px]" aria-label="Pasos del alta">
         <Paso n={1} texto="Cuenta" hecho={Boolean(user)} activo={!user} />
         <Paso n={2} texto="Correo" hecho={correoVerificado} activo={Boolean(user) && !correoVerificado} />
         <Paso n={3} texto="Tu consulta" hecho={false} activo={correoVerificado} />
@@ -62,12 +65,12 @@ export default async function RegistroPage() {
         <CrearCuentaForm />
       ) : !correoVerificado ? (
         <div className="card flex flex-col gap-3 p-5">
-          <h2 className="font-semibold">Confirma tu correo</h2>
-          <p className="text-sm leading-relaxed text-ink-2">
+          <h2 className="section-title">Confirma tu correo</h2>
+          <p className="text-[13.5px] leading-relaxed text-ink-2">
             Te hemos enviado un enlace a <strong className="text-ink">{user.email}</strong>.
             Ábrelo para continuar. Si ya lo has hecho, recarga esta página.
           </p>
-          <p className="text-xs text-ink-3">
+          <p className="text-[12.5px] leading-relaxed text-ink-3">
             Confirmar el correo demuestra que la dirección es tuya. No acredita
             tu colegiación: eso lo revisamos aparte, en el último paso.
           </p>
@@ -98,7 +101,7 @@ function Paso({
             ? "bg-accent text-accent-ink"
             : activo
               ? "bg-accent-soft text-accent"
-              : "bg-surface-2 text-ink-3"
+              : "bg-surface-muted text-ink-3"
         }`}
         aria-hidden
       >

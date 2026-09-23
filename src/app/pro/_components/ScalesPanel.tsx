@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions/scales";
 import { formatDate } from "@/lib/format";
 import { useAction } from "@/lib/use-action";
+import { Status } from "@/components/ui/Status";
 import type { CatalogScale } from "@/lib/queries/scales";
 import type { ScaleAssignmentView } from "@/lib/queries/patient-detail";
 
@@ -52,18 +53,18 @@ export function ScalesPanel({
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="card bg-panel p-4">
-        <h3 className="section-label">Activar una escala (opt-in)</h3>
-        <p className="mt-1 text-xs text-ink-3">
+    <div className="flex flex-col gap-8">
+      <section>
+        <h2 className="section-title">Activar una escala (opt-in)</h2>
+        <p className="mt-0.5 text-[13px] text-ink-3">
           Sin activación, el paciente no ve ningún cuestionario.
         </p>
         {available.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-2">
+          <p className="mt-3.5 text-[13.5px] text-ink-2">
             Todas las escalas del catálogo ya están activas para este paciente.
           </p>
         ) : (
-          <div className="mt-3 flex flex-col gap-3">
+          <div className="mt-4 flex max-w-xl flex-col gap-3">
             <label className="block">
               <span className="field-label">Escala</span>
               <select
@@ -78,8 +79,8 @@ export function ScalesPanel({
                 ))}
               </select>
             </label>
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-1.5 text-sm">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <label className="flex items-center gap-1.5 text-[13.5px]">
                 <input
                   type="radio"
                   name="scale-type"
@@ -89,7 +90,7 @@ export function ScalesPanel({
                 />
                 Puntual
               </label>
-              <label className="flex items-center gap-1.5 text-sm">
+              <label className="flex items-center gap-1.5 text-[13.5px]">
                 <input
                   type="radio"
                   name="scale-type"
@@ -100,14 +101,14 @@ export function ScalesPanel({
                 Recurrente
               </label>
               {type === "recurring" && (
-                <label className="flex items-center gap-1.5 text-sm text-ink-2">
+                <label className="flex items-center gap-2 text-[13.5px] text-ink-2">
                   cada
                   <input
                     type="number"
                     min={1}
                     value={interval}
                     onChange={(e) => setInterval(Number(e.target.value) || 14)}
-                    className="field w-16 px-2 py-1"
+                    className="field w-20"
                   />
                   días
                 </label>
@@ -123,53 +124,58 @@ export function ScalesPanel({
             </div>
           </div>
         )}
-      </div>
+      </section>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p className="text-[13px] text-danger">{error}</p>}
 
-      {assignments.length === 0 ? (
-        <p className="text-sm text-ink-2">Ninguna escala activada todavía.</p>
-      ) : (
-        <ul className="card divide-y divide-line">
-          {assignments.map((a) => (
-            <li
-              key={a.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{a.scaleCode}</span>
-                  <span className="chip">
-                    {a.assignment_type === "recurring" ? "recurrente" : "puntual"}
-                  </span>
-                  {!a.active && <span className="chip">inactiva</span>}
+      <section className="border-t border-line pt-7">
+        <h2 className="section-title mb-1">Escalas del paciente</h2>
+        {assignments.length === 0 ? (
+          <p className="py-3 text-[13.5px] text-ink-3">
+            Ninguna escala activada. Actívala arriba y le aparecerá al paciente.
+          </p>
+        ) : (
+          <ul>
+            {assignments.map((a) => (
+              <li
+                key={a.id}
+                className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line-soft py-3.5 last:border-b-0"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <span className="text-[13.5px] font-medium">{a.scaleCode}</span>
+                    <span className="chip">
+                      {a.assignment_type === "recurring" ? "recurrente" : "puntual"}
+                    </span>
+                    {!a.active && <Status tone="neutral">inactiva</Status>}
+                  </div>
+                  <div className="mt-0.5 text-[12.5px] text-ink-3">
+                    {a.latestScore != null
+                      ? `Última respuesta el ${formatDate(a.latestAt)}, puntuación ${a.latestScore}, ${a.latestSeverity}`
+                      : "Sin respuestas"}
+                  </div>
                 </div>
-                <div className="mt-0.5 text-xs text-ink-3">
-                  {a.latestScore != null
-                    ? `Última: ${a.latestScore} · ${a.latestSeverity} · ${formatDate(a.latestAt)}`
-                    : "Sin respuestas"}
+                <div className="flex shrink-0 items-center gap-2">
+                  <Link
+                    href={`/pro/patients/${patientId}/scales/${a.id}`}
+                    className="text-[13px] font-medium text-accent hover:underline"
+                  >
+                    Ver evolución
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => toggle(a.id, !a.active)}
+                    disabled={pending}
+                    className="btn-subtle btn-sm"
+                  >
+                    {a.active ? "Desactivar" : "Reactivar"}
+                  </button>
                 </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <Link
-                  href={`/pro/patients/${patientId}/scales/${a.id}`}
-                  className="btn-subtle btn-sm text-accent hover:text-accent"
-                >
-                  Ver evolución
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => toggle(a.id, !a.active)}
-                  disabled={pending}
-                  className="btn-subtle btn-sm"
-                >
-                  {a.active ? "Desactivar" : "Reactivar"}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

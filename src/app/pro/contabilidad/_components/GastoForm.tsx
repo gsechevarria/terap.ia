@@ -34,7 +34,7 @@ export function GastoForm() {
   const [pending, startTransition] = useTransition();
   const sending = useRef(false);
   return (
-    <form key={revision} aria-busy={pending} className="card bg-panel p-4" onSubmit={event => {
+    <form key={revision} aria-busy={pending} className="card p-5" onSubmit={event => {
       event.preventDefault();
       if (sending.current) return;
       const fd = new FormData(event.currentTarget);
@@ -49,7 +49,7 @@ export function GastoForm() {
       });
     }}>
       <fieldset disabled={pending} className="contents"><GastoFields error={error} /></fieldset>
-      {pending && <p role="status" className="mt-2 text-sm">Guardando…</p>}
+      {pending && <p role="status" className="mt-2 text-[13px] text-ink-2">Guardando…</p>}
     </form>
   );
 }
@@ -73,8 +73,8 @@ function GastoFields({
 
   return (
     <>
-      <h3 className="section-label">Nuevo gasto</h3>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <h3 className="section-title">Nuevo gasto</h3>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="field-label">Fecha</span>
           <input
@@ -169,27 +169,29 @@ function GastoFields({
         </label>
         <label className="block">
           <span className="field-label">Justificante (opcional)</span>
+          {/* El campo no baja de 16 px: por debajo, iOS hace zoom al enfocar. */}
           <input
             type="file"
             name="adjunto"
             accept="image/*,application/pdf"
-            className="field py-1.5 text-xs"
+            className="field"
           />
         </label>
       </div>
 
-      <label className="mt-3 flex items-center gap-2 text-sm">
+      <label className="mt-5 flex items-center gap-2.5 border-t border-line pt-5 text-[13.5px] text-ink">
         <input
           type="checkbox"
           name="es_bien_inversion"
           checked={esBien}
           onChange={(e) => setEsBien(e.target.checked)}
+          className="size-4 shrink-0 accent-[var(--accent)]"
         />
         Es un bien de inversión (se amortiza)
       </label>
 
       {esBien && (
-        <div className="mt-2 grid gap-3 rounded-2xl border border-line bg-surface p-3 sm:grid-cols-2">
+        <div className="tinted mt-3 grid gap-4 p-4 sm:grid-cols-2">
           <label className="block">
             <span className="field-label">% amortización anual</span>
             <input
@@ -213,23 +215,33 @@ function GastoFields({
               className="field"
             />
           </label>
-          <p className="text-xs text-ink-3 sm:col-span-2">
+          <p className="text-[12px] text-ink-2 sm:col-span-2">
             El importe se amortiza en varios años en vez de deducirse íntegro; se
             listará en el libro de bienes de inversión.
           </p>
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-ink-2">
-          Cuota IVA <span className="font-medium">{formatEur(cuota)}</span> · Total{" "}
-          <span className="font-medium">{formatEur(total)}</span>
-        </p>
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-4 border-t border-line pt-5">
+        <div className="flex gap-7">
+          <div>
+            <div className="text-[12.5px] text-ink-3">Cuota de IVA</div>
+            <div className="mono mt-0.5 text-[15px] font-medium text-ink">
+              {formatEur(cuota)}
+            </div>
+          </div>
+          <div>
+            <div className="text-[12.5px] text-ink-3">Total</div>
+            <div className="mono mt-0.5 text-[15px] font-medium text-ink">
+              {formatEur(total)}
+            </div>
+          </div>
+        </div>
         <SubmitButton pendingLabel="Guardando…">Añadir gasto</SubmitButton>
       </div>
 
       {error && (
-        <div className="mt-2 rounded bg-danger-soft p-2.5 text-xs text-danger">
+        <div className="mt-4 rounded-md bg-danger-soft px-4 py-3 text-[12.5px] text-danger-ink">
           <p>{error}</p>
           {v?.hadFile && (
             <p className="mt-1">

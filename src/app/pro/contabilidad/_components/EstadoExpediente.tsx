@@ -86,7 +86,7 @@ export function EstadoExpediente({
       <h2 className="card-title">Estado del expediente</h2>
 
       {pasosIncompletos.length > 0 && (
-        <div className="mt-3 rounded-xl bg-warn-soft px-4 py-3 text-[12px] text-warn">
+        <div className="mt-3 rounded-md bg-warning-soft px-4 py-3 text-[12.5px] text-warning-ink">
           <p className="font-medium">
             Quedan {pasosIncompletos.length} pasos sin completar. Puede marcarlo
             igualmente: un expediente incompleto identificado como tal es más
