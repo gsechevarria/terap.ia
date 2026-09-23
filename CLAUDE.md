@@ -346,6 +346,12 @@ migraciones. **Sin revisión visual en este entorno.**
 En «Agenda de hoy» todas las sesiones muestran ya inicio y fin (#53); antes
 solo la próxima, y una de 90 min no se distinguía de una de 60.
 
+**`/pro/patients` con el lenguaje de «Hoy».** Anchura completa (fuera el
+`max-w-5xl`), frase de estado bajo el título, tabla sin caja con las líneas de
+«Sin próxima cita», estados en texto de color, fechas relativas como en «Hoy» y
+«Proponer cita» a quien no tiene ninguna. De paso, «Proponer cita» en «Hoy»
+mandaba `?paciente=` y la agenda lee `?patient=`: no preseleccionaba a nadie.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
