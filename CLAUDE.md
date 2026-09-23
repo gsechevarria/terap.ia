@@ -343,6 +343,9 @@ bloqueos según la duración. La ocupación la da `getDayBusyAction`, con el
 criterio de `findConflict`; es ayuda para elegir, no la barrera. Sin
 migraciones. **Sin revisión visual en este entorno.**
 
+En «Agenda de hoy» todas las sesiones muestran ya inicio y fin (#53); antes
+solo la próxima, y una de 90 min no se distinguía de una de 60.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
