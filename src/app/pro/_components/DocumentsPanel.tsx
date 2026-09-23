@@ -45,8 +45,8 @@ export function DocumentsPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="card bg-panel p-4">
-        <h3 className="section-label">Subir documento</h3>
+      <div className="tinted p-4">
+        <h3 className="section-title">Subir documento</h3>
         <div className="mt-3 flex flex-col gap-2">
           <label className="block">
             <span className="field-label">Título (opcional)</span>

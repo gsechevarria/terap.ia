@@ -126,14 +126,14 @@ export function FacturasPanel({
           </button>
         </div>
 
-        <p className="mono mt-4 rounded-xl bg-surface-2 px-4 py-3 text-[13px] text-ink">
+        <p className="mono mt-4 rounded-md bg-surface-muted px-4 py-3 text-[13.5px] text-ink">
           {formatCurrency(totalBase)} de base en {facturas.length}{" "}
           {facturas.length === 1 ? "factura" : "facturas"}
-          {sinDeterminar > 0 && ` · ${sinDeterminar} con el IVA sin determinar`}
+          {sinDeterminar > 0 && `, ${sinDeterminar} con el IVA sin determinar`}
         </p>
 
         {error && (
-          <p role="alert" className="mt-4 rounded-xl bg-danger-soft px-4 py-3 text-[13px] text-danger">
+          <p role="alert" className="mt-4 rounded-md bg-danger-soft px-4 py-3 text-[13.5px] text-danger-ink">
             {error}
           </p>
         )}
@@ -175,8 +175,9 @@ export function FacturasPanel({
                     .filter((f) => f.tipo !== "rectificativa")
                     .map((f) => (
                       <option key={f.id} value={f.id}>
-                        {[f.serie, f.numero].filter(Boolean).join("-") || formatDate(f.fecha_emision)}{" "}
-                        · {formatCurrency(f.total_cents)}
+                        {[f.serie, f.numero].filter(Boolean).join("-") || formatDate(f.fecha_emision)}
+                        {", "}
+                        {formatCurrency(f.total_cents)}
                       </option>
                     ))}
                 </select>
@@ -307,7 +308,7 @@ export function FacturasPanel({
             {/* El servicio describe lo hecho; NO decide la tributación. La
                 exención sanitaria depende de la titulación del profesional y de
                 la finalidad asistencial, no del epígrafe ni de quién paga. */}
-            <p className="rounded-xl bg-surface-2 px-4 py-3 text-[11px] text-ink-2 sm:col-span-2">
+            <p className="rounded-md bg-surface-muted px-4 py-3 text-[12.5px] text-ink-2 sm:col-span-2">
               La categoría del servicio describe qué se hizo y no determina su
               tributación. Deje el IVA «sin determinar» si no está seguro: el
               expediente lo señalará en lugar de suponerlo.
@@ -348,9 +349,9 @@ export function FacturasPanel({
                       </p>
                       <p className="mt-0.5 text-[12px] text-ink-2">
                         {formatDate(f.fecha_emision)}
-                        {f.destinatario_nombre ? ` · ${f.destinatario_nombre}` : ""}
+                        {f.destinatario_nombre ? `, ${f.destinatario_nombre}` : ""}
                         {rectifica
-                          ? ` · rectifica a ${[rectifica.serie, rectifica.numero].filter(Boolean).join("-")}`
+                          ? `. Rectifica a ${[rectifica.serie, rectifica.numero].filter(Boolean).join("-")}`
                           : ""}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">

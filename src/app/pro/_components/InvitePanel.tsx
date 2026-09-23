@@ -93,9 +93,9 @@ export function InvitePanel({
   }
 
   return (
-    <div className="card bg-panel p-4">
+    <div className="tinted p-4">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="section-label">Acceso a Terap</h3>
+        <h3 className="section-title">Acceso a Terap</h3>
         <Status tone={etiqueta.tono}>{etiqueta.texto}</Status>
       </div>
 
@@ -145,7 +145,7 @@ export function InvitePanel({
               </>
             ) : (
               <>
-                <MailWarning className="mt-0.5 size-3.5 shrink-0 text-warn" strokeWidth={2} aria-hidden />
+                <MailWarning className="mt-0.5 size-3.5 shrink-0 text-warning-ink" strokeWidth={2} aria-hidden />
                 <span className="text-ink-2">
                   {resultado.correo === "no_provider"
                     ? "No hay proveedor de correo configurado en este entorno, así que no se ha enviado nada."
@@ -161,9 +161,9 @@ export function InvitePanel({
               readOnly
               value={resultado.url}
               aria-label="Enlace de invitación"
-              className="field min-w-0 flex-1 px-2 py-1.5 text-xs"
+              className="field min-w-0 flex-1"
             />
-            <button type="button" onClick={copiar} className="btn-primary h-7 shrink-0 px-2.5 text-xs">
+            <button type="button" onClick={copiar} className="btn-primary btn-sm shrink-0">
               {copiado ? "Copiado" : "Copiar"}
             </button>
           </div>
@@ -185,7 +185,7 @@ export function InvitePanel({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="nombre@correo.com"
-            className="field text-sm"
+            className="field"
           />
           <p className="text-xs text-ink-3">
             Solo esa dirección podrá aceptar la invitación. Reenviar invalida el

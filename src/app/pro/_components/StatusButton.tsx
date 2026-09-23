@@ -25,7 +25,7 @@ export function StatusButton({
       >
         {pending ? "…" : status === "active" ? "Archivar" : "Reactivar"}
       </button>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-[12.5px] text-danger">{error}</p>}
     </div>
   );
 }

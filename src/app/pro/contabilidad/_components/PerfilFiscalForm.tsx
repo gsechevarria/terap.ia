@@ -117,7 +117,7 @@ export function PerfilFiscalForm({
       </p>
 
       {faltan.length > 0 && (
-        <ul className="mt-4 list-inside list-disc rounded-xl bg-warn-soft px-4 py-3 text-[12px] text-warn">
+        <ul className="mt-4 list-inside list-disc rounded-md bg-warning-soft px-4 py-3 text-[12.5px] text-warning-ink">
           {faltan.map((f) => (
             <li key={f}>{f}</li>
           ))}
@@ -218,7 +218,7 @@ export function PerfilFiscalForm({
         />
       </div>
 
-      <div className="mt-5 rounded-xl border border-line bg-surface-2 p-3">
+      <div className="mt-5 rounded-md bg-surface-muted p-3">
         <label className="flex items-start gap-2.5 text-[13px] font-medium text-ink">
           <input
             type="checkbox"

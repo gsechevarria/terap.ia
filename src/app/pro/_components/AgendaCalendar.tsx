@@ -211,7 +211,11 @@ export function AgendaCalendar({
       {/* Popup de vista previa */}
       {popup && (
         <>
-          <div className="fixed inset-0 z-30" onClick={() => setPopup(null)} />
+          {/* Velo para cerrar pinchando fuera. Es comodidad de ratón y nada
+              más: por teclado se cierra con Escape (ver el efecto de arriba),
+              así que va oculto al lector de pantalla en vez de anunciarse como
+              un control suelto sin nombre. */}
+          <div aria-hidden className="fixed inset-0 z-30" onClick={() => setPopup(null)} />
           {/* Radio 12 y borde de 1 px, sin sombra: lo que separa el diálogo de
               lo que hay debajo es el borde, no una nube gris. */}
           <div
@@ -633,13 +637,13 @@ function ApptPreview({
       <p className="text-sm text-ink-2">
         {formatTime(appt.starts_at)} – {formatTime(appt.ends_at)}
         {appt.attendance !== "pending" && (
-          <span className="ml-2 text-xs text-ink-3">
-            · {ATTENDANCE_LABEL[appt.attendance] ?? appt.attendance}
+          <span className="ml-2 text-[12.5px] text-ink-3">
+            {ATTENDANCE_LABEL[appt.attendance] ?? appt.attendance}
           </span>
         )}
       </p>
       {appt.notes && (
-        <p className="mt-2 line-clamp-3 rounded bg-panel p-2 text-xs text-ink-2">
+        <p className="mt-2 line-clamp-3 rounded-md bg-surface-muted p-2.5 text-[12.5px] text-ink-2">
           {appt.notes}
         </p>
       )}
@@ -690,7 +694,7 @@ function BlockPreview({
       <p className="text-sm font-semibold">Bloqueo</p>
       {error && <p role="alert" className="text-danger">{error}</p>}
       <p className="mt-1 text-sm text-ink-2">
-        {fmt(block.starts_at)} → {fmt(block.ends_at)}
+        De {fmt(block.starts_at)} a {fmt(block.ends_at)}
       </p>
       {block.reason && <p className="mt-1 text-sm text-ink-2">{block.reason}</p>}
       <div className="mt-3 border-t border-line pt-3">
@@ -845,7 +849,7 @@ function EditModal({
             las repeticiones en el horario antiguo, sin aviso. Editar la serie
             completa está pendiente. */}
         {esDeSerie && (
-          <p className="mt-3 rounded bg-info-soft p-2.5 text-xs text-info">
+          <p className="mt-3 rounded-md bg-info-soft p-2.5 text-[12.5px] text-info">
             Esta cita forma parte de una serie. Los cambios se aplican{" "}
             <strong className="font-semibold">solo a esta cita</strong>; las
             demás repeticiones se quedan como están.

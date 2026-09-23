@@ -42,30 +42,31 @@ export function PaymentsPanel({
   const [payMethod, setPayMethod] = useState("");
 
   return (
-    <div className="flex flex-col gap-5">
-      {error && <p role="alert" className="text-danger">{error}</p>}
-      {/* Resumen */}
-      <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
-        <div className="card px-4 py-3">
-          <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-            Deuda pendiente
-          </div>
-          <div className="mt-0.5 text-lg font-semibold">
-            {formatCurrency(detail.debtCents)}
-          </div>
+    <div className="flex flex-col gap-8">
+      {error && (
+        <p role="alert" className="text-[13px] text-danger">
+          {error}
+        </p>
+      )}
+
+      {/* Resumen: dos cifras sin caja. Eran dos tarjetas iguales en mosaico, que
+          es justo lo que el sistema visual no quiere: decían que la deuda y el
+          bono pesan lo mismo, y no es verdad — la deuda es lo que se mira. */}
+      <div className="flex flex-wrap gap-x-12 gap-y-5">
+        <div>
+          <div className="text-[13px] text-ink-3">Deuda pendiente</div>
+          <div className="figure mono mt-1">{formatCurrency(detail.debtCents)}</div>
         </div>
-        <div className="card px-4 py-3">
-          <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-            Sesiones de bono
-          </div>
-          <div className="mt-0.5 text-lg font-semibold">{detail.packRemaining}</div>
+        <div>
+          <div className="text-[13px] text-ink-3">Sesiones de bono</div>
+          <div className="figure mono mt-1">{detail.packRemaining}</div>
         </div>
       </div>
 
       {/* Precio */}
-      <div className="card bg-panel p-4">
-        <h3 className="section-label">Precio por sesión</h3>
-        <div className="mt-3 flex items-center gap-2">
+      <section className="border-t border-line pt-7">
+        <h3 className="section-title mb-3.5">Precio por sesión</h3>
+        <div className="flex items-center gap-2">
           <input
             type="number"
             min={0}
@@ -85,19 +86,21 @@ export function PaymentsPanel({
             Guardar
           </button>
         </div>
-      </div>
+      </section>
 
       {/* Bonos */}
-      <div className="card bg-panel p-4">
-        <h3 className="section-label">Bonos</h3>
+      <section className="border-t border-line pt-7">
+        <h3 className="section-title mb-3.5">Bonos</h3>
         {detail.packs.length > 0 && (
-          <ul className="mt-3 flex flex-col gap-1.5 text-sm">
+          <ul className="mb-3.5 flex flex-col gap-2 text-[13.5px]">
             {detail.packs.map((p) => (
-              <li key={p.id} className="flex justify-between">
+              <li key={p.id} className="flex justify-between gap-3">
                 <span>
-                  Bono de {p.total_sessions} · usadas {p.used_sessions}/
+                  Bono de {p.total_sessions}, usadas {p.used_sessions} de{" "}
                   {p.total_sessions}
-                  {!p.active && " (inactivo)"}
+                  {!p.active && (
+                    <span className="text-ink-3"> (inactivo)</span>
+                  )}
                   <button type="button" disabled={pending} className="btn-subtle ml-2 text-xs" onClick={() => run(() => callAction(setPackActiveAction, patientId, p.id, !p.active))}>{p.active ? "Archivar" : "Reactivar"}</button>
                 </span>
                 <span className="text-ink-2">
@@ -138,12 +141,12 @@ export function PaymentsPanel({
             Añadir bono
           </button>
         </div>
-      </div>
+      </section>
 
       {/* Sesiones y pagos */}
-      <div className="card bg-panel p-4">
-        <h3 className="section-label">Sesiones y pagos</h3>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+      <section className="border-t border-line pt-7">
+        <h3 className="section-title mb-3.5">Sesiones y pagos</h3>
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="number"
             min={0}
@@ -195,13 +198,16 @@ export function PaymentsPanel({
         </div>
 
         {detail.payments.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-2">Sin sesiones ni pagos registrados.</p>
+          <p className="mt-4 py-3 text-[13.5px] text-ink-3">
+            Todavía no hay ningún cobro. Se anotan solos al registrar la
+            asistencia a una cita, o a mano con el formulario de arriba.
+          </p>
         ) : (
           // La tabla solo se muestra a partir de `sm`. Por debajo, el método y
           // el estado quedaban fuera de pantalla y había que desplazar en
           // horizontal justo para llegar a los dos controles que se usan. En
           // móvil cada pago es una tarjeta y todo cabe.
-          <div className="mt-3 hidden sm:block">
+          <div className="table-wrap mt-4 hidden sm:block">
             <table className="table-base">
               <thead>
                 <tr>
@@ -232,13 +238,13 @@ export function PaymentsPanel({
                         </span>
                       )}
                     </td>
-                    <td className="tabular-nums whitespace-nowrap">
+                    <td className="mono whitespace-nowrap">
                       {formatCurrency(p.amount_cents, p.currency)}
                       {/* "Sin tarifa configurada" no es lo mismo que "gratis":
                           un 0,00 € a secas parecía una deuda saldada. */}
                       {p.note?.startsWith("Sin tarifa") && (
                         <span
-                          className="ml-2 chip bg-warn-soft text-warn"
+                          className="ml-2 text-[12.5px] font-medium text-warning-ink"
                           title={p.note}
                         >
                           revisar importe
@@ -369,9 +375,9 @@ export function PaymentsPanel({
             })}
           </ul>
         )}
-      </div>
+      </section>
 
-      <p className="text-xs text-ink-3">
+      <p className="border-t border-line pt-5 text-[12.5px] text-ink-3">
         terap.ia hace seguimiento de pagos; no emite facturas.
       </p>
     </div>

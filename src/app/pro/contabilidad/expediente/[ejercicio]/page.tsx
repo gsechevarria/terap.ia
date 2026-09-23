@@ -187,7 +187,7 @@ export default async function ExpedientePage({
                 enlace={{ href: "/pro/contabilidad/revision", texto: "Revisar cobros pendientes" }}
                 dato={`${formatCurrency(resumen.totales.ingresosConfirmadosCents)} confirmados${
                   resumen.totales.ingresosPendientes > 0
-                    ? ` · ${resumen.totales.ingresosPendientes} sin tratamiento fiscal`
+                    ? `, ${resumen.totales.ingresosPendientes} sin tratamiento fiscal`
                     : ""
                 }`}
               />
@@ -202,7 +202,7 @@ export default async function ExpedientePage({
               enlace={{ href: "/pro/contabilidad/gastos", texto: "Ir a gastos" }}
               dato={`${formatCurrency(resumen.totales.gastosConfirmadosCents)} confirmados${
                 resumen.totales.gastosPendientes > 0
-                  ? ` · ${resumen.totales.gastosPendientes} sin IVA recuperable`
+                  ? `, ${resumen.totales.gastosPendientes} sin IVA recuperable`
                   : ""
               }`}
             />
@@ -238,7 +238,7 @@ export default async function ExpedientePage({
                     <li key={o.modelo} className="flex flex-wrap items-start justify-between gap-3 py-3">
                       <div className="min-w-0">
                         <p className="text-[13px] font-medium text-ink">
-                          <span className="mono">Modelo {o.modelo}</span> · {o.nombre}
+                          <span className="mono">Modelo {o.modelo}</span>, {o.nombre}
                         </p>
                         <p className="mt-0.5 text-[12px] text-ink-2">{o.explicacion}</p>
                         {o.faltan && o.faltan.length > 0 && (
