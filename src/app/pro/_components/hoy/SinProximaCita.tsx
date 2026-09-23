@@ -82,7 +82,7 @@ export function SinProximaCita({ pacientes }: { pacientes: PacienteSinCita[] }) 
                   style={{ borderBottom: "1px solid var(--line-soft)" }}
                 >
                   <Link
-                    href={`/pro/agenda?paciente=${p.id}`}
+                    href={`/pro/agenda?patient=${p.id}`}
                     className="font-semibold text-accent hover:underline"
                   >
                     Proponer cita
