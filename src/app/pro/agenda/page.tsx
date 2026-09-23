@@ -95,6 +95,8 @@ export default async function AgendaPage({
               dateYMD={w.dateYMD}
               appointments={appointments}
               blocks={blocks}
+              patients={patients}
+              defaultPatientId={patient}
             />
           </div>
         </div>
@@ -103,7 +105,11 @@ export default async function AgendaPage({
             plegado y separado por una línea, no en otra tarjeta: tres cajas
             apiladas dicen que las tres cosas pesan lo mismo, y no es el caso. */}
         <aside className="flex flex-col gap-4">
-          <NewAppointment patients={patients} defaultPatientId={patient} />
+          <NewAppointment
+            patients={patients}
+            defaultPatientId={patient}
+            initialDay={w.todayYMD}
+          />
           <Link href="/pro/agenda/citas" className="btn-ghost w-full">
             Ver todas las citas
           </Link>
