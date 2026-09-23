@@ -46,6 +46,45 @@ export function formatFechaLarga(iso: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
+/**
+ * Cómo nombrar el día de una cita futura dentro de una frase.
+ *
+ * Hoy no se nombra —«a las 17:32» ya se entiende—, mañana se dice con su
+ * palabra, y a partir de ahí hace falta la fecha. Dentro de los seis días
+ * siguientes basta el día de la semana, porque cada uno aparece una sola vez y
+ * no hay ambigüedad posible; más allá, el día y el mes.
+ *
+ * Devuelve "" para hoy, de modo que quien lo use pueda concatenarlo sin
+ * comprobar nada.
+ */
+export function nombreDelDia(iso: string, diasHasta: number): string {
+  if (diasHasta <= 0) return "";
+  if (diasHasta === 1) return "mañana";
+  const opciones: Intl.DateTimeFormatOptions =
+    diasHasta <= 6 ? { weekday: "long" } : { day: "numeric", month: "long" };
+  return `el ${new Date(iso).toLocaleDateString("es-ES", { timeZone: TZ, ...opciones })}`;
+}
+
+/**
+ * Cuánto falta, para la insignia de la tarjeta de próxima sesión.
+ *
+ * Por debajo de una hora van los minutos, porque es cuando importan. A partir
+ * del día siguiente se cuenta en días: decir «en 31 h 12 min» obliga a hacer la
+ * cuenta mentalmente para saber que es mañana.
+ */
+export function formatCuantoFalta(desdeISO: string, hastaISO: string, diasHasta: number): string {
+  if (diasHasta === 1) return "mañana";
+  if (diasHasta > 1) return `en ${diasHasta} días`;
+  const minutos = Math.round(
+    (new Date(hastaISO).getTime() - new Date(desdeISO).getTime()) / 60000,
+  );
+  if (minutos <= 0) return "ahora";
+  if (minutos < 60) return `en ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  const resto = minutos % 60;
+  return resto === 0 ? `en ${horas} h` : `en ${horas} h ${resto} min`;
+}
+
 /** Minutos legibles: «1 h 30 min», «45 min», «2 h». */
 export function formatDuracion(minutos: number): string {
   const m = Math.max(0, Math.round(minutos));

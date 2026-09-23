@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ProximaSesion, PuntoEscala } from "@/lib/queries/hoy";
-import { formatTime } from "@/lib/format";
+import { formatCuantoFalta, formatTime, nombreDelDia } from "@/lib/format";
 
 /**
  * Gráfica de las últimas tomas, en blanco sobre el verde de la tarjeta.
@@ -73,10 +73,10 @@ export function TarjetaProximaSesion({
     return (
       <div className="flex w-full flex-col justify-between gap-4 rounded-3xl bg-surface-muted p-6 lg:w-[500px] lg:shrink-0">
         <div>
-          <p className="text-[17px] font-semibold text-ink">No queda ninguna sesión</p>
+          <p className="text-[17px] font-semibold text-ink">No tienes ninguna cita</p>
           <p className="mt-1.5 text-[13.5px] text-ink-2">
-            Ni hoy ni mañana tienes citas agendadas. Puedes crear una desde la agenda o
-            proponérsela a quien lleva tiempo sin venir.
+            No hay ninguna sesión agendada por delante. Puedes crear una desde la
+            agenda o proponérsela a quien lleva tiempo sin venir.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -88,16 +88,11 @@ export function TarjetaProximaSesion({
     );
   }
 
-  const minutos = Math.round(
-    (new Date(sesion.inicioISO).getTime() - new Date(ahoraISO).getTime()) / 60000,
-  );
-  const insignia = sesion.esDeManana
-    ? "mañana"
-    : minutos <= 0
-      ? "ahora"
-      : minutos < 60
-        ? `en ${minutos} min`
-        : `en ${Math.floor(minutos / 60)} h ${minutos % 60 > 0 ? `${minutos % 60} min` : ""}`.trim();
+  // La sesión puede ser dentro de un rato o dentro de tres semanas, así que el
+  // encabezado nombra el día cuando no es hoy: «a las 17:32» a secas induciría a
+  // pensar que es hoy.
+  const dia = nombreDelDia(sesion.inicioISO, sesion.diasHasta);
+  const insignia = formatCuantoFalta(ahoraISO, sesion.inicioISO, sesion.diasHasta);
 
   return (
     <div
@@ -106,8 +101,7 @@ export function TarjetaProximaSesion({
     >
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-[13.5px]" style={{ color: "var(--accent-on-dark)" }}>
-          {sesion.esDeManana ? "Primera sesión de mañana" : "Siguiente sesión"} a las{" "}
-          {formatTime(sesion.inicioISO)}
+          Siguiente sesión{dia ? ` ${dia}` : ""} a las {formatTime(sesion.inicioISO)}
         </span>
         <span
           className="shrink-0 rounded px-2.5 py-0.5 text-[13.5px] font-semibold"

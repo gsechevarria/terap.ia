@@ -93,8 +93,13 @@ export type ProximaSesion = {
   paciente: string;
   inicioISO: string;
   finISO: string;
-  /** true cuando no queda ninguna hoy y se muestra la primera de mañana. */
-  esDeManana: boolean;
+  /**
+   * Días de calendario que faltan, en hora de Madrid: 0 hoy, 1 mañana, 6 el
+   * mismo día de la semana que viene. Es distancia entre DÍAS, no entre
+   * instantes: una cita a las 09:00 de mañana está «a 1 día» aunque falten
+   * catorce horas, que es como lo diría cualquiera.
+   */
+  diasHasta: number;
   online: boolean;
   videoLink: string | null;
   /** Número de sesión: citas ya atendidas + esta. */
@@ -275,7 +280,7 @@ export async function getPanelDeHoy(
 
   const [
     hoy,
-    manana,
+    proximaRes,
     rangoLargo,
     pacientesRes,
     futurasRes,
@@ -284,7 +289,22 @@ export async function getPanelDeHoy(
     tarifasRes,
   ] = await Promise.all([
     getProfessionalAgendaRange(isoDeYMD(hoyYMD), isoDeYMD(mananaYMD)),
-    getProfessionalAgendaRange(isoDeYMD(mananaYMD), isoDeYMD(formatYMD(addDaysYMD(parseYMD(mananaYMD), 1)))),
+    // La siguiente cita viva, SIN techo: puede ser dentro de un rato o dentro
+    // de tres semanas, y en los dos casos es la que toca enseñar. Antes se
+    // miraba solo hasta mañana y a partir de ahí la tarjeta decía que no
+    // quedaba ninguna sesión, que era falso.
+    checked(
+      supabase
+        .from("appointments")
+        .select(
+          "id, professional_id, patient_id, starts_at, ends_at, status, attendance, video_link, recurrence_freq, recurrence_until, parent_appointment_id, notes, created_at, updated_at, patients(full_name)",
+        )
+        .gt("starts_at", ahora.toISOString())
+        .neq("status", "cancelled")
+        .order("starts_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ),
     // Una sola lectura cubre la ocupación de 12 semanas, las cifras del mes y
     // la franja con más cancelaciones: son ventanas distintas del mismo dato.
     allRows(
@@ -440,10 +460,18 @@ export async function getPanelDeHoy(
   const minutosDeSesion = sesiones.reduce((t, s) => t + Math.max(0, s.hasta - s.desde), 0);
 
   // ---- Próxima sesión -----------------------------------------------------
-  const candidata = primeraFutura ?? manana.appointments.find((a) => a.status !== "cancelled") ?? null;
-  const proxima = candidata
-    ? await detalleProximaSesion(candidata, candidata !== primeraFutura, ahora)
-    : null;
+  // `primeraFutura` sale de la agenda de hoy y es la que la rejilla pinta como
+  // «próxima»; `proximaRes` es la siguiente del calendario entero. Coinciden
+  // siempre que quede algo hoy, y cuando no, la segunda es la buena.
+  const fila = proximaRes.data as
+    | (Omit<AgendaAppointment, "patientName"> & { patients: { full_name: string | null } | null })
+    | null;
+  const candidata: AgendaAppointment | null = primeraFutura
+    ? primeraFutura
+    : fila
+      ? { ...(fila as unknown as AgendaAppointment), patientName: fila.patients?.full_name ?? null }
+      : null;
+  const proxima = candidata ? await detalleProximaSesion(candidata, ahora) : null;
 
   // ---- Semana en curso ----------------------------------------------------
   const largo = rangoLargo.data as {
@@ -703,7 +731,6 @@ function franjaConMasCancelaciones(
  */
 async function detalleProximaSesion(
   cita: AgendaAppointment,
-  esDeManana: boolean,
   ahora: Date,
 ): Promise<ProximaSesion> {
   const supabase = await createClient();
@@ -771,7 +798,7 @@ async function detalleProximaSesion(
     paciente: cita.patientName ?? "Sin nombre",
     inicioISO: cita.starts_at,
     finISO: cita.ends_at,
-    esDeManana,
+    diasHasta: diasEntre(ahora.toISOString(), cita.starts_at),
     online: Boolean(cita.video_link),
     videoLink: cita.video_link,
     numeroSesion: (atendidasRes.count ?? 0) + 1,
