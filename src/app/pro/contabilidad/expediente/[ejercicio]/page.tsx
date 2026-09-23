@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Check, CircleAlert } from "lucide-react";
+import { Check, CircleAlert } from "lucide-react";
 import {
   PASOS,
   esPasoValido,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/queries/expediente";
 import { getConfiguracionFiscal } from "@/lib/queries/contabilidad";
 import { formatCurrency } from "@/lib/format";
+import { NavContabilidad } from "@/app/pro/contabilidad/_components/NavContabilidad";
 import { DescargoFiscal } from "@/app/pro/contabilidad/_components/DescargoFiscal";
 import { DescargaExpediente } from "@/app/pro/contabilidad/_components/DescargaExpediente";
 import { EstadoExpediente } from "@/app/pro/contabilidad/_components/EstadoExpediente";
@@ -63,19 +64,11 @@ export default async function ExpedientePage({
   const estadoInfo = ESTADO_TONO[estado] ?? ESTADO_TONO.borrador!;
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <Link
-        href="/pro/contabilidad"
-        className="inline-flex items-center gap-1.5 text-label-sm text-ink-3 transition-colors hover:text-ink"
-      >
-        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
-        Contabilidad
-      </Link>
-
-      <header className="mt-3 flex flex-wrap items-end justify-between gap-4">
-        <div>
+    <div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="page-title">Expediente fiscal {ejercicio}</h1>
-          <p className="mt-1.5 text-body-sm text-ink-2">
+          <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">
             Recopilación para que su gestor prepare la declaración. La aplicación
             no presenta nada ante la AEAT ni calcula la cuota de la renta.
           </p>
@@ -102,7 +95,11 @@ export default async function ExpedientePage({
         </div>
       </header>
 
-      <div className="mt-5">
+      <div className="mt-[22px]">
+        <NavContabilidad ejercicio={ejercicio} />
+      </div>
+
+      <div className="mt-[22px]">
         <DescargoFiscal />
       </div>
 
@@ -127,7 +124,7 @@ export default async function ExpedientePage({
               {completos} de {PASOS.length}
             </span>
           </p>
-          <ol className="card divide-y divide-line overflow-hidden">
+          <ol className="divide-y divide-line-soft border-y border-line">
             {resumen.pasos.map((p, i) => {
               const activo = p.clave === paso;
               return (
@@ -135,7 +132,7 @@ export default async function ExpedientePage({
                   <Link
                     href={`/pro/contabilidad/expediente/${ejercicio}?paso=${p.clave}`}
                     aria-current={activo ? "step" : undefined}
-                    className={`flex items-start gap-3 px-4 py-3 transition-colors ${
+                    className={`flex items-start gap-3 px-3 py-3 transition-colors ${
                       activo ? "bg-accent-soft" : "hover:bg-surface-2"
                     }`}
                   >

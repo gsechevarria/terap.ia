@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { ArrowLeft, FileSpreadsheet, FileText, FileDown } from "lucide-react";
+import { FileSpreadsheet, FileText, FileDown } from "lucide-react";
 import { DescargoFiscal } from "../_components/DescargoFiscal";
+import { NavContabilidad } from "@/app/pro/contabilidad/_components/NavContabilidad";
 
 export default function ExportarPage() {
   // Ejercicios ofrecidos (fuera del JSX): año actual y dos anteriores.
@@ -8,22 +8,19 @@ export default function ExportarPage() {
   const ejercicios = [y, y - 1, y - 2];
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Link
-        href="/pro/contabilidad"
-        className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 transition-colors hover:text-ink"
-      >
-        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
-        Contabilidad
-      </Link>
-      <h1 className="page-title mt-3">Exportar</h1>
-      <p className="mt-1.5 text-[13.5px] text-ink-2">
+    <div>
+      <h1 className="page-title">Exportar</h1>
+      <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">
         Genera los libros registro y el resumen del periodo para tu gestor.
       </p>
 
-      <DescargoFiscal className="mt-5" />
+      <div className="mt-[22px]">
+        <NavContabilidad ejercicio={y} />
+      </div>
 
-      <form method="get" action="/pro/contabilidad/export" className="mt-7">
+      <DescargoFiscal className="mt-[22px]" />
+
+      <form method="get" action="/pro/contabilidad/export" className="mt-7 max-w-2xl">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="field-label">Ejercicio</span>

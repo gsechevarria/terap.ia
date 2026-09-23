@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import {
   getConfiguracionFiscal,
   getPendientesRevisionFiscal,
@@ -7,6 +7,8 @@ import {
 import { formatCurrency, formatDate } from "@/lib/format";
 import { DescargoFiscal } from "@/app/pro/contabilidad/_components/DescargoFiscal";
 import { RevisionCobros } from "@/app/pro/contabilidad/_components/RevisionCobros";
+import { NavContabilidad } from "@/app/pro/contabilidad/_components/NavContabilidad";
+import { trimestreActual } from "@/lib/fiscal";
 
 /**
  * Revisión fiscal pendiente.
@@ -25,25 +27,22 @@ export default async function RevisionFiscalPage() {
 
   const total =
     pendientes.cobros.length + pendientes.gastos.length + pendientes.bienes.length;
+  const { anio } = trimestreActual(new Date());
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <Link
-        href="/pro/contabilidad"
-        className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 transition-colors hover:text-ink"
-      >
-        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
-        Contabilidad
-      </Link>
-
-      <h1 className="page-title mt-3">Revisión fiscal pendiente</h1>
-      <p className="mt-1.5 text-[13.5px] text-ink-2">
+    <div>
+      <h1 className="page-title">Revisión fiscal pendiente</h1>
+      <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">
         Mientras queden registros sin tratamiento fiscal confirmado, el resumen y
         la exportación no se calculan. No es un fallo: es que no se reconstruye el
         pasado con la configuración de hoy sin que alguien lo confirme.
       </p>
 
-      <DescargoFiscal className="mt-5" />
+      <div className="mt-[22px]">
+        <NavContabilidad ejercicio={anio} />
+      </div>
+
+      <DescargoFiscal className="mt-[22px]" />
 
       {total === 0 ? (
         <div className="mt-8 flex items-start gap-3">
@@ -79,8 +78,8 @@ export default async function RevisionFiscalPage() {
             descripcion="Se confirman abriendo cada gasto y guardándolo: al hacerlo se aplica el porcentaje que corresponde a su situación de IVA."
             accion={{ href: "/pro/contabilidad/gastos", texto: "Ir a gastos" }}
           >
-            <div className="table-wrap">
-              <table className="table-base">
+            <div className="overflow-x-auto">
+              <table className="table-base table-plain">
                 <thead>
                   <tr>
                     <th>Concepto</th>
@@ -109,8 +108,8 @@ export default async function RevisionFiscalPage() {
             descripcion="Se confirman volviendo a guardar su gasto de origen, que recalcula el valor de adquisición con la fórmula real. Ese valor puede cambiar: anote el actual antes."
             accion={{ href: "/pro/contabilidad/gastos", texto: "Ir a gastos" }}
           >
-            <div className="table-wrap">
-              <table className="table-base">
+            <div className="overflow-x-auto">
+              <table className="table-base table-plain">
                 <thead>
                   <tr>
                     <th>Descripción</th>
