@@ -360,6 +360,16 @@ y julio quedaba al lado de septiembre. Tabla de detalle sin caja, y
 «Septiembre de 2026» en vez del «Septiembre De 2026» que daba `capitalize`.
 `BarChart` sigue en Analítica y en el histórico.
 
+**Contabilidad, igual.** Pestañas comunes del módulo (`NavContabilidad`:
+Resumen, Gastos, Revisión, Expediente anual, Exportar, Configuración) bajo el
+título de cada pantalla, en vez de cinco botones en la cabecera del resumen y
+un «← Contabilidad» en cada subpantalla. Van en cada página y no en un
+`layout` para que el `h1` siga siendo lo primero. Anchura completa en listas;
+los formularios conservan su ancho, alineados a la izquierda. Los avisos del
+resumen se agrupan en una sola franja. Nueva variante **`.table-plain`** (con
+`.table-base`, sin `.table-wrap`): tabla sin caja, la de «Hoy». Las tarjetas
+del asistente del expediente (facturas, retenciones, checklist) se quedan.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a

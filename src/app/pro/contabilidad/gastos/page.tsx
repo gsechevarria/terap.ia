@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import {
   getGastos,
   getBienesInversion,
@@ -10,6 +8,8 @@ import type { SituacionIva } from "@/lib/fiscal";
 import { GastoForm } from "../_components/GastoForm";
 import { GastosTable } from "../_components/GastosTable";
 import { DescargoFiscal } from "../_components/DescargoFiscal";
+import { NavContabilidad } from "@/app/pro/contabilidad/_components/NavContabilidad";
+import { trimestreActual } from "@/lib/fiscal";
 
 export default async function GastosPage() {
   const [gastos, bienes, cfg] = await Promise.all([
@@ -18,25 +18,25 @@ export default async function GastosPage() {
     getConfiguracionFiscal(),
   ]);
   const situacionIva = (cfg?.situacion_iva as SituacionIva) ?? "exenta";
+  const { anio } = trimestreActual(new Date());
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <Link
-        href="/pro/contabilidad"
-        className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 transition-colors hover:text-ink"
-      >
-        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
-        Contabilidad
-      </Link>
-      <h1 className="page-title mt-3">Gastos deducibles</h1>
-      <p className="mt-1.5 text-[13.5px] text-ink-2">
+    <div>
+      <h1 className="page-title">Gastos deducibles</h1>
+      <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">
         Registra tus gastos con su justificante. El % de afectación ajusta la
         parte deducible.
       </p>
 
-      <DescargoFiscal className="mt-5" />
+      <div className="mt-[22px]">
+        <NavContabilidad ejercicio={anio} />
+      </div>
 
-      <div className="mt-7">
+      <DescargoFiscal className="mt-[22px]" />
+
+      {/* El formulario conserva su ancho de lectura; la tabla, debajo, usa la
+          hoja entera, que es donde las columnas lo aprovechan. */}
+      <div className="mt-7 max-w-4xl">
         <GastoForm />
       </div>
 
@@ -58,8 +58,8 @@ export default async function GastosPage() {
             Bienes de inversión{" "}
             <span className="font-normal text-ink-4">{bienes.length}</span>
           </h2>
-          <div className="table-wrap overflow-x-auto">
-            <table className="table-base">
+          <div className="overflow-x-auto">
+            <table className="table-base table-plain">
               <thead>
                 <tr>
                   <th>Descripción</th>

@@ -76,8 +76,8 @@ export function GastosTable({
   }
 
   return (
-    <div className="table-wrap overflow-x-auto">
-      <table className="table-base">
+    <div className="overflow-x-auto">
+      <table className="table-base table-plain">
         <thead>
           <tr>
             <th>Fecha</th>

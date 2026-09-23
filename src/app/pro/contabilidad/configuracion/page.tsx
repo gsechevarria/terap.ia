@@ -1,33 +1,30 @@
 import { ActionForm } from "@/components/ui/ActionForm";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { getConfiguracionFiscal } from "@/lib/queries/contabilidad";
 import { upsertConfiguracionFiscalAction } from "@/lib/actions/contabilidad";
-import { REGIMEN_LABEL, SITUACION_IVA_LABEL } from "@/lib/fiscal";
+import { REGIMEN_LABEL, SITUACION_IVA_LABEL, trimestreActual } from "@/lib/fiscal";
 import { DescargoFiscal } from "../_components/DescargoFiscal";
+import { NavContabilidad } from "@/app/pro/contabilidad/_components/NavContabilidad";
 
 export default async function ConfiguracionFiscalPage() {
   const cfg = await getConfiguracionFiscal();
+  const { anio } = trimestreActual(new Date());
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Link
-        href="/pro/contabilidad"
-        className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 transition-colors hover:text-ink"
-      >
-        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
-        Contabilidad
-      </Link>
-      <h1 className="page-title mt-3">Configuración fiscal</h1>
-      <p className="mt-1.5 text-[13.5px] text-ink-2">
+    <div>
+      <h1 className="page-title">Configuración fiscal</h1>
+      <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">
         Estos datos ajustan las estimaciones. No se envían a ningún organismo.
       </p>
 
-      <DescargoFiscal className="mt-5" />
+      <div className="mt-[22px]">
+        <NavContabilidad ejercicio={anio} />
+      </div>
+
+      <DescargoFiscal className="mt-[22px]" />
 
       {/* Formulario largo: se agrupa con títulos y líneas, no metiendo cada
           grupo en su propia tarjeta. */}
-      <ActionForm action={upsertConfiguracionFiscalAction} className="mt-7">
+      <ActionForm action={upsertConfiguracionFiscalAction} className="mt-7 max-w-2xl">
         <section>
           <h2 className="section-title">Régimen e IVA</h2>
           <div className="mt-4 flex flex-col gap-4">

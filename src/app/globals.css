@@ -541,6 +541,26 @@ body {
   .table-base tbody tr:last-child td {
     border-bottom: 0;
   }
+  /* Variante sin caja, la de las tablas de «Hoy»: va directamente sobre la
+     hoja, sin `.table-wrap` alrededor ni cabecera tintada. `--line` bajo la
+     cabecera, `--line-soft` entre filas —también bajo la última, que es lo que
+     cierra la tabla cuando no hay contenedor— y sin sangría en los extremos,
+     para que la primera columna quede alineada con el título de la sección. */
+  .table-plain th {
+    @apply font-normal;
+    background: transparent;
+  }
+  .table-plain th:first-child,
+  .table-plain td:first-child {
+    @apply pl-0;
+  }
+  .table-plain th:last-child,
+  .table-plain td:last-child {
+    @apply pr-0;
+  }
+  .table-plain tbody tr:last-child td {
+    border-bottom: 1px solid var(--line-soft);
+  }
 
   /* ---- Modal -----------------------------------------------------------
      Radio 12, borde y velo. Sin sombra pesada. */

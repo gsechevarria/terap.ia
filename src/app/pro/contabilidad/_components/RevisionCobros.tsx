@@ -95,8 +95,8 @@ export function RevisionCobros({
         </p>
       )}
 
-      <div className="table-wrap mt-3">
-        <table className="table-base">
+      <div className="mt-3 overflow-x-auto">
+        <table className="table-base table-plain">
           <thead>
             <tr>
               <th>Pagador</th>
