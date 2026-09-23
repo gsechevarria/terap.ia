@@ -353,6 +353,20 @@ Anotado para que no se confunda con un olvido:
   ninguna regla que compare la hora de cancelación con la de la cita, así que el
   rótulo dice «que marcaste como tardías».
 
+### Una desviación pedida a propósito
+
+La maqueta acota la tarjeta de próxima sesión a «hoy o, si no queda ninguna, la
+primera de mañana». **Se amplió a la siguiente cita sea cuando sea**, por
+petición expresa del 23-sep: en una consulta con hueco, decir «no queda ninguna
+sesión» cuando la hay dentro de tres días es sencillamente falso, y el estado
+vacío dejaba de significar «no tienes nada» para significar «no tienes nada en
+48 horas».
+
+El encabezado nombra el día en cuanto no es hoy —«mañana», «el lunes», «el 14 de
+octubre»— y la insignia pasa a contar en días a partir del día siguiente, porque
+«en 31 h 12 min» obliga a hacer la cuenta para saber que es mañana. Las reglas
+están en `nombreDelDia` y `formatCuantoFalta` (`src/lib/format.ts`), con pruebas.
+
 ---
 
 ## Revisión de la implantación (22-sep-2026)
