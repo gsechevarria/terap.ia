@@ -76,23 +76,28 @@ export function ResourcesPanel({
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="card bg-panel p-4">
-        <h3 className="section-label">Compartir un enlace</h3>
-        <div className="mt-3 flex flex-col gap-2">
-          <input
-            value={linkTitle}
-            onChange={(e) => setLinkTitle(e.target.value)}
-            placeholder="Título"
-            className="field"
-          />
-          <input
-            value={linkUrl}
-            onChange={(e) => setLinkUrl(e.target.value)}
-            placeholder="https://…"
-            className="field"
-          />
-          <label className="flex items-center gap-2 text-sm text-ink-2">
+    <div className="flex flex-col gap-8">
+      <section>
+        <h2 className="section-title mb-3.5">Compartir un enlace</h2>
+        <div className="flex max-w-xl flex-col gap-3">
+          <label className="block">
+            <span className="field-label">Título</span>
+            <input
+              value={linkTitle}
+              onChange={(e) => setLinkTitle(e.target.value)}
+              className="field"
+            />
+          </label>
+          <label className="block">
+            <span className="field-label">Dirección</span>
+            <input
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://…"
+              className="field"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-[13.5px] text-ink-2">
             <input
               type="checkbox"
               checked={linkShared}
@@ -110,27 +115,35 @@ export function ResourcesPanel({
             Añadir enlace
           </button>
         </div>
-      </div>
+      </section>
 
-      <div className="card bg-panel p-4">
-        <h3 className="section-label">Subir archivo (PDF / audio)</h3>
-        <div className="mt-3 flex flex-col gap-2">
-          <input
-            value={fileTitle}
-            onChange={(e) => setFileTitle(e.target.value)}
-            placeholder="Título"
-            className="field"
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={fileKind}
-              onChange={(e) => setFileKind(e.target.value as "pdf" | "audio")}
-              className="field w-auto"
-            >
-              <option value="pdf">PDF</option>
-              <option value="audio">Audio</option>
-            </select>
-            <input ref={fileRef} type="file" className="text-sm text-ink-2" />
+      <section className="border-t border-line pt-7">
+        <h2 className="section-title mb-3.5">Subir un archivo</h2>
+        <div className="flex max-w-xl flex-col gap-3">
+          <label className="block">
+            <span className="field-label">Título</span>
+            <input
+              value={fileTitle}
+              onChange={(e) => setFileTitle(e.target.value)}
+              className="field"
+            />
+          </label>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="block">
+              <span className="field-label">Tipo</span>
+              <select
+                value={fileKind}
+                onChange={(e) => setFileKind(e.target.value as "pdf" | "audio")}
+                className="field w-auto"
+              >
+                <option value="pdf">PDF</option>
+                <option value="audio">Audio</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="field-label">Archivo</span>
+              <input ref={fileRef} type="file" className="text-[13px] text-ink-2" />
+            </label>
             <button
               type="button"
               onClick={addFile}
@@ -140,59 +153,65 @@ export function ResourcesPanel({
               Subir
             </button>
           </div>
-          <p className="text-xs text-ink-3">
+          <p className="text-[12.5px] text-ink-3">
             Los archivos se asocian a este paciente.
           </p>
         </div>
-      </div>
+      </section>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <p className="text-[13px] text-danger">{error}</p>}
 
-      {resources.length === 0 ? (
-        <p className="text-sm text-ink-2">Sin recursos.</p>
-      ) : (
-        <ul className="card divide-y divide-line">
-          {resources.map((r) => (
-            <li
-              key={r.id}
-              className="group flex items-center justify-between px-4 py-3 text-sm"
-            >
-              <div className="min-w-0">
-                <span className="font-medium">{r.title}</span>
-                <span className="chip ml-2">{r.kind}</span>
-                {r.patient_id === null && <span className="chip ml-1">general</span>}
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                {r.kind === "link" && r.url ? (
-                  <a
-                    href={r.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-accent hover:underline"
+      <section className="border-t border-line pt-7">
+        <h2 className="section-title mb-1">Recursos compartidos</h2>
+        {resources.length === 0 ? (
+          <p className="py-3 text-[13.5px] text-ink-3">
+            Todavía no has compartido nada. Añade un enlace o sube un archivo
+            arriba.
+          </p>
+        ) : (
+          <ul>
+            {resources.map((r) => (
+              <li
+                key={r.id}
+                className="group flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-line-soft py-3.5 last:border-b-0"
+              >
+                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-[13.5px] font-medium">{r.title}</span>
+                  <span className="chip">{r.kind}</span>
+                  {r.patient_id === null && <span className="chip">general</span>}
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  {r.kind === "link" && r.url ? (
+                    <a
+                      href={r.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] font-medium text-accent hover:underline"
+                    >
+                      Abrir
+                    </a>
+                  ) : r.storage_path ? (
+                    <a
+                      href={`/files?path=${encodeURIComponent(r.storage_path)}`}
+                      className="text-[13px] font-medium text-accent hover:underline"
+                    >
+                      Descargar
+                    </a>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => run(() => callAction(deleteResourceAction, r.id, patientId))}
+                    disabled={pending}
+                    className="btn-danger btn-sm opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                   >
-                    Abrir
-                  </a>
-                ) : r.storage_path ? (
-                  <a
-                    href={`/files?path=${encodeURIComponent(r.storage_path)}`}
-                    className="text-sm font-medium text-accent hover:underline"
-                  >
-                    Descargar
-                  </a>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => run(() => callAction(deleteResourceAction, r.id, patientId))}
-                  disabled={pending}
-                  className="btn-danger btn-sm opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+                    Eliminar
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

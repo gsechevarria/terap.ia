@@ -50,11 +50,11 @@ export default async function ContabilidadPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div>
           <h1 className="page-title">Contabilidad</h1>
-          <p className="mt-1 text-sm text-ink-2">
-            Resumen fiscal orientativo · Ejercicio {anio}
+          <p className="mt-1.5 text-[13.5px] text-ink-2">
+            Resumen fiscal orientativo del ejercicio {anio}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -76,15 +76,15 @@ export default async function ContabilidadPage() {
         </div>
       </div>
 
-      <DescargoFiscal className="mt-4" />
+      <DescargoFiscal className="mt-5" />
 
       {totalExcluidos > 0 && (
-        <div className="mt-3 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-2xl border border-warn/30 bg-warn-soft px-4 py-3 text-[13px] text-ink">
+        <div className="mt-3 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-md border border-warning-line bg-warning-soft px-4 py-3 text-[13px] text-ink">
           <TriangleAlert
             size={16}
             strokeWidth={1.75}
             aria-hidden
-            className="mt-0.5 shrink-0 text-warn"
+            className="mt-0.5 shrink-0 text-warning-ink"
           />
           <p className="min-w-0 flex-1">
             <span className="font-semibold">
@@ -103,19 +103,32 @@ export default async function ContabilidadPage() {
       )}
 
       {!hayParamsExactos(anio) && (
-        <p className="mt-3 flex items-start gap-2 rounded-2xl border border-warn-soft bg-warn-soft px-3 py-2 text-xs text-warn">
-          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          No hay parámetros fiscales confirmados para {anio}; se usan los del
-          último ejercicio disponible. Verifica las cifras con tu asesor.
+        <p className="mt-3 flex items-start gap-2.5 rounded-md border border-warning-line bg-warning-soft px-4 py-3 text-[13px] text-ink">
+          <TriangleAlert
+            size={16}
+            strokeWidth={1.75}
+            aria-hidden
+            className="mt-0.5 shrink-0 text-warning-ink"
+          />
+          <span>
+            No hay parámetros fiscales confirmados para {anio}; se usan los del
+            último ejercicio disponible. Verifica las cifras con tu asesor.
+          </span>
         </p>
       )}
 
       {alertas.length > 0 && (
-        <div className="mt-3 rounded-lg border border-warn-soft bg-warn-soft px-4 py-3">
-          <p className="flex items-center gap-2 text-sm font-medium text-warn">
-            <CalendarClock className="size-4" aria-hidden /> Vencimientos próximos
+        <div className="mt-3 rounded-md border border-warning-line bg-warning-soft px-4 py-3">
+          <p className="flex items-center gap-2 text-[13.5px] font-semibold text-ink">
+            <CalendarClock
+              size={16}
+              strokeWidth={1.75}
+              aria-hidden
+              className="text-warning-ink"
+            />
+            Vencimientos próximos
           </p>
-          <ul className="mt-1.5 space-y-0.5 text-sm text-ink-2">
+          <ul className="mt-1.5 space-y-0.5 text-[13px] text-ink-2">
             {alertas.map((a) => (
               <li key={`${a.modelo}-${a.ejercicio}-${a.trimestre ?? "r"}`}>
                 {a.etiqueta} — {fmtYMD(a.fechaLimiteYMD)}{" "}
@@ -128,69 +141,71 @@ export default async function ContabilidadPage() {
         </div>
       )}
 
-      {/* Estimación del trimestre actual */}
-      <section className="card mt-6 p-5">
-        <div className="section-label">
-          Pago fraccionado estimado · Modelo 130 · {trimestre}T {anio}
-        </div>
-        <div className="mt-1 text-4xl font-semibold tracking-[-0.02em]">
-          {formatEur(q.pagoTrimestre)}
-        </div>
-        <p className="mt-1 text-xs text-ink-3">
+      {/* La cifra que se viene a ver, sin caja alrededor: la jerarquía la hace
+          su tamaño, no un borde. */}
+      <section className="mt-8">
+        <p className="section-label">
+          Pago fraccionado estimado del {trimestre}T {anio}, modelo 130
+        </p>
+        <p className="figure mono mt-1.5">{formatEur(q.pagoTrimestre)}</p>
+        <p className="mt-1 text-[12.5px] text-ink-3">
           Estimación acumulada del 1 ene al fin del {trimestre}T. Orientativa.
         </p>
-        <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-          <Dato label="Ingresos acum." value={formatEur(q.ingresosAcumulados)} />
+        <dl className="mt-5 grid grid-cols-2 gap-x-7 gap-y-4 sm:grid-cols-4">
+          <Dato label="Ingresos acumulados" value={formatEur(q.ingresosAcumulados)} />
           <Dato label="Gastos deducibles" value={formatEur(q.gastosDeduciblesAcumulados)} />
           <Dato label="Rendimiento neto" value={formatEur(q.rendimientoNeto)} />
           <Dato label="Retenciones" value={formatEur(q.retencionesAcumuladas)} />
         </dl>
       </section>
 
-      {/* Ingresos vs gastos + próximo vencimiento */}
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
-        <Tile label="Ingresos del año" value={formatEur(resumen.ingresosTotales)} />
-        <Tile
-          label="Gastos deducibles"
-          value={formatEur(resumen.gastosDeduciblesTotales)}
-          hint={`${formatEur(resumen.amortizacionesTotales)} en amortizaciones`}
-        />
-        <Tile
-          label="Rendimiento neto (año)"
-          value={formatEur(resumen.rendimientoNeto)}
-        />
-      </div>
+      {/* Tres cifras del año, no tres tarjetas iguales en mosaico. */}
+      <section className="mt-7 border-t border-line pt-6">
+        <h2 className="section-title">Resumen del ejercicio</h2>
+        <div className="mt-4 grid gap-x-7 gap-y-5 sm:grid-cols-3">
+          <Cifra label="Ingresos del año" value={formatEur(resumen.ingresosTotales)} />
+          <Cifra
+            label="Gastos deducibles"
+            value={formatEur(resumen.gastosDeduciblesTotales)}
+            hint={`${formatEur(resumen.amortizacionesTotales)} en amortizaciones`}
+          />
+          <Cifra
+            label="Rendimiento neto del año"
+            value={formatEur(resumen.rendimientoNeto)}
+          />
+        </div>
+      </section>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <section className="card p-4">
-          <div className="section-label mb-2">Próximo vencimiento</div>
+      <div className="mt-7 grid gap-x-10 gap-y-7 border-t border-line pt-6 md:grid-cols-2">
+        <section>
+          <h2 className="section-title">Próximo vencimiento</h2>
           {prox ? (
-            <div>
-              <p className="text-sm font-medium">{prox.etiqueta}</p>
-              <p className="mt-0.5 text-sm text-ink-2">
-                {fmtYMD(prox.fechaLimiteYMD)} ·{" "}
+            <div className="mt-2">
+              <p className="text-[13.5px] font-medium text-ink">{prox.etiqueta}</p>
+              <p className="mt-0.5 text-[13px] text-ink-2">
+                {fmtYMD(prox.fechaLimiteYMD)},{" "}
                 {prox.diasRestantes === 0
                   ? "vence hoy"
                   : `en ${prox.diasRestantes} días`}
               </p>
             </div>
           ) : (
-            <p className="text-sm text-ink-2">Sin vencimientos próximos.</p>
+            <p className="mt-2 text-[13px] text-ink-2">Sin vencimientos próximos.</p>
           )}
         </section>
 
-        <section className="card p-4">
-          <div className="section-label mb-2">Pagos fraccionados del año</div>
-          <ul className="space-y-1 text-sm">
+        <section>
+          <h2 className="section-title">Pagos fraccionados del año</h2>
+          <ul className="mt-2 text-[13.5px]">
             {resumen.trimestres.map((t) => (
               <li
                 key={t.trimestre}
-                className={`flex justify-between ${
-                  t.trimestre === trimestre ? "font-medium" : "text-ink-2"
+                className={`flex justify-between border-b border-line-soft py-1.5 last:border-b-0 ${
+                  t.trimestre === trimestre ? "font-semibold text-ink" : "text-ink-2"
                 }`}
               >
                 <span>{t.trimestre}T</span>
-                <span className="tabular-nums">{formatEur(t.pagoTrimestre)}</span>
+                <span className="mono">{formatEur(t.pagoTrimestre)}</span>
               </li>
             ))}
           </ul>
@@ -198,13 +213,19 @@ export default async function ContabilidadPage() {
       </div>
 
       {sinDatos && (
-        <p className="mt-6 rounded-lg border border-dashed border-line p-8 text-center text-sm text-ink-2">
+        <p className="empty mt-7">
           Aún no hay datos de este ejercicio. Empieza por{" "}
-          <Link href="/pro/contabilidad/configuracion" className="text-accent hover:underline">
+          <Link
+            href="/pro/contabilidad/configuracion"
+            className="font-medium text-accent hover:underline"
+          >
             configurar tu perfil fiscal
           </Link>{" "}
           y{" "}
-          <Link href="/pro/contabilidad/gastos" className="text-accent hover:underline">
+          <Link
+            href="/pro/contabilidad/gastos"
+            className="font-medium text-accent hover:underline"
+          >
             registrar tus gastos
           </Link>
           .
@@ -217,13 +238,13 @@ export default async function ContabilidadPage() {
 function Dato({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs text-ink-3">{label}</dt>
-      <dd className="tabular-nums font-medium">{value}</dd>
+      <dt className="text-[12.5px] text-ink-3">{label}</dt>
+      <dd className="mono mt-0.5 text-[15px] font-medium text-ink">{value}</dd>
     </div>
   );
 }
 
-function Tile({
+function Cifra({
   label,
   value,
   hint,
@@ -233,14 +254,12 @@ function Tile({
   hint?: string;
 }) {
   return (
-    <div className="card px-4 py-3">
-      <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-        {label}
-      </div>
-      <div className="mt-0.5 text-xl font-semibold tracking-[-0.01em] tabular-nums">
+    <div>
+      <div className="text-[13px] text-ink-3">{label}</div>
+      <div className="mono mt-1 text-[22px] font-semibold tracking-[-0.02em] text-ink">
         {value}
       </div>
-      {hint && <div className="text-xs text-ink-3">{hint}</div>}
+      {hint && <div className="mt-0.5 text-[12.5px] text-ink-2">{hint}</div>}
     </div>
   );
 }

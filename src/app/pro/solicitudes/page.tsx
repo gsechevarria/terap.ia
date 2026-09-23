@@ -10,11 +10,11 @@ export default async function SolicitudesPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <header className="mb-6">
+    <div className="mx-auto flex max-w-3xl flex-col gap-7">
+      <header>
         <h1 className="page-title">Solicitudes</h1>
-        <p className="mt-1 text-sm text-ink-2">
-          Lo que sus pacientes piden desde su aplicación. Nada entra en su agenda
+        <p className="mt-3 max-w-[520px] text-body-lg text-ink-2">
+          Lo que tus pacientes piden desde su aplicación. Nada entra en tu agenda
           sin que lo aceptes.
         </p>
       </header>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   getProfessionalPayments,
   PAYMENT_METHOD_FILTERS,
@@ -127,45 +128,41 @@ export default async function PaymentsHistoryPage({
           : "";
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <Link href="/pro/pagos" className="text-sm text-ink-3 hover:text-ink">
-        ← Pagos
-      </Link>
-      <div className="mt-3 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Histórico de pagos</h1>
-          <p className="mt-1 text-sm text-ink-2">
-            {total} {total === 1 ? "pago" : "pagos"}
-            {rangeLabel ? ` · ${rangeLabel}` : ""}
-          </p>
+    <div className="flex flex-col gap-[22px]">
+      <div>
+        <Link
+          href="/pro/pagos"
+          className="inline-flex items-center gap-1 text-[13px] text-ink-3 hover:text-ink"
+        >
+          <ChevronLeft size={15} strokeWidth={1.8} aria-hidden />
+          Pagos
+        </Link>
+        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="page-title">Histórico de pagos</h1>
+            <p className="mt-1.5 text-[13.5px] text-ink-2">
+              {total} {total === 1 ? "pago" : "pagos"}
+              {rangeLabel ? `, ${rangeLabel}` : ""}
+            </p>
+          </div>
+          <a href={exportHref} className="btn-ghost">
+            Exportar CSV
+          </a>
         </div>
-        <a href={exportHref} className="btn-ghost">
-          Exportar CSV
-        </a>
       </div>
 
-      {/* Presets rápidos de rango (GET, sin JS) */}
-      <div className="mt-5 flex flex-wrap items-center gap-1.5">
+      {/* Presets rápidos de rango (GET, sin JS). */}
+      <div className="segmented flex-wrap" role="group" aria-label="Rango de fechas">
         {presets.map((p) => (
-          <Link
-            key={p.key}
-            href={p.href}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150 ${
-              p.active
-                ? "bg-accent-soft text-accent"
-                : "bg-panel text-ink-2 hover:bg-wash-2 hover:text-ink"
-            }`}
-          >
+          <Link key={p.key} href={p.href} aria-current={p.active ? "true" : undefined}>
             {p.label}
           </Link>
         ))}
       </div>
 
-      {/* Filtros (GET, sin JS) */}
-      <form
-        method="get"
-        className="mt-2.5 flex flex-wrap items-end gap-2 rounded-lg bg-panel p-3"
-      >
+      {/* Filtros (GET, sin JS). Bloque tintado sin borde: agrupa los controles
+          sin añadir otra caja con línea a una pantalla que ya trae tabla. */}
+      <form method="get" className="tinted flex flex-wrap items-end gap-2.5 p-4">
         <label className="block">
           <span className="field-label">Desde</span>
           <input
@@ -230,61 +227,65 @@ export default async function PaymentsHistoryPage({
         )}
       </form>
 
-      {/* Resumen del conjunto filtrado */}
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Tile
-          label="Cobrado"
-          value={formatCurrency(history.totalPaidCents)}
-          hint={`${history.paidCount} ${history.paidCount === 1 ? "pago" : "pagos"}`}
+      {/* Resumen del conjunto filtrado: cifras sin caja. */}
+      <section className="grid grid-cols-1 gap-x-7 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Cifra
+          rotulo="Cobrado"
+          valor={formatCurrency(history.totalPaidCents)}
+          pie={`${history.paidCount} ${history.paidCount === 1 ? "pago" : "pagos"}`}
         />
-        <Tile
-          label="Pendiente"
-          value={formatCurrency(history.totalPendingCents)}
-          hint={`${history.pendingCount} ${history.pendingCount === 1 ? "pago" : "pagos"}`}
-          tone="warn"
+        <Cifra
+          rotulo="Pendiente"
+          valor={formatCurrency(history.totalPendingCents)}
+          pie={`${history.pendingCount} ${history.pendingCount === 1 ? "pago" : "pagos"}`}
         />
-        <Tile
-          label="Nº de pagos"
-          value={String(total)}
-        />
-        <Tile
-          label="Importe medio"
-          value={
+        <Cifra rotulo="Pagos en total" valor={String(total)} pie="con estos filtros" />
+        <Cifra
+          rotulo="Importe medio"
+          valor={
             history.paidCount > 0
               ? formatCurrency(Math.round(history.totalPaidCents / history.paidCount))
               : "—"
           }
-          hint="por pago cobrado"
+          pie="por pago cobrado"
         />
-      </div>
+      </section>
 
-      {/* Analítica: ingresos por mes + reparto por método */}
+      {/* Analítica: ingresos por mes + reparto por método. */}
       {history.byMonth.length > 0 && (
-        <div className="mt-6 grid gap-4 md:grid-cols-5">
-          <section className="card p-4 md:col-span-3">
-            <h2 className="section-label mb-3">Ingresos por mes</h2>
-            <BarChart
-              ariaLabel="Ingresos por mes"
-              valueLabel={(n) => formatCurrency(n)}
-              data={[...history.byMonth]
-                .reverse()
-                .map((m) => ({ label: monthLabel(m.month), value: m.paidCents }))}
-            />
+        <div className="flex flex-col gap-8 border-t border-line pt-[22px] lg:flex-row">
+          <section className="min-w-0 flex-1">
+            <h2 className="section-title">Ingresos por mes</h2>
+            <p className="mt-0.5 text-[13px] text-ink-3">
+              Solo lo que consta como cobrado.
+            </p>
+            <div className="mt-4">
+              <BarChart
+                ariaLabel="Ingresos por mes"
+                valueLabel={(n) => formatCurrency(n)}
+                data={[...history.byMonth]
+                  .reverse()
+                  .map((m) => ({ label: monthLabel(m.month), value: m.paidCents }))}
+              />
+            </div>
           </section>
-          <section className="card p-4 md:col-span-2">
-            <h2 className="section-label mb-3">Cobrado por método</h2>
-            <MethodBreakdown rows={history.byMethod} />
+          <section className="w-full lg:w-[300px] lg:shrink-0">
+            <h2 className="section-title">Cobrado por método</h2>
+            <div className="mt-4">
+              <MethodBreakdown rows={history.byMethod} />
+            </div>
           </section>
         </div>
       )}
 
       {/* Listado */}
       {pageRows.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-line p-8 text-center text-sm text-ink-2">
-          No hay pagos con estos filtros.
+        <p className="empty">
+          Ningún pago cuadra con estos filtros. Amplía el rango de fechas o
+          quítalos con «Limpiar».
         </p>
       ) : (
-        <div className="card mt-5 overflow-x-auto">
+        <div className="table-wrap overflow-x-auto">
           <table className="table-base">
             <thead>
               <tr>
@@ -298,19 +299,19 @@ export default async function PaymentsHistoryPage({
             </thead>
             <tbody>
               {pageRows.map((p) => (
-                <tr key={p.id} className="row-hover last:[&>td]:border-b-0">
-                  <td className="whitespace-nowrap">
+                <tr key={p.id} className="row-hover">
+                  <td className="whitespace-nowrap text-ink-2">
                     {formatDate(p.paid_at ?? p.created_at)}
                   </td>
                   <td>
                     <Link
                       href={`/pro/patients/${p.patient_id}?tab=pagos`}
-                      className="font-medium hover:underline"
+                      className="font-medium hover:text-accent"
                     >
                       {p.patientName ?? "Sin nombre"}
                     </Link>
                   </td>
-                  <td className="text-right tabular-nums whitespace-nowrap font-medium">
+                  <td className="mono text-right font-medium whitespace-nowrap">
                     {formatCurrency(p.amount_cents, p.currency)}
                   </td>
                   <td className="text-ink-2">
@@ -335,39 +336,35 @@ export default async function PaymentsHistoryPage({
 
       {/* Paginación */}
       {total > 0 && (
-        <div className="mt-4 flex items-center justify-between gap-4">
-          <p className="text-xs text-ink-3">
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-[12.5px] text-ink-4">
             {firstRow}–{lastRow} de {total}
           </p>
           {totalPages > 1 && (
             <div className="flex items-center gap-1.5">
               {safePage > 1 ? (
-                <Link
-                  href={pageHref(safePage - 1)}
-                  className="btn-ghost btn-sm"
-                  rel="prev"
-                >
-                  ← Anterior
+                <Link href={pageHref(safePage - 1)} className="btn-ghost btn-sm" rel="prev">
+                  <ChevronLeft size={15} strokeWidth={1.8} aria-hidden />
+                  Anterior
                 </Link>
               ) : (
                 <span className="btn-ghost btn-sm cursor-not-allowed opacity-45">
-                  ← Anterior
+                  <ChevronLeft size={15} strokeWidth={1.8} aria-hidden />
+                  Anterior
                 </span>
               )}
-              <span className="px-1 text-xs text-ink-2">
+              <span className="px-1 text-[12.5px] text-ink-2">
                 Página {safePage} de {totalPages}
               </span>
               {safePage < totalPages ? (
-                <Link
-                  href={pageHref(safePage + 1)}
-                  className="btn-ghost btn-sm"
-                  rel="next"
-                >
-                  Siguiente →
+                <Link href={pageHref(safePage + 1)} className="btn-ghost btn-sm" rel="next">
+                  Siguiente
+                  <ChevronRight size={15} strokeWidth={1.8} aria-hidden />
                 </Link>
               ) : (
                 <span className="btn-ghost btn-sm cursor-not-allowed opacity-45">
-                  Siguiente →
+                  Siguiente
+                  <ChevronRight size={15} strokeWidth={1.8} aria-hidden />
                 </span>
               )}
             </div>
@@ -375,37 +372,28 @@ export default async function PaymentsHistoryPage({
         </div>
       )}
 
-      <p className="mt-8 text-xs text-ink-3">
+      <p className="text-[12.5px] text-ink-4">
         Seguimiento de pagos para la gestoría. terap.ia no emite facturas.
       </p>
     </div>
   );
 }
 
-function Tile({
-  label,
-  value,
-  hint,
-  tone,
+/** Cifra sin caja: rótulo, número y pie. Ver `docs/DESIGN.md`. */
+function Cifra({
+  rotulo,
+  valor,
+  pie,
 }: {
-  label: string;
-  value: string;
-  hint?: string;
-  tone?: "warn";
+  rotulo: string;
+  valor: string;
+  pie: string;
 }) {
   return (
-    <div className="card px-4 py-3">
-      <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-        {label}
-      </div>
-      <div
-        className={`mt-0.5 text-lg font-semibold tracking-[-0.01em] ${
-          tone === "warn" ? "text-warn" : ""
-        }`}
-      >
-        {value}
-      </div>
-      {hint && <div className="text-xs text-ink-3">{hint}</div>}
+    <div>
+      <div className="text-[13px] text-ink-3">{rotulo}</div>
+      <div className="figure mt-1">{valor}</div>
+      <div className="mt-0.5 text-[12.5px] text-ink-2">{pie}</div>
     </div>
   );
 }

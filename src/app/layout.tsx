@@ -44,7 +44,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2f6b4f",
+  // El verde de la PWA del paciente, que es quien instala la aplicación. NO se
+  // cambia al acento del panel aunque ahora sean distintos: `manifest.ts`
+  // declara este mismo valor, y que difieran haría que la aplicación instalada
+  // y la pestaña del navegador pintaran la barra de dos colores.
+  themeColor: "#4f9d8b",
   width: "device-width",
   initialScale: 1,
   // Sin `maximumScale` ni `userScalable: false`: bloquear el pinch-zoom

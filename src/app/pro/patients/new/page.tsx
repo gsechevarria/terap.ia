@@ -9,18 +9,18 @@ export default function NewPatientPage() {
     <div className="mx-auto max-w-lg">
       <Link
         href="/pro/patients"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-3 transition-colors hover:text-ink"
+        className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink"
       >
         <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
         Pacientes
       </Link>
-      <h1 className="page-title mt-3">Nuevo paciente</h1>
-      <p className="mt-1 text-sm text-ink-2">
+      <h1 className="page-title mt-4">Nuevo paciente</h1>
+      <p className="mt-2.5 text-[13.5px] text-ink-2">
         Crea la ficha. Después podrás generar un enlace de invitación para que
         se dé de alta.
       </p>
 
-      <ActionForm action={createPatientAction} className="mt-8 flex flex-col gap-5">
+      <ActionForm action={createPatientAction} className="mt-9 flex flex-col gap-5">
         <label className="block">
           <span className="field-label">Nombre completo</span>
           {/* Sin `autoFocus`: mueve el foco antes de que el usuario haya leído
@@ -37,11 +37,12 @@ export default function NewPatientPage() {
             <span className="field-label">Teléfono (opcional)</span>
             <input name="phone" type="tel" className="field" />
           </label>
+          {/* Sin `className`: `.field` ya trae el tamaño y el relleno del
+              disparador, y repetirlos aquí solo invita a que se descuadre. */}
           <DateField
             label="Fecha de nacimiento (opcional)"
             name="birth_date"
             defaultValue={null}
-            className="py-2 text-base"
           />
           <label className="block">
             <span className="field-label">Profesión (opcional)</span>
@@ -69,9 +70,12 @@ export default function NewPatientPage() {
             className="field"
           />
         </label>
-        <button type="submit" className="btn-primary h-9 self-start px-5">
-          Crear paciente
-        </button>
+        {/* La acción se separa del formulario con una línea, no con otra caja. */}
+        <div className="border-t border-line pt-5">
+          <button type="submit" className="btn-primary px-5">
+            Crear paciente
+          </button>
+        </div>
       </ActionForm>
     </div>
   );

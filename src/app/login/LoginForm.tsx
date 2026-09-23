@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { authErrorMessage } from "@/lib/errors";
 import { getUserRole, homePathForRole } from "@/lib/auth/roles";
@@ -102,14 +103,14 @@ export function LoginForm({ invite }: { invite?: string }) {
 
   return (
     <div className="card w-full max-w-sm p-8">
-      <h1 className="text-xl font-semibold tracking-[-0.01em]">
+      <h1 className="text-headline-lg font-semibold text-ink">
         {isInvite
           ? "Aceptar invitación"
           : method === "reset"
             ? "Restablecer contraseña"
             : "Acceder"}
       </h1>
-      <p className="mt-1 text-sm text-ink-2">
+      <p className="mt-1.5 text-[13.5px] text-ink-2">
         {isInvite
           ? "Introduce tu correo para darte de alta como paciente."
           : method === "password"
@@ -121,7 +122,11 @@ export function LoginForm({ invite }: { invite?: string }) {
 
       {/* Selector de método (no aplica al alta por invitación) */}
       {!isInvite && method !== "reset" && (
-        <div className="mt-5 grid grid-cols-2 gap-0.5 rounded bg-panel p-0.5">
+        <div
+          className="segmented mt-5 flex w-full"
+          role="group"
+          aria-label="Forma de acceder"
+        >
           <MethodTab
             label="Contraseña"
             active={method === "password"}
@@ -137,16 +142,20 @@ export function LoginForm({ invite }: { invite?: string }) {
 
       {status === "sent" ? (
         <div className="mt-6">
-          <p role="status" className="rounded bg-accent-soft p-4 text-sm text-accent">
+          <p
+            role="status"
+            className="rounded-md bg-accent-soft p-4 text-[13.5px] leading-relaxed text-accent"
+          >
             {message}
           </p>
           {method === "reset" && (
             <button
               type="button"
               onClick={() => switchMethod("password")}
-              className="mt-3 text-sm text-ink-3 hover:text-ink"
+              className="mt-3 inline-flex cursor-pointer items-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink"
             >
-              ← Volver al acceso
+              <ArrowLeft size={15} strokeWidth={1.8} aria-hidden />
+              Volver al acceso
             </button>
           )}
         </div>
@@ -161,7 +170,7 @@ export function LoginForm({ invite }: { invite?: string }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
-              className="field py-2 text-base"
+              className="field"
             />
           </label>
           <PasswordField
@@ -173,7 +182,7 @@ export function LoginForm({ invite }: { invite?: string }) {
           />
 
           {status === "error" && (
-            <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="rounded-md bg-danger-soft p-3 text-[13.5px] text-danger-ink">
               {message}
             </p>
           )}
@@ -181,14 +190,14 @@ export function LoginForm({ invite }: { invite?: string }) {
           <button
             type="submit"
             disabled={status === "sending"}
-            className="btn-primary h-9"
+            className="btn-primary btn-lg"
           >
             {status === "sending" ? "Entrando…" : "Entrar"}
           </button>
           <button
             type="button"
             onClick={() => switchMethod("reset")}
-            className="self-start text-xs text-ink-3 underline underline-offset-2 hover:text-ink"
+            className="cursor-pointer self-start text-[12.5px] text-ink-3 underline underline-offset-2 transition-colors hover:text-ink"
           >
             ¿Has olvidado tu contraseña o aún no tienes una?
           </button>
@@ -204,12 +213,12 @@ export function LoginForm({ invite }: { invite?: string }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
-              className="field py-2 text-base"
+              className="field"
             />
           </label>
 
           {status === "error" && (
-            <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="rounded-md bg-danger-soft p-3 text-[13.5px] text-danger-ink">
               {message}
             </p>
           )}
@@ -217,16 +226,17 @@ export function LoginForm({ invite }: { invite?: string }) {
           <button
             type="submit"
             disabled={status === "sending"}
-            className="btn-primary h-9"
+            className="btn-primary btn-lg"
           >
             {status === "sending" ? "Enviando…" : "Enviar enlace"}
           </button>
           <button
             type="button"
             onClick={() => switchMethod("password")}
-            className="self-start text-xs text-ink-3 underline underline-offset-2 hover:text-ink"
+            className="inline-flex cursor-pointer items-center gap-1.5 self-start text-[12.5px] text-ink-3 transition-colors hover:text-ink"
           >
-            ← Volver al acceso
+            <ArrowLeft size={15} strokeWidth={1.8} aria-hidden />
+            Volver al acceso
           </button>
         </form>
       ) : (
@@ -240,12 +250,12 @@ export function LoginForm({ invite }: { invite?: string }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
-              className="field py-2 text-base"
+              className="field"
             />
           </label>
 
           {!isInvite && (
-            <p className="rounded bg-panel p-3 text-xs leading-relaxed text-ink-2">
+            <p className="rounded-md bg-surface-muted p-3 text-[12.5px] leading-relaxed text-ink-2">
               El acceso por enlace es solo para cuentas ya existentes. Si eres
               paciente, entra desde el enlace de invitación que te haya enviado
               tu profesional; si eres profesional y aún no tienes cuenta,
@@ -254,7 +264,7 @@ export function LoginForm({ invite }: { invite?: string }) {
           )}
 
           {status === "error" && (
-            <p role="alert" className="rounded bg-danger-soft p-3 text-sm text-danger">
+            <p role="alert" className="rounded-md bg-danger-soft p-3 text-[13.5px] text-danger-ink">
               {message}
             </p>
           )}
@@ -262,7 +272,7 @@ export function LoginForm({ invite }: { invite?: string }) {
           <button
             type="submit"
             disabled={status === "sending"}
-            className="btn-primary h-9"
+            className="btn-primary btn-lg"
           >
             {status === "sending" ? "Enviando…" : "Enviar enlace de acceso"}
           </button>
@@ -281,15 +291,14 @@ function MethodTab({
   active: boolean;
   onClick: () => void;
 }) {
+  // El activo lo marca `aria-pressed`, que es de lo que tira `.segmented`: el
+  // estado viaja al lector de pantalla y no solo al color de fondo.
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`cursor-pointer rounded py-1.5 text-sm font-medium transition-colors duration-100 ${
-        active
-          ? "bg-canvas text-ink shadow-[0_1px_2px_rgba(15,15,15,0.08)]"
-          : "text-ink-2 hover:text-ink"
-      }`}
+      aria-pressed={active}
+      className="flex-1 py-1.5 text-[13px]"
     >
       {label}
     </button>

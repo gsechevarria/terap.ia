@@ -20,28 +20,47 @@ export default async function AnalyticsPage() {
   const occupancyTotal = a.occupancyByWeek.reduce((s, w) => s + w.count, 0);
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="page-title">Analítica</h1>
-      <p className="mt-1 text-sm text-ink-2">
-        Resumen descriptivo de su consulta.
-      </p>
-
-      {/* Tiles */}
-      <div className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Tile label="Pacientes activos" value={String(a.patients.active)} />
-        <Tile label="Archivados" value={String(a.patients.archived)} />
-        <Tile
-          label="Tasa de no-shows"
-          value={`${Math.round(a.noShow.rate * 100)}%`}
-          hint={`${a.noShow.noShow}/${a.noShow.total || 0}`}
-        />
-        <Tile label="Citas (8 sem.)" value={String(occupancyTotal)} />
+    <div className="flex flex-col gap-[22px]">
+      <div>
+        <h1 className="page-title">Analítica</h1>
+        <p className="mt-3 max-w-[500px] text-body-lg text-ink-2">
+          Resumen descriptivo de su consulta.
+        </p>
       </div>
 
-      {/* Ocupación semanal */}
-      <Section title="Ocupación semanal (últimas 8 semanas)">
+      {/* Las cuatro cifras, sin caja: separadas por espacio, no por bordes. */}
+      <section className="grid grid-cols-1 gap-x-7 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Cifra
+          rotulo="Pacientes activos"
+          valor={String(a.patients.active)}
+          pie="con la ficha abierta"
+        />
+        <Cifra
+          rotulo="Pacientes archivados"
+          valor={String(a.patients.archived)}
+          pie="conservan su histórico"
+        />
+        <Cifra
+          rotulo="No acudieron sin avisar"
+          valor={`${Math.round(a.noShow.rate * 100)}%`}
+          pie={`${a.noShow.noShow} de ${a.noShow.total} citas con asistencia registrada`}
+        />
+        <Cifra
+          rotulo="Citas en las últimas 8 semanas"
+          valor={String(occupancyTotal)}
+          pie="sin contar las canceladas"
+        />
+      </section>
+
+      <Seccion
+        titulo="Ocupación semanal"
+        descripcion="Citas por semana durante las últimas ocho."
+      >
         {occupancyTotal === 0 ? (
-          <Empty />
+          <Vacio>
+            Todavía no hay citas en las últimas ocho semanas. Se agendan desde la
+            agenda.
+          </Vacio>
         ) : (
           <BarChart
             ariaLabel="Citas por semana"
@@ -51,12 +70,14 @@ export default async function AnalyticsPage() {
             }))}
           />
         )}
-      </Section>
+      </Seccion>
 
-      {/* Ingresos por mes */}
-      <Section title="Ingresos por mes">
+      <Seccion titulo="Ingresos por mes" descripcion="Solo lo que consta como cobrado.">
         {a.incomeByMonth.length === 0 ? (
-          <Empty />
+          <Vacio>
+            Todavía no hay ningún cobro registrado. Los pagos se anotan desde la
+            ficha del paciente, en la pestaña Pagos.
+          </Vacio>
         ) : (
           <BarChart
             ariaLabel="Ingresos por mes"
@@ -66,17 +87,22 @@ export default async function AnalyticsPage() {
               .map((m) => ({ label: monthLabel(m.month), value: m.paidCents }))}
           />
         )}
-      </Section>
+      </Seccion>
 
-      {/* Evolución agregada de escalas */}
-      <Section title="Evolución agregada de escalas (media mensual, anónima)">
+      <Seccion
+        titulo="Evolución agregada de escalas"
+        descripcion="Media mensual por escala, anónima."
+      >
         {a.scaleEvolution.length === 0 ? (
-          <Empty />
+          <Vacio>
+            Ninguna escala respondida todavía. Se activan paciente a paciente,
+            desde su ficha.
+          </Vacio>
         ) : (
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-7">
             {a.scaleEvolution.map((s) => (
               <div key={s.code}>
-                <h3 className="mb-2 text-sm font-medium">{s.code}</h3>
+                <h3 className="mb-2 text-[13.5px] font-semibold text-ink">{s.code}</h3>
                 <ScoreChart
                   points={s.points.map((p) => ({
                     date: p.date,
@@ -91,56 +117,53 @@ export default async function AnalyticsPage() {
             ))}
           </div>
         )}
-      </Section>
+      </Seccion>
 
-      <p className="mt-10 text-xs text-ink-3">
+      <p className="text-[12.5px] text-ink-4">
         Datos descriptivos y anonimizados; no constituyen interpretación clínica.
       </p>
     </div>
   );
 }
 
-function Tile({
-  label,
-  value,
-  hint,
+/** Cifra sin caja: rótulo, número y pie. Ver `docs/DESIGN.md`. */
+function Cifra({
+  rotulo,
+  valor,
+  pie,
 }: {
-  label: string;
-  value: string;
-  hint?: string;
+  rotulo: string;
+  valor: string;
+  pie: string;
 }) {
   return (
-    <div className="card p-5">
-      <div className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-        {label}
-      </div>
-      <div className="mono mt-1.5 text-headline-xl font-semibold">
-        {value}
-      </div>
-      {hint && <div className="text-xs text-ink-3">{hint}</div>}
+    <div>
+      <div className="text-[13px] text-ink-3">{rotulo}</div>
+      <div className="figure mt-1">{valor}</div>
+      <div className="mt-0.5 text-[12.5px] text-ink-2">{pie}</div>
     </div>
   );
 }
 
-function Section({
-  title,
+/** Zona separada por una línea y aire, nunca por otra caja dentro de la hoja. */
+function Seccion({
+  titulo,
+  descripcion,
   children,
 }: {
-  title: string;
+  titulo: string;
+  descripcion: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-10">
-      <h2 className="mb-3 text-sm font-semibold">{title}</h2>
-      {children}
+    <section className="border-t border-line pt-[22px]">
+      <h2 className="section-title">{titulo}</h2>
+      <p className="mt-0.5 text-[13px] text-ink-3">{descripcion}</p>
+      <div className="mt-4">{children}</div>
     </section>
   );
 }
 
-function Empty() {
-  return (
-    <p className="rounded-lg border border-dashed border-line p-4 text-sm text-ink-2">
-      Aún no hay datos suficientes.
-    </p>
-  );
+function Vacio({ children }: { children: React.ReactNode }) {
+  return <p className="py-3 text-[13.5px] text-ink-3">{children}</p>;
 }

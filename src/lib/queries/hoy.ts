@@ -309,6 +309,14 @@ export async function getPanelDeHoy(
         .neq("status", "cancelled"),
     ),
     // Última sesión realmente atendida, por paciente.
+    //
+    // Trae TODO el histórico atendido y se queda con el máximo por paciente en
+    // JS. Es deliberado y tiene un techo conocido: `allRows` pagina de 500 en
+    // 500, así que una consulta con diez años de historia son ~10 viajes. No se
+    // acota por fecha porque la pregunta es «¿cuándo vino por última vez?» y a
+    // quien lleva dos años sin aparecer es justo a quien hay que enseñar. Si
+    // algún día pesa, el sitio correcto es una RPC con `distinct on
+    // (patient_id)`, no recortar la ventana aquí.
     allRows(
       supabase
         .from("appointments")

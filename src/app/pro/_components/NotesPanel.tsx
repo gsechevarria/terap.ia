@@ -36,54 +36,64 @@ export function NotesPanel({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <label className="block">
-          <span className="field-label">Nueva nota</span>
-          <textarea
-            ref={ref}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            rows={3}
-            placeholder="Nota rápida (privada, solo usted la ve)…"
-            className="field"
-          />
-        </label>
-        {error && <p className="text-sm text-danger">{error}</p>}
-        <button
-          type="button"
-          onClick={add}
-          disabled={pending || !value.trim()}
-          className="btn-primary self-start"
-        >
-          Añadir nota
-        </button>
-      </div>
+    <div className="flex flex-col gap-8">
+      <section>
+        <div className="flex max-w-xl flex-col gap-3">
+          <label className="block">
+            <span className="field-label">Nueva nota</span>
+            <textarea
+              ref={ref}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              rows={3}
+              placeholder="Nota rápida (privada, solo usted la ve)…"
+              className="field"
+            />
+          </label>
+          {error && <p className="text-[13px] text-danger">{error}</p>}
+          <button
+            type="button"
+            onClick={add}
+            disabled={pending || !value.trim()}
+            className="btn-primary self-start"
+          >
+            Añadir nota
+          </button>
+        </div>
+      </section>
 
-      {notes.length === 0 ? (
-        <p className="text-sm text-ink-2">Sin notas todavía.</p>
-      ) : (
-        <ul className="card divide-y divide-line">
-          {notes.map((n) => (
-            <li key={n.id} className="group p-4">
-              <p className="text-sm whitespace-pre-wrap">{n.body}</p>
-              <div className="mt-1.5 flex items-center justify-between">
-                <span className="text-xs text-ink-3">
-                  {formatDateTime(n.created_at)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => remove(n.id)}
-                  disabled={pending}
-                  className="btn-danger btn-sm opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      <section className="border-t border-line pt-7">
+        <h2 className="section-title mb-1">Notas</h2>
+        {notes.length === 0 ? (
+          <p className="py-3 text-[13.5px] text-ink-3">
+            Todavía no hay ninguna nota. Escribe la primera arriba.
+          </p>
+        ) : (
+          <ul>
+            {notes.map((n) => (
+              <li
+                key={n.id}
+                className="group border-b border-line-soft py-3.5 last:border-b-0"
+              >
+                <p className="text-[13.5px] whitespace-pre-wrap">{n.body}</p>
+                <div className="mt-1.5 flex items-center justify-between gap-3">
+                  <span className="text-[12.5px] text-ink-3">
+                    {formatDateTime(n.created_at)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => remove(n.id)}
+                    disabled={pending}
+                    className="btn-danger btn-sm opacity-100 transition-opacity duration-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

@@ -5,8 +5,12 @@ type Point = { date: string; score: number; severity: string | null };
 
 /**
  * Gráfica de evolución de una escala (serie única: puntuación en el tiempo).
- * SVG estático, tema-aware. Las bandas de severidad se muestran como líneas de
- * referencia neutras (rangos estándar publicados; no se interpreta el caso).
+ * SVG estático, tema-aware.
+ *
+ * La serie va SIEMPRE en la misma tinta, suba o baje: pintar de verde la
+ * bajada y de rojo la subida sería interpretar la puntuación, que es
+ * exactamente lo que esta aplicación no hace. Las bandas de severidad son
+ * líneas de referencia neutras (rangos estándar publicados), no un semáforo.
  */
 export function ScoreChart({
   points,
@@ -63,7 +67,7 @@ export function ScoreChart({
                 x={padL + plotW + 6}
                 y={yy + 3}
                 fill="var(--ink-3)"
-                style={{ fontSize: 10 }}
+                style={{ fontSize: 11 }}
               >
                 {s.label} (≤{s.max})
               </text>
@@ -77,19 +81,19 @@ export function ScoreChart({
           x2={padL}
           y1={padT}
           y2={padT + plotH}
-          stroke="var(--line)"
+          stroke="var(--line-strong)"
         />
         <line
           x1={padL}
           x2={padL + plotW}
           y1={padT + plotH}
           y2={padT + plotH}
-          stroke="var(--line)"
+          stroke="var(--line-strong)"
         />
-        <text x={4} y={padT + 4} fill="var(--ink-3)" style={{ fontSize: 10 }}>
+        <text x={4} y={padT + 4} fill="var(--ink-4)" style={{ fontSize: 11 }}>
           {max}
         </text>
-        <text x={10} y={padT + plotH} fill="var(--ink-3)" style={{ fontSize: 10 }}>
+        <text x={10} y={padT + plotH} fill="var(--ink-4)" style={{ fontSize: 11 }}>
           0
         </text>
 
@@ -113,7 +117,9 @@ export function ScoreChart({
               cy={y(p.score)}
               r={5}
               fill="var(--accent)"
-              stroke="var(--canvas, #fff)"
+              // El cerco es del color de lo que hay DETRÁS, que es la hoja. Con
+              // `--canvas` se veía un anillo gris alrededor de cada punto.
+              stroke="var(--surface)"
               strokeWidth={1.75}
             />
             <title>
@@ -128,8 +134,8 @@ export function ScoreChart({
           <text
             x={x(0)}
             y={padT + plotH + 16}
-            fill="var(--ink-3)"
-            style={{ fontSize: 10 }}
+            fill="var(--ink-4)"
+            style={{ fontSize: 11 }}
             textAnchor="middle"
           >
             {formatDate(points[0]?.date)}
@@ -139,8 +145,8 @@ export function ScoreChart({
           <text
             x={x(points.length - 1)}
             y={padT + plotH + 16}
-            fill="var(--ink-3)"
-            style={{ fontSize: 10 }}
+            fill="var(--ink-4)"
+            style={{ fontSize: 11 }}
             textAnchor="middle"
           >
             {formatDate(points[points.length - 1]?.date)}

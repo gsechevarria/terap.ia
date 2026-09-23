@@ -68,14 +68,15 @@ export function GastosTable({
 
   if (gastos.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-line p-8 text-center text-sm text-ink-2">
-        No hay gastos registrados todavía.
+      <p className="empty">
+        Todavía no has registrado ningún gasto. Añade el primero con el
+        formulario de arriba.
       </p>
     );
   }
 
   return (
-    <div className="card overflow-x-auto">
+    <div className="table-wrap overflow-x-auto">
       <table className="table-base">
         <thead>
           <tr>
@@ -85,15 +86,17 @@ export function GastosTable({
             <th className="text-right">Base</th>
             <th className="text-right">Total</th>
             <th className="text-right">Deducible</th>
-            <th className="w-0" />
+            <th className="w-0">
+              <span className="sr-only">Acciones</span>
+            </th>
           </tr>
         </thead>
         <tbody>
           {gastos.map((g) =>
             editingId === g.id ? (
               <tr key={g.id}>
-                <td colSpan={7} className="bg-panel">
-                  <form onSubmit={e => { e.preventDefault(); if (pending) return; const fd = new FormData(e.currentTarget); startTransition(() => saveEdit(fd)); }} className="grid gap-3 p-3 sm:grid-cols-3">
+                <td colSpan={7} className="bg-surface-subtle">
+                  <form onSubmit={e => { e.preventDefault(); if (pending) return; const fd = new FormData(e.currentTarget); startTransition(() => saveEdit(fd)); }} className="grid gap-4 p-4 sm:grid-cols-3">
                     <input type="hidden" name="id" value={g.id} />
                     <label className="block">
                       <span className="field-label">Fecha</span>
@@ -140,11 +143,11 @@ export function GastosTable({
                     <label className="block">
                       <span className="field-label">IVA recuperable (%)</span>
                       <input type="number" name="iva_recuperable_pct" required min={0} max={100} step={1} defaultValue={g.iva_recuperable_pct ?? ""} className="field" />
-                      <span className="text-xs text-ink-3">Confirma el porcentaje aplicable a este gasto: 0 si no se recupera IVA.</span>
+                      <span className="mt-1.5 block text-[12px] text-ink-3">Confirma el porcentaje aplicable a este gasto: 0 si no se recupera IVA.</span>
                     </label>
                     <label className="block">
                       <span className="field-label">Reemplazar justificante</span>
-                      <input type="file" name="adjunto" accept="image/*,application/pdf" className="field py-1.5 text-xs" />
+                      <input type="file" name="adjunto" accept="image/*,application/pdf" className="field" />
                     </label>
                     <div className="flex items-end gap-2 sm:col-span-3">
                       <SubmitButton disabled={pending} className="btn-primary btn-sm">
@@ -158,14 +161,14 @@ export function GastosTable({
                         Cancelar
                       </button>
                       {error && (
-                        <p className="text-xs text-danger">{error}</p>
+                        <p className="text-[12.5px] text-danger-ink">{error}</p>
                       )}
                     </div>
                   </form>
                 </td>
               </tr>
             ) : (
-              <tr key={g.id} className="group row-hover last:[&>td]:border-b-0">
+              <tr key={g.id} className="group row-hover">
                 <td className="whitespace-nowrap">{formatDate(g.fecha)}</td>
                 <td>
                   {CATEGORIA_LABEL[g.categoria_deducible as CategoriaGasto] ??
@@ -175,14 +178,18 @@ export function GastosTable({
                   )}
                 </td>
                 <td className="text-ink-2">{g.proveedor_nombre ?? "—"}</td>
-                <td className="text-right tabular-nums whitespace-nowrap">
+                <td className="mono text-right whitespace-nowrap">
                   {formatCurrency(g.base_cents)}
                 </td>
-                <td className="text-right tabular-nums whitespace-nowrap">
+                <td className="mono text-right whitespace-nowrap">
                   {formatCurrency(g.total_cents)}
                 </td>
-                <td className="text-right tabular-nums whitespace-nowrap">
-                  {g.iva_recuperable_pct == null ? "Pendiente de revisión" : formatCurrency(deducibleCents(g, situacionIva, prorrata))}
+                <td className="mono text-right whitespace-nowrap">
+                  {g.iva_recuperable_pct == null ? (
+                    <span className="text-warning-ink">Pendiente de revisión</span>
+                  ) : (
+                    formatCurrency(deducibleCents(g, situacionIva, prorrata))
+                  )}
                 </td>
                 <td className="whitespace-nowrap text-right">
                   <span className="inline-flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">

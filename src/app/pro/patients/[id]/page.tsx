@@ -90,7 +90,7 @@ export default async function PatientDetailPage({
         <Link href="/pro/patients" className="transition-colors hover:text-accent">
           Pacientes
         </Link>
-        <ChevronRight size={13} strokeWidth={1.75} aria-hidden className="text-ink-faint" />
+        <ChevronRight size={13} strokeWidth={1.75} aria-hidden className="text-ink-4" />
         <span className="truncate font-medium text-ink">
           {patient.full_name ?? "Sin nombre"}
         </span>
@@ -98,28 +98,28 @@ export default async function PatientDetailPage({
 
       <FlaggedAlerts patientId={id} responses={flagged} />
 
-      {/* Cabecera del expediente, como isla: el dato de identidad se separa del
-          contenido por superficie y no por una línea más. */}
-      <header className="card mt-4 flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
+      {/* Cabecera del expediente sin caja: va sobre la hoja y lo que la separa
+          del contenido es el subrayado de las pestañas, no un borde más. */}
+      <header className="mt-5 flex flex-col gap-5 pb-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 items-start gap-4">
           <span
             aria-hidden
-            className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-line bg-accent-soft text-headline font-semibold text-accent"
+            className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-headline-lg font-semibold text-accent"
           >
             {(patient.full_name ?? "?").charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <h1 className="page-title truncate">
-                {patient.full_name ?? "Sin nombre"}
-              </h1>
+            <h1 className="page-title truncate">
+              {patient.full_name ?? "Sin nombre"}
+            </h1>
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5">
               <Status tone={patient.status === "archived" ? "neutral" : "success"}>
                 {patient.status === "archived" ? "Archivado" : "En seguimiento"}
               </Status>
+              {patient.email && (
+                <span className="text-[13px] text-ink-2">{patient.email}</span>
+              )}
             </div>
-            {patient.email && (
-              <p className="mt-1 text-sm text-ink-2">{patient.email}</p>
-            )}
             <div className="mt-3">
               <TagsEditor patientId={patient.id} tags={patient.tags} />
             </div>
@@ -128,73 +128,69 @@ export default async function PatientDetailPage({
         <StatusButton patientId={patient.id} status={patient.status} />
       </header>
 
-      <div className="mt-6">
-        <div className="min-w-0">
-          {/* Pestañas */}
-          <nav className="tabs" aria-label="Secciones del expediente">
-            {TABS.map((t) => (
-              <Link
-                key={t.key}
-                href={`/pro/patients/${id}?tab=${t.key}`}
-                aria-current={tab === t.key ? "page" : undefined}
-                className={`tab${tab === t.key ? " tab-active" : ""}`}
-              >
-                {t.label}
-              </Link>
-            ))}
-          </nav>
+      <div className="min-w-0">
+        {/* Pestañas */}
+        <nav className="tabs" aria-label="Secciones del expediente">
+          {TABS.map((t) => (
+            <Link
+              key={t.key}
+              href={`/pro/patients/${id}?tab=${t.key}`}
+              aria-current={tab === t.key ? "page" : undefined}
+              className={`tab${tab === t.key ? " tab-active" : ""}`}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </nav>
 
-          <div className="mt-6">
-            {tab === "informacion" && (
-              <PatientDetailsPanel
+        <div className="mt-7">
+          {tab === "informacion" && (
+            <PatientDetailsPanel
+              patientId={id}
+              age={ageFromBirthDate(patient.birth_date)}
+              details={{
+                full_name: patient.full_name,
+                email: patient.email,
+                phone: patient.phone,
+                birth_date: patient.birth_date,
+                address: patient.address,
+                profession: patient.profession,
+                emergency_contact: patient.emergency_contact,
+              }}
+            />
+          )}
+          {tab === "tareas" && (
+            <TasksPanel
+              patientId={id}
+              tasks={await getTasksForPatient(id)}
+              today={hoy}
+              soon={formatYMD(addDaysYMD(parseYMD(hoy), 2))}
+            />
+          )}
+          {tab === "notas" && (
+            <NotesPanel patientId={id} notes={await getNotesForPatient(id)} />
+          )}
+          {tab === "escalas" && <ScalesTab patientId={id} />}
+          {tab === "citas" && <AppointmentsTab patientId={id} />}
+          {tab === "pagos" && <PaymentsTab patientId={id} />}
+          {tab === "diario" && <DiaryTab patientId={id} />}
+          {tab === "recursos" && <ResourcesTab patientId={id} />}
+          {tab === "documentos" && <DocumentsTab patientId={id} />}
+          {tab === "invitacion" && (
+            <div className="flex max-w-xl flex-col gap-8">
+              <InvitePanel
                 patientId={id}
-                age={ageFromBirthDate(patient.birth_date)}
-                details={{
-                  full_name: patient.full_name,
-                  email: patient.email,
-                  phone: patient.phone,
-                  birth_date: patient.birth_date,
-                  address: patient.address,
-                  profession: patient.profession,
-                  emergency_contact: patient.emergency_contact,
-                }}
+                acceso={acceso}
+                emailFicha={patient.email}
               />
-            )}
-            {tab === "tareas" && (
-              <TasksPanel
+              <AsignacionesPanel
                 patientId={id}
-                tasks={await getTasksForPatient(id)}
-                today={hoy}
-                soon={formatYMD(addDaysYMD(parseYMD(hoy), 2))}
+                asignaciones={asignaciones}
+                equipo={equipo}
+                esCentro={esCentro}
               />
-            )}
-            {tab === "notas" && (
-              <NotesPanel patientId={id} notes={await getNotesForPatient(id)} />
-            )}
-            {tab === "escalas" && <ScalesTab patientId={id} />}
-            {tab === "citas" && <AppointmentsTab patientId={id} />}
-            {tab === "pagos" && <PaymentsTab patientId={id} />}
-            {tab === "diario" && <DiaryTab patientId={id} />}
-            {tab === "recursos" && <ResourcesTab patientId={id} />}
-            {tab === "documentos" && <DocumentsTab patientId={id} />}
-            {tab === "invitacion" && (
-              <div className="max-w-xl">
-                <div className="flex flex-col gap-4">
-                  <InvitePanel
-                    patientId={id}
-                    acceso={acceso}
-                    emailFicha={patient.email}
-                  />
-                  <AsignacionesPanel
-                    patientId={id}
-                    asignaciones={asignaciones}
-                    equipo={equipo}
-                    esCentro={esCentro}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -235,9 +231,9 @@ function FilaCita({ cita, pasada }: { cita: Appointment; pasada: boolean }) {
     ? (ASISTENCIA[cita.attendance] ?? { label: cita.attendance, tone: "neutral" as const })
     : (APPT_STATUS[cita.status] ?? { label: cita.status, tone: "neutral" as const });
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-      <span className="text-[13px]">{formatDateTime(cita.starts_at)}</span>
-      <div className="flex items-center gap-3">
+    <li className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 border-b border-line-soft py-3 last:border-b-0">
+      <span className="text-[13.5px]">{formatDateTime(cita.starts_at)}</span>
+      <div className="flex items-center gap-5">
         {pasada && cita.status === "cancelled" ? (
           <Status tone="neutral">cancelada</Status>
         ) : (
@@ -245,9 +241,9 @@ function FilaCita({ cita, pasada }: { cita: Appointment; pasada: boolean }) {
         )}
         <a
           href={`/appointments/${cita.id}/ics`}
-          className="text-[11px] text-ink-3 underline underline-offset-2 hover:text-ink"
+          className="text-[12.5px] text-accent hover:underline"
         >
-          .ics
+          Descargar .ics
         </a>
       </div>
     </li>
@@ -257,17 +253,19 @@ function FilaCita({ cita, pasada }: { cita: Appointment; pasada: boolean }) {
 async function AppointmentsTab({ patientId }: { patientId: string }) {
   const { proximas, pasadas } = await getPatientAppointments(patientId);
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-8">
       <Link href={`/pro/agenda?patient=${patientId}`} className="btn-primary self-start">
         Nueva cita en la agenda
       </Link>
 
       <section>
-        <h3 className="section-label mb-2.5">Próximas citas</h3>
+        <h2 className="section-title mb-1">Próximas citas</h2>
         {proximas.length === 0 ? (
-          <p className="text-[13px] text-ink-2">Sin próximas citas.</p>
+          <p className="py-3 text-[13.5px] text-ink-3">
+            No tiene ninguna cita agendada. Créala desde la agenda.
+          </p>
         ) : (
-          <ul className="card divide-y divide-line">
+          <ul>
             {proximas.map((a) => (
               <FilaCita key={a.id} cita={a} pasada={false} />
             ))}
@@ -275,19 +273,19 @@ async function AppointmentsTab({ patientId }: { patientId: string }) {
         )}
       </section>
 
-      <section>
-        <h3 className="section-label mb-2.5">
-          Historial de sesiones
+      <section className="border-t border-line pt-7">
+        <h2 className="section-title mb-1">
+          Historial de sesiones{" "}
           {pasadas.length > 0 && (
-            <span className="mono ml-2 font-normal normal-case">
-              {pasadas.length}
-            </span>
+            <span className="font-normal text-ink-4">{pasadas.length}</span>
           )}
-        </h3>
+        </h2>
         {pasadas.length === 0 ? (
-          <p className="text-[13px] text-ink-2">Todavía no hay citas pasadas.</p>
+          <p className="py-3 text-[13.5px] text-ink-3">
+            Todavía no ha acudido a ninguna sesión.
+          </p>
         ) : (
-          <ul className="card divide-y divide-line">
+          <ul>
             {pasadas.map((a) => (
               <FilaCita key={a.id} cita={a} pasada />
             ))}
@@ -323,53 +321,59 @@ async function DiaryTab({ patientId }: { patientId: string }) {
   return (
     <div>
       {entries.length === 0 ? (
-        <p className="text-sm text-ink-2">Sin entradas en el diario.</p>
+        <p className="text-[13.5px] text-ink-3">
+          Este paciente todavía no ha registrado ningún estado de ánimo.
+        </p>
       ) : (
-        <>
+        <div className="flex flex-col gap-8">
           {escalas.map((escala) => {
             const deLaEscala = entries.filter((e) => e.mood_scale === escala);
             const points = [...deLaEscala]
               .reverse()
               .map((e) => ({ date: e.entry_date, score: e.mood_value, severity: null }));
             return (
-              <div key={escala} className="card mb-4 p-4">
-                <h3 className="mb-1 text-sm font-semibold">
-                  Evolución del ánimo (1-{escala})
-                </h3>
-                <p className="mb-3 text-xs text-ink-3">
+              <section key={escala}>
+                <h2 className="section-title">Evolución del ánimo (1-{escala})</h2>
+                <p className="mt-0.5 text-[13px] text-ink-3">
                   {escala === ESCALA_ACTUAL
-                    ? `${etiquetaAnimo(1, escala)} · ${etiquetaAnimo(escala, escala)}`
+                    ? `Del 1, «${etiquetaAnimo(1, escala)}», al ${escala}, «${etiquetaAnimo(escala, escala)}».`
                     : `Escala anterior, retirada. Sus valores no son comparables con los de la escala de ${ESCALA_ACTUAL}.`}
                 </p>
-                <ScoreChart points={points} max={escala} severity={[]} title="Ánimo" />
-              </div>
+                <div className="mt-4">
+                  <ScoreChart points={points} max={escala} severity={[]} title="Ánimo" />
+                </div>
+              </section>
             );
           })}
-          <ul className="card mt-4 divide-y divide-line">
-            {entries.map((e) => (
-              <li
-                key={e.id}
-                className="flex items-start justify-between gap-4 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <span className="text-sm font-medium">
-                    {etiquetaAnimo(e.mood_value, e.mood_scale)}
+
+          <section className="border-t border-line pt-7">
+            <h2 className="section-title mb-1">Registros</h2>
+            <ul>
+              {entries.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex items-start justify-between gap-4 border-b border-line-soft py-3 last:border-b-0"
+                >
+                  <div className="min-w-0">
+                    <span className="text-[13.5px] font-medium">
+                      {etiquetaAnimo(e.mood_value, e.mood_scale)}
+                    </span>
+                    {/* El número va siempre con su escala: «3» a secas es ambiguo. */}
+                    <span className="mono ml-2 text-[12.5px] text-ink-3">
+                      {e.mood_value}/{e.mood_scale}
+                    </span>
+                    {e.note && (
+                      <p className="mt-1 text-[13.5px] text-ink-2">{e.note}</p>
+                    )}
+                  </div>
+                  <span className="shrink-0 text-[12.5px] text-ink-3">
+                    {formatDate(e.entry_date)}
                   </span>
-                  {/* El número va siempre con su escala: «3» a secas es ambiguo. */}
-                  <span className="ml-2 text-xs text-ink-3">
-                    {e.mood_value}/{e.mood_scale}
-                  </span>
-                  {e.note && (
-                    <p className="mt-1 text-sm text-ink-2">{e.note}</p>
-                  )}
-                </div>
-                <span className="shrink-0 text-xs text-ink-3">
-                  {formatDate(e.entry_date)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       )}
     </div>
   );

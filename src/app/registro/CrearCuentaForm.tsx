@@ -51,13 +51,13 @@ export function CrearCuentaForm() {
   if (estado === "enviado") {
     return (
       <div className="card flex flex-col gap-3 p-5">
-        <h2 className="font-semibold">Revisa tu correo</h2>
-        <p className="text-sm leading-relaxed text-ink-2">
+        <h2 className="section-title">Revisa tu correo</h2>
+        <p className="text-[13.5px] leading-relaxed text-ink-2">
           Hemos enviado un enlace de confirmación a{" "}
           <strong className="text-ink">{email.trim()}</strong>. Ábrelo para
           seguir con el alta.
         </p>
-        <p className="text-xs text-ink-3">
+        <p className="text-[12.5px] leading-relaxed text-ink-3">
           Si esa dirección ya tenía cuenta, el enlace te llevará a iniciar
           sesión en lugar de crear una nueva.
         </p>
@@ -104,7 +104,11 @@ export function CrearCuentaForm() {
         required
       />
 
-      {estado === "error" && <p className="text-sm text-danger">{mensaje}</p>}
+      {estado === "error" && (
+        <p role="alert" className="text-[13.5px] text-danger-ink">
+          {mensaje}
+        </p>
+      )}
 
       <button type="submit" disabled={estado === "enviando"} className="btn-primary btn-lg">
         {estado === "enviando" ? "Creando…" : "Crear cuenta"}

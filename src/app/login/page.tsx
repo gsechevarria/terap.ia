@@ -18,7 +18,7 @@ export default async function LoginPage({
         href="/"
         aria-label="Volver al inicio"
         title="Volver al inicio"
-        className="absolute top-4 right-4 rounded-lg p-2 text-ink-3 transition-colors hover:bg-wash hover:text-ink"
+        className="absolute top-4 right-4 rounded-lg p-2 text-ink-3 transition-colors hover:bg-surface-muted hover:text-ink"
       >
         <X size={18} strokeWidth={1.75} aria-hidden />
       </Link>
@@ -31,7 +31,7 @@ export default async function LoginPage({
       {/* Las otras dos entradas, para quien llegue aquí sin cuenta. El alta de
           pacientes NO se ofrece: no existe, y `/acceso/paciente` lo explica. */}
       {!invite && (
-        <p className="text-center text-sm text-ink-2">
+        <p className="text-center text-[13.5px] text-ink-2">
           ¿Eres profesional y aún no tienes cuenta?{" "}
           <Link href="/registro" className="font-medium text-accent hover:underline">
             Crear mi consulta

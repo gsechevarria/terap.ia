@@ -59,62 +59,80 @@ export function RevisionCobros({
   }
 
   return (
-    <section className="card">
-      <div className="border-b border-line p-5">
-        <h2 className="card-title">
-          Cobros sin tratamiento fiscal{" "}
-          <span className="mono ml-1 font-normal text-ink-3">{restantes}</span>
-        </h2>
-        <p className="mt-1 text-body-sm text-ink-2">
-          Se confirmarán como{" "}
-          <strong className="font-medium text-ink">
-            {exenta ? "operación exenta" : `operación sujeta al ${tipoIvaRepercutido} %`}
-          </strong>
-          , según su configuración fiscal, y sin retención practicada. Si alguno
-          llevó retención o tuvo otro tratamiento, confírmelo con el criterio que
-          corresponda antes de exportar.
+    <section>
+      <h2 className="section-title">
+        Cobros sin tratamiento fiscal{" "}
+        <span className="font-normal text-ink-4">{restantes}</span>
+      </h2>
+      <p className="mt-1 text-[13px] text-ink-2">
+        Se confirmarán como{" "}
+        <strong className="font-medium text-ink">
+          {exenta ? "operación exenta" : `operación sujeta al ${tipoIvaRepercutido} %`}
+        </strong>
+        , según su configuración fiscal, y sin retención practicada. Si alguno
+        llevó retención o tuvo otro tratamiento, confírmelo con el criterio que
+        corresponda antes de exportar.
+      </p>
+
+      {restantes > 10 && (
+        <p className="mt-3 rounded-md border border-warning-line bg-warning-soft px-4 py-3 text-[12.5px] text-ink">
+          Son {restantes} registros. Para una regularización masiva de
+          históricos existe un script de mantenimiento que deja constancia de
+          que fue una regularización, y no una confirmación operación por
+          operación:{" "}
+          {/* Literal técnico: se marca con fondo propio, no con otra familia
+              tipográfica — el sistema tiene una sola. */}
+          <code className="rounded-md bg-surface-muted px-1.5 py-0.5 text-ink-2">
+            regularizar-ingresos-demo.sql
+          </code>
+          .
         </p>
-        {restantes > 10 && (
-          <p className="mt-2 rounded-lg bg-warn-soft px-3 py-2 text-[12px] text-warn">
-            Son {restantes} registros. Para una regularización masiva de
-            históricos existe un script de mantenimiento que deja constancia de
-            que fue una regularización, y no una confirmación operación por
-            operación: <code className="mono">regularizar-ingresos-demo.sql</code>.
-          </p>
-        )}
-      </div>
+      )}
 
       {error && (
-        <p role="alert" className="border-b border-line px-4 py-2.5 text-[12px] text-danger">
+        <p role="alert" className="mt-3 rounded-md bg-danger-soft px-4 py-2.5 text-[12.5px] text-danger-ink">
           {error}
         </p>
       )}
 
-      <ul className="divide-y divide-line">
-        {visibles.map((cobro) => (
-          <li key={cobro.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-            <span className="min-w-0 truncate text-[13px]">
-              {cobro.paciente ?? "Sin pagador"}
-            </span>
-            <span className="flex items-center gap-3">
-              <span className="mono text-[12px] text-ink-2">
-                {formatDate(cobro.fecha)} · {formatCurrency(cobro.importeCents)}
-              </span>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => confirmar(cobro)}
-                className="btn-ghost btn-sm"
-              >
-                Confirmar
-              </button>
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="table-wrap mt-3">
+        <table className="table-base">
+          <thead>
+            <tr>
+              <th>Pagador</th>
+              <th>Fecha</th>
+              <th className="text-right">Importe</th>
+              <th className="w-0">
+                <span className="sr-only">Acción</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibles.map((cobro) => (
+              <tr key={cobro.id}>
+                <td>{cobro.paciente ?? "Sin pagador"}</td>
+                <td className="whitespace-nowrap text-ink-2">{formatDate(cobro.fecha)}</td>
+                <td className="mono text-right whitespace-nowrap">
+                  {formatCurrency(cobro.importeCents)}
+                </td>
+                <td className="text-right">
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => confirmar(cobro)}
+                    className="btn-ghost btn-sm"
+                  >
+                    Confirmar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {restantes > visibles.length && (
-        <p className="border-t border-line px-4 py-2.5 text-[12px] text-ink-3">
+        <p className="mt-2 text-[12px] text-ink-3">
           Y {restantes - visibles.length} más.
         </p>
       )}

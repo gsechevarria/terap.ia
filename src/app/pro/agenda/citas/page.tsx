@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   getPatientsForSelect,
   listProfessionalAppointments,
@@ -15,8 +16,11 @@ import {
   toDateToISO,
 } from "@/lib/date-ranges";
 
+/* «sin confirmar» y no «programada»: es la misma palabra que usan el calendario
+   y la pantalla de hoy para `scheduled`, y tenerla escrita de tres maneras
+   distintas obligaba a traducir mentalmente entre pantallas. */
 const STATUS_LABEL: Record<string, string> = {
-  scheduled: "programada",
+  scheduled: "sin confirmar",
   confirmed: "confirmada",
   cancelled: "cancelada",
   completed: "completada",
@@ -29,7 +33,7 @@ const ATTENDANCE_LABEL: Record<string, string> = {
 };
 const STATUSES = ["scheduled", "confirmed", "completed", "cancelled"] as const;
 const STATUS_TONE: Record<string, StatusTone> = {
-  scheduled: "info",
+  scheduled: "warn",
   confirmed: "accent",
   completed: "neutral",
   cancelled: "neutral",
@@ -131,215 +135,213 @@ export default async function AllAppointmentsPage({
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Link href="/pro/agenda" className="text-sm text-ink-3 hover:text-ink">
-        ← Agenda
-      </Link>
-      <div className="mt-3 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Todas las citas</h1>
-          <p className="mt-1 text-sm text-ink-2">
-            {total} {total === 1 ? "cita" : "citas"}
-            {scope === "upcoming"
-              ? " próximas"
-              : scope === "past"
-                ? " pasadas"
-                : ""}
-            {rangeLabel ? ` · ${rangeLabel}` : ""}
-          </p>
-        </div>
-      </div>
-
-      {/* Presets rápidos de rango (GET, sin JS) */}
-      <div className="mt-5 flex flex-wrap items-center gap-1.5">
-        {presets.map((p) => (
-          <Link
-            key={p.key}
-            href={p.href}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors duration-150 ${
-              p.active
-                ? "bg-accent-soft text-accent"
-                : "bg-panel text-ink-2 hover:bg-wash-2 hover:text-ink"
-            }`}
-          >
-            {p.label}
-          </Link>
-        ))}
-      </div>
-
-      {/* Filtros (GET, sin JS) */}
-      <form
-        method="get"
-        className="mt-2.5 flex flex-wrap items-end gap-2 rounded-lg bg-panel p-3"
+      <Link
+        href="/pro/agenda"
+        className="inline-flex items-center gap-1 text-[13px] text-ink-3 transition-colors hover:text-ink"
       >
-        <label className="block">
-          <span className="field-label">Cuándo</span>
-          <select name="scope" defaultValue={scope} className="field w-auto">
-            <option value="all">Todas</option>
-            <option value="upcoming">Próximas</option>
-            <option value="past">Pasadas</option>
-          </select>
-        </label>
-        <label className="block">
-          <span className="field-label">Desde</span>
-          <input
-            type="date"
-            name="from"
-            defaultValue={from ?? ""}
-            max={to ?? undefined}
-            className="field w-auto"
-          />
-        </label>
-        <label className="block">
-          <span className="field-label">Hasta</span>
-          <input
-            type="date"
-            name="to"
-            defaultValue={to ?? ""}
-            min={from ?? undefined}
-            className="field w-auto"
-          />
-        </label>
-        <label className="block">
-          <span className="field-label">Estado</span>
-          <select name="status" defaultValue={status ?? ""} className="field w-auto">
-            <option value="">Todos</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className="field-label">Paciente</span>
-          <select
-            name="patient"
-            defaultValue={patientId ?? ""}
-            className="field w-auto max-w-48"
-          >
-            <option value="">Todos</option>
-            {patients.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.full_name ?? "Sin nombre"}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className="btn-primary">
-          Filtrar
-        </button>
-        {hasFilters && (
-          <Link href="/pro/agenda/citas" className="btn-subtle">
-            Limpiar
-          </Link>
-        )}
-      </form>
+        <ChevronLeft className="size-3.5" strokeWidth={1.75} aria-hidden />
+        Agenda
+      </Link>
+      <h1 className="page-title mt-3">Todas las citas</h1>
+      <p className="mt-1.5 text-[13.5px] text-ink-2">
+        {total} {total === 1 ? "cita" : "citas"}
+        {scope === "upcoming" ? " próximas" : scope === "past" ? " pasadas" : ""}
+        {rangeLabel ? `, ${rangeLabel}` : ""}
+      </p>
+
+      {/* Filtros (GET, sin JS). La zona se separa con una línea y aire, no con
+          una caja de fondo gris: competía con la tabla que hay justo debajo. */}
+      <div className="mt-6 border-t border-line pt-5">
+        <div className="segmented flex-wrap" role="group" aria-label="Rango rápido">
+          {presets.map((p) => (
+            <Link
+              key={p.key}
+              href={p.href}
+              aria-current={p.active ? "page" : undefined}
+            >
+              {p.label}
+            </Link>
+          ))}
+        </div>
+
+        <form method="get" className="mt-4 flex flex-wrap items-end gap-3">
+          <label className="block">
+            <span className="field-label">Cuándo</span>
+            <select name="scope" defaultValue={scope} className="field w-auto">
+              <option value="all">Todas</option>
+              <option value="upcoming">Próximas</option>
+              <option value="past">Pasadas</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="field-label">Desde</span>
+            <input
+              type="date"
+              name="from"
+              defaultValue={from ?? ""}
+              max={to ?? undefined}
+              className="field w-auto"
+            />
+          </label>
+          <label className="block">
+            <span className="field-label">Hasta</span>
+            <input
+              type="date"
+              name="to"
+              defaultValue={to ?? ""}
+              min={from ?? undefined}
+              className="field w-auto"
+            />
+          </label>
+          <label className="block">
+            <span className="field-label">Estado</span>
+            <select name="status" defaultValue={status ?? ""} className="field w-auto">
+              <option value="">Todos</option>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="field-label">Paciente</span>
+            <select
+              name="patient"
+              defaultValue={patientId ?? ""}
+              className="field w-auto max-w-48"
+            >
+              <option value="">Todos</option>
+              {patients.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name ?? "Sin nombre"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className="btn-primary">
+            Filtrar
+          </button>
+          {hasFilters && (
+            <Link href="/pro/agenda/citas" className="btn-subtle">
+              Limpiar
+            </Link>
+          )}
+        </form>
+      </div>
 
       {/* Listado */}
       {appointments.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-dashed border-line p-8 text-center text-sm text-ink-2">
-          No hay citas con estos filtros.
+        <p className="empty mt-6">
+          No hay citas con estos filtros. Amplía el rango de fechas o quita el
+          estado para ver más.
         </p>
       ) : (
-        <div className="card mt-5 overflow-x-auto">
-          <table className="table-base">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Paciente</th>
-                <th>Estado</th>
-                <th>Asistencia</th>
-                <th className="text-right">Enlaces</th>
-              </tr>
-            </thead>
-            <tbody>
-              {appointments.map((a) => {
-                const dayYMD = localYMD(a.starts_at);
-                return (
-                  <tr
-                    key={a.id}
-                    className={`row-hover last:[&>td]:border-b-0 ${
-                      a.status === "cancelled" ? "opacity-60" : ""
-                    }`}
-                  >
-                    <td className="whitespace-nowrap">
-                      <Link
-                        href={`/pro/agenda?view=day&date=${dayYMD}`}
-                        className="hover:underline"
-                        title="Abrir en el calendario"
-                      >
-                        {formatDateTime(a.starts_at)}
-                      </Link>
-                    </td>
-                    <td>
-                      <Link
-                        href={`/pro/patients/${a.patient_id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {a.patientName ?? "Sin nombre"}
-                      </Link>
-                    </td>
-                    <td>
-                      <Status tone={STATUS_TONE[a.status] ?? "neutral"}>
-                        {STATUS_LABEL[a.status] ?? a.status}
-                      </Status>
-                    </td>
-                    <td className="text-ink-2">
-                      {ATTENDANCE_LABEL[a.attendance] ?? a.attendance}
-                    </td>
-                    <td className="text-right whitespace-nowrap">
-                      {a.video_link && (
-                        <a
-                          href={a.video_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mr-3 text-xs font-medium text-accent hover:underline"
+        <div className="table-wrap mt-6">
+          <div className="overflow-x-auto">
+            <table className="table-base">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Paciente</th>
+                  <th>Estado</th>
+                  <th>Asistencia</th>
+                  <th className="text-right">Enlaces</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appointments.map((a) => {
+                  const dayYMD = localYMD(a.starts_at);
+                  return (
+                    <tr
+                      key={a.id}
+                      className={`row-hover ${
+                        a.status === "cancelled" ? "[&>td]:text-ink-disabled" : ""
+                      }`}
+                    >
+                      <td className="whitespace-nowrap">
+                        <Link
+                          href={`/pro/agenda?view=day&date=${dayYMD}`}
+                          className="hover:underline"
+                          title="Abrir en el calendario"
                         >
-                          Video
+                          {formatDateTime(a.starts_at)}
+                        </Link>
+                      </td>
+                      <td>
+                        <Link
+                          href={`/pro/patients/${a.patient_id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {a.patientName ?? "Sin nombre"}
+                        </Link>
+                      </td>
+                      <td>
+                        <Status tone={STATUS_TONE[a.status] ?? "neutral"}>
+                          {STATUS_LABEL[a.status] ?? a.status}
+                        </Status>
+                      </td>
+                      <td className="text-ink-2">
+                        {ATTENDANCE_LABEL[a.attendance] ?? a.attendance}
+                      </td>
+                      <td className="text-right whitespace-nowrap">
+                        {a.video_link && (
+                          <a
+                            href={a.video_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mr-3 text-[12.5px] font-medium text-accent hover:underline"
+                          >
+                            Videollamada
+                          </a>
+                        )}
+                        <a
+                          href={`/appointments/${a.id}/ics`}
+                          className="text-[12.5px] text-ink-3 underline underline-offset-2 hover:text-ink"
+                        >
+                          .ics
                         </a>
-                      )}
-                      <a
-                        href={`/appointments/${a.id}/ics`}
-                        className="text-xs text-ink-3 underline underline-offset-2 hover:text-ink"
-                      >
-                        .ics
-                      </a>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {/* Paginación */}
       {total > 0 && (
         <div className="mt-4 flex items-center justify-between gap-4">
-          <p className="text-xs text-ink-3">
+          <p className="text-[12.5px] text-ink-4">
             {firstRow}–{lastRow} de {total}
           </p>
           {totalPages > 1 && (
             <div className="flex items-center gap-1.5">
               {page > 1 ? (
                 <Link href={pageHref(page - 1)} className="btn-ghost btn-sm" rel="prev">
-                  ← Anterior
+                  <ChevronLeft className="size-4" strokeWidth={1.75} aria-hidden />
+                  Anterior
                 </Link>
               ) : (
                 <span className="btn-ghost btn-sm cursor-not-allowed opacity-45">
-                  ← Anterior
+                  <ChevronLeft className="size-4" strokeWidth={1.75} aria-hidden />
+                  Anterior
                 </span>
               )}
-              <span className="px-1 text-xs text-ink-2">
+              <span className="px-1 text-[12.5px] text-ink-2">
                 Página {page} de {totalPages}
               </span>
               {page < totalPages ? (
                 <Link href={pageHref(page + 1)} className="btn-ghost btn-sm" rel="next">
-                  Siguiente →
+                  Siguiente
+                  <ChevronRight className="size-4" strokeWidth={1.75} aria-hidden />
                 </Link>
               ) : (
                 <span className="btn-ghost btn-sm cursor-not-allowed opacity-45">
-                  Siguiente →
+                  Siguiente
+                  <ChevronRight className="size-4" strokeWidth={1.75} aria-hidden />
                 </span>
               )}
             </div>

@@ -60,8 +60,8 @@ export function PatientDetailsPanel({
 
   if (editing) {
     return (
-      <section className="card p-5">
-        <h2 className="section-label mb-4">Editar información</h2>
+      <section>
+        <h2 className="section-title mb-4">Editar información</h2>
         <form onSubmit={onSubmit}>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Nombre completo" name="full_name" defaultValue={details.full_name} required wide />
@@ -71,7 +71,6 @@ export function PatientDetailsPanel({
               label="Fecha de nacimiento"
               name="birth_date"
               defaultValue={details.birth_date}
-              className="h-9"
             />
             <Field label="Profesión" name="profession" defaultValue={details.profession} />
             <Field label="Dirección" name="address" defaultValue={details.address} wide />
@@ -83,9 +82,9 @@ export function PatientDetailsPanel({
               wide
             />
           </div>
-          {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+          {error && <p className="mt-3 text-[13px] text-danger">{error}</p>}
           <div className="mt-5 flex items-center gap-2">
-            <button type="submit" disabled={pending} className="btn-primary btn-sm">
+            <button type="submit" disabled={pending} className="btn-primary">
               {pending ? "Guardando…" : "Guardar"}
             </button>
             <button
@@ -94,7 +93,7 @@ export function PatientDetailsPanel({
                 setError(null);
                 setEditing(false);
               }}
-              className="btn-subtle btn-sm"
+              className="btn-subtle"
             >
               Cancelar
             </button>
@@ -116,7 +115,7 @@ export function PatientDetailsPanel({
     {
       label: "Fecha de nacimiento",
       value: details.birth_date
-        ? `${formatDate(details.birth_date)}${age !== null ? ` · ${age} años` : ""}`
+        ? `${formatDate(details.birth_date)}${age !== null ? `, ${age} años` : ""}`
         : null,
       Icono: Cake,
     },
@@ -131,11 +130,11 @@ export function PatientDetailsPanel({
   ];
 
   return (
-    <section className="card p-6">
+    <section>
       <div className="mb-5 flex items-start justify-between gap-4 border-b border-line pb-4">
         <div>
-          <h2 className="card-title">Datos personales y de contacto</h2>
-          <p className="mt-0.5 text-body-sm text-ink-2">
+          <h2 className="section-title">Datos personales y de contacto</h2>
+          <p className="mt-0.5 text-[13px] text-ink-3">
             Amparados por el secreto profesional. Solo usted y el propio paciente
             acceden a este expediente.
           </p>
@@ -149,21 +148,23 @@ export function PatientDetailsPanel({
           Editar
         </button>
       </div>
-      <dl className="grid grid-cols-1 gap-x-8 gap-y-1 md:grid-cols-2">
+      <dl className="grid grid-cols-1 gap-x-10 gap-y-1 md:grid-cols-2">
         {rows.map(({ label, value, Icono, wide }) => (
           <div
             key={label}
-            className={`flex flex-col gap-1 rounded-lg p-2 transition-colors hover:bg-surface-2 ${wide ? "md:col-span-2" : ""}`}
+            className={`flex flex-col gap-1 rounded-lg px-2 py-2 transition-colors hover:bg-surface-subtle ${wide ? "md:col-span-2" : ""}`}
           >
-            <dt className="text-label-sm text-ink-3">{label}</dt>
+            <dt className="text-[12.5px] text-ink-3">{label}</dt>
             <dd className="flex items-start gap-2">
               <Icono
                 size={16}
                 strokeWidth={1.75}
                 aria-hidden
-                className="mt-0.5 shrink-0 text-ink-3"
+                className="mt-0.5 shrink-0 text-ink-4"
               />
-              <span className={`text-body break-words ${value ? "font-medium text-ink" : "text-ink-3"}`}>
+              <span
+                className={`text-[13.5px] break-words ${value ? "font-medium text-ink" : "text-ink-3"}`}
+              >
                 {value ?? "Sin registrar"}
               </span>
             </dd>

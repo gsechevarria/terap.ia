@@ -30,25 +30,23 @@ export default async function RevisionFiscalPage() {
     <div className="mx-auto max-w-4xl">
       <Link
         href="/pro/contabilidad"
-        className="inline-flex items-center gap-1.5 text-label-sm text-ink-3 transition-colors hover:text-ink"
+        className="inline-flex items-center gap-1.5 text-[12px] text-ink-3 transition-colors hover:text-ink"
       >
         <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
         Contabilidad
       </Link>
 
       <h1 className="page-title mt-3">Revisión fiscal pendiente</h1>
-      <p className="mt-1.5 text-body-sm text-ink-2">
+      <p className="mt-1.5 text-[13.5px] text-ink-2">
         Mientras queden registros sin tratamiento fiscal confirmado, el resumen y
         la exportación no se calculan. No es un fallo: es que no se reconstruye el
         pasado con la configuración de hoy sin que alguien lo confirme.
       </p>
 
-      <div className="mt-6">
-        <DescargoFiscal />
-      </div>
+      <DescargoFiscal className="mt-5" />
 
       {total === 0 ? (
-        <div className="card mt-6 flex items-start gap-3 p-6">
+        <div className="mt-8 flex items-start gap-3">
           <CheckCircle2
             size={20}
             strokeWidth={1.75}
@@ -56,8 +54,8 @@ export default async function RevisionFiscalPage() {
             className="mt-0.5 shrink-0 text-success"
           />
           <div>
-            <h2 className="card-title">No queda nada por revisar</h2>
-            <p className="mt-1 text-body-sm text-ink-2">
+            <h2 className="section-title">No queda nada por revisar</h2>
+            <p className="mt-1 text-[13.5px] text-ink-2">
               Todos los cobros, gastos y bienes tienen su tratamiento fiscal
               confirmado.{" "}
               <Link href="/pro/contabilidad" className="font-medium text-accent hover:underline">
@@ -68,7 +66,7 @@ export default async function RevisionFiscalPage() {
           </div>
         </div>
       ) : (
-        <div className="mt-6 flex flex-col gap-6">
+        <div className="mt-8 flex flex-col gap-9">
           <RevisionCobros
             cobros={pendientes.cobros}
             situacionIva={config?.situacion_iva ?? null}
@@ -81,16 +79,28 @@ export default async function RevisionFiscalPage() {
             descripcion="Se confirman abriendo cada gasto y guardándolo: al hacerlo se aplica el porcentaje que corresponde a su situación de IVA."
             accion={{ href: "/pro/contabilidad/gastos", texto: "Ir a gastos" }}
           >
-            {pendientes.gastos.slice(0, 8).map((g) => (
-              <li key={g.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                <span className="min-w-0 truncate text-[13px]">
-                  {g.concepto ?? "Sin concepto"}
-                </span>
-                <span className="mono shrink-0 text-[12px] text-ink-2">
-                  {formatDate(g.fecha)} · {formatCurrency(g.totalCents)}
-                </span>
-              </li>
-            ))}
+            <div className="table-wrap">
+              <table className="table-base">
+                <thead>
+                  <tr>
+                    <th>Concepto</th>
+                    <th>Fecha</th>
+                    <th className="text-right">Importe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendientes.gastos.slice(0, 8).map((g) => (
+                    <tr key={g.id}>
+                      <td>{g.concepto ?? "Sin concepto"}</td>
+                      <td className="whitespace-nowrap text-ink-2">{formatDate(g.fecha)}</td>
+                      <td className="mono text-right whitespace-nowrap">
+                        {formatCurrency(g.totalCents)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Bloque>
 
           <Bloque
@@ -99,11 +109,22 @@ export default async function RevisionFiscalPage() {
             descripcion="Se confirman volviendo a guardar su gasto de origen, que recalcula el valor de adquisición con la fórmula real. Ese valor puede cambiar: anote el actual antes."
             accion={{ href: "/pro/contabilidad/gastos", texto: "Ir a gastos" }}
           >
-            {pendientes.bienes.map((b) => (
-              <li key={b.id} className="px-4 py-2.5 text-[13px]">
-                {b.descripcion ?? "Sin descripción"}
-              </li>
-            ))}
+            <div className="table-wrap">
+              <table className="table-base">
+                <thead>
+                  <tr>
+                    <th>Descripción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendientes.bienes.map((b) => (
+                    <tr key={b.id}>
+                      <td>{b.descripcion ?? "Sin descripción"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Bloque>
         </div>
       )}
@@ -126,24 +147,21 @@ function Bloque({
 }) {
   if (registros === 0) return null;
   return (
-    <section className="card">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line p-5">
+    <section>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="card-title">
-            {titulo}{" "}
-            <span className="mono ml-1 font-normal text-ink-3">{registros}</span>
+          <h2 className="section-title">
+            {titulo} <span className="font-normal text-ink-4">{registros}</span>
           </h2>
-          <p className="mt-1 text-body-sm text-ink-2">{descripcion}</p>
+          <p className="mt-1 text-[13px] text-ink-2">{descripcion}</p>
         </div>
         <Link href={accion.href} className="btn-ghost btn-sm shrink-0">
           {accion.texto}
         </Link>
       </div>
-      <ul className="divide-y divide-line">{children}</ul>
+      {children}
       {registros > 8 && (
-        <p className="border-t border-line px-4 py-2.5 text-[12px] text-ink-3">
-          Y {registros - 8} más.
-        </p>
+        <p className="mt-2 text-[12px] text-ink-3">Y {registros - 8} más.</p>
       )}
     </section>
   );

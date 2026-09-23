@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   listPatientsWithOverview,
   listPatientTags,
@@ -37,10 +37,10 @@ export default async function ProDashboard({
 
   return (
     <div className="mx-auto max-w-5xl">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="page-title">Pacientes</h1>
-          <p className="mt-1.5 text-sm text-ink-2">
+          <p className="mt-2.5 text-[13.5px] text-ink-2">
             {patients.length} {patients.length === 1 ? "expediente" : "expedientes"}
             {status === "active"
               ? " en seguimiento"
@@ -49,7 +49,7 @@ export default async function ProDashboard({
                 : " en total"}
           </p>
         </div>
-        <Link href="/pro/patients/new" className="btn-primary">
+        <Link href="/pro/patients/new" className="btn-primary mt-1.5">
           <Plus size={16} strokeWidth={1.75} aria-hidden /> Nuevo paciente
         </Link>
       </header>
@@ -57,8 +57,8 @@ export default async function ProDashboard({
       {conAlertas.length > 0 && <BandaAlertas pacientes={conAlertas} />}
 
       {/* Filtros: búsqueda, estado y etiqueta */}
-      <section className="mt-7 space-y-4" aria-label="Filtros">
-        <Suspense fallback={<div className="field h-10 max-w-sm" aria-hidden />}>
+      <section className="mt-8 space-y-4" aria-label="Filtros">
+        <Suspense fallback={<div className="field h-[42px] max-w-sm" aria-hidden />}>
           <div className="max-w-sm">
             <PatientSearch initialValue={q} />
           </div>
@@ -94,13 +94,14 @@ export default async function ProDashboard({
           <p className="empty">
             {q ? (
               <>
-                No se encontraron pacientes para{" "}
+                Ningún paciente coincide con{" "}
                 <span className="font-medium text-ink">«{q}»</span>
                 {status === "active"
-                  ? " entre los activos."
+                  ? " entre los activos"
                   : status === "archived"
-                    ? " entre los archivados."
-                    : "."}
+                    ? " entre los archivados"
+                    : ""}
+                . Se busca por nombre, correo, teléfono y profesión.
               </>
             ) : (
               <>
@@ -109,20 +110,54 @@ export default async function ProDashboard({
                   href="/pro/patients/new"
                   className="font-medium text-accent hover:underline"
                 >
-                  Cree el primero
+                  Crea el primero
                 </Link>
                 .
               </>
             )}
           </p>
         ) : (
-          <ul className="card divide-y divide-line overflow-hidden">
-            {patients.map((p) => (
-              <li key={p.id}>
-                <FilaPaciente paciente={p} />
-              </li>
-            ))}
-          </ul>
+          /*
+            Tabla de verdad, y no una lista de tarjetas, por una razón concreta.
+
+            Las tres columnas de la derecha tienen que medir lo mismo en todas
+            las filas. Cuando cada fila era su propio contenedor, el navegador
+            no las cuadraba entre sí: la única fila con cita —«16 sept, 08:30»—
+            era más ancha que las que llevan «—» y arrastraba las columnas hacia
+            la izquierda. Se parcheaba reservando el hueco en `ch`, con el
+            argumento de que la fuente era monoespaciada y `14ch` medía
+            exactamente esa fecha. Eso ya no es cierto: el sistema visual tiene
+            una familia única y proporcional, así que `ch` es el ancho del cero
+            y no dice nada del ancho de «16 sept, 08:30». Un `table` reparte el
+            ancho de cada columna mirando TODAS las filas, de modo que la
+            vertical cuadra por construcción y las reservas sobran.
+
+            En pantalla estrecha la tabla desplaza en horizontal:
+            `overflow-x-auto` gana al `overflow-hidden` de `.table-wrap` porque
+            las utilidades van en una capa posterior. Esconder columnas
+            escondería datos.
+          */
+          <div className="table-wrap overflow-x-auto">
+            <table className="table-base">
+              <thead>
+                <tr>
+                  {/* `w-full` deja que la columna del nombre absorba el ancho
+                      sobrante y las de datos se queden en su contenido. */}
+                  <th scope="col" className="w-full">
+                    Paciente
+                  </th>
+                  <th scope="col">Tareas pendientes</th>
+                  <th scope="col">Próxima cita</th>
+                  <th scope="col">Última actividad</th>
+                </tr>
+              </thead>
+              <tbody>
+                {patients.map((p) => (
+                  <FilaPaciente key={p.id} paciente={p} />
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>
@@ -141,11 +176,7 @@ function BandaAlertas({ pacientes }: { pacientes: PatientOverview[] }) {
     <section className="alert-clinical mt-6" aria-labelledby="alertas-titulo">
       {/* El punto va suelto, fuera de `.st`, así que lleva su geometría
           explícita: las reglas de `.dot` están acotadas a `.st .dot`. */}
-      <span
-        aria-hidden
-        className="d-danger mt-1.5 block size-2 shrink-0 rounded-full"
-        style={{ boxShadow: "0 0 0 3px color-mix(in srgb, currentColor 20%, transparent)" }}
-      />
+      <span aria-hidden className="d-danger mt-1.5 block size-2 shrink-0 rounded-full" />
       <div className="min-w-0 flex-1">
         <h2 id="alertas-titulo" className="font-semibold">
           {total === 1
@@ -162,10 +193,9 @@ function BandaAlertas({ pacientes }: { pacientes: PatientOverview[] }) {
             <li key={p.id}>
               <Link
                 href={`/pro/patients/${p.id}?tab=escalas`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink transition-colors hover:bg-surface-2"
+                className="inline-flex items-center rounded-lg border border-line bg-surface px-3 py-1 text-[12.5px] font-medium text-ink transition-colors hover:bg-surface-subtle"
               >
                 {p.full_name ?? "Sin nombre"}
-                <ArrowRight size={13} strokeWidth={1.75} aria-hidden />
               </Link>
             </li>
           ))}
@@ -226,10 +256,10 @@ function EtiquetaFiltro({
     <Link
       href={href}
       aria-current={activa ? "true" : undefined}
-      className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors duration-150 ${
+      className={`rounded-full border px-2.5 py-0.5 text-[11.5px] font-medium transition-colors duration-150 ${
         activa
           ? "border-accent/30 bg-accent-soft text-accent"
-          : "border-line bg-surface-2 text-ink-2 hover:text-ink"
+          : "border-line bg-surface-subtle text-ink-2 hover:text-ink"
       }`}
     >
       {label}
@@ -240,99 +270,64 @@ function EtiquetaFiltro({
 function FilaPaciente({ paciente }: { paciente: PatientOverview }) {
   const archivado = paciente.status === "archived";
   return (
-    <Link
-      href={`/pro/patients/${paciente.id}`}
-      className="row-hover flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <div className="flex min-w-0 items-center gap-3.5">
-        <span
-          aria-hidden
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-accent-soft text-[13px] font-semibold text-accent"
-        >
-          {(paciente.full_name ?? "?").charAt(0).toUpperCase()}
-        </span>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <span className="truncate text-body-lg font-semibold text-ink">
-              {paciente.full_name ?? "Sin nombre"}
-            </span>
-            {paciente.openAlerts > 0 ? (
-              <StatusCritical>
-                {paciente.openAlerts === 1
-                  ? "Requiere atención"
-                  : `Requiere atención · ${paciente.openAlerts}`}
-              </StatusCritical>
-            ) : (
-              <Status tone={archivado ? "neutral" : "success"}>
-                {archivado ? "Archivado" : "En seguimiento"}
-              </Status>
-            )}
-            {/* Sin cuenta, nada de lo que se le asigne le llega. Se dice aquí
-                porque dos fichas con el mismo nombre —una vinculada y otra
-                no— eran indistinguibles, y elegir la equivocada no avisaba. */}
-            {!paciente.tieneCuenta && (
-              <Status tone="warn">Sin cuenta</Status>
+    <tr className="row-hover">
+      <td>
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            aria-hidden
+            className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-[13px] font-semibold text-accent"
+          >
+            {(paciente.full_name ?? "?").charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <Link
+                href={`/pro/patients/${paciente.id}`}
+                className="font-semibold text-ink hover:text-accent"
+              >
+                {paciente.full_name ?? "Sin nombre"}
+              </Link>
+              {paciente.openAlerts > 0 ? (
+                <StatusCritical>
+                  {paciente.openAlerts === 1
+                    ? "Requiere atención"
+                    : `Requiere atención (${paciente.openAlerts})`}
+                </StatusCritical>
+              ) : (
+                <Status tone={archivado ? "neutral" : "success"}>
+                  {archivado ? "Archivado" : "En seguimiento"}
+                </Status>
+              )}
+              {/* Sin cuenta, nada de lo que se le asigne le llega. Se dice aquí
+                  porque dos fichas con el mismo nombre —una vinculada y otra
+                  no— eran indistinguibles, y elegir la equivocada no avisaba.
+                  Va en texto de color y no en pastilla: las rellenas quedan
+                  para los contadores y para lo crítico. */}
+              {!paciente.tieneCuenta && (
+                <span className="text-[12.5px] font-medium text-warning-ink">
+                  Sin cuenta
+                </span>
+              )}
+            </div>
+            {paciente.tags.length > 0 && (
+              <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                {paciente.tags.map((t) => (
+                  <li key={t} className="chip">
+                    {t}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-          {paciente.tags.length > 0 && (
-            <ul className="mt-2 flex flex-wrap gap-1.5">
-              {paciente.tags.map((t) => (
-                <li key={t} className="chip">
-                  {t}
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
-      </div>
-      {/*
-        Rejilla de columnas que miden lo mismo en TODAS las filas.
-
-        Cada fila es su propio contenedor, así que el navegador no las cuadra
-        entre sí: el bloque se dimensionaba por su contenido y, al ir pegado a
-        la derecha, la única fila con cita («16 sept, 08:30») era más ancha que
-        las que llevan «—» y arrastraba las tres columnas hacia la izquierda.
-
-        La solución no lleva ni un ancho a ojo: el valor reserva su sitio en
-        `ch`, que es el ancho del carácter de SU PROPIA fuente —y como es
-        monoespaciada, `14ch` es exactamente «16 sept, 08:30»—. La columna se
-        queda entonces en el mayor de la etiqueta y esa reserva, y ambas son
-        idénticas fila a fila, así que la vertical cuadra por construcción y no
-        por acierto. `DD mmm, HH:MM` y `DD mmm YYYY` con «sept», el mes
-        abreviado más largo en español, son el caso peor.
-
-        En móvil la fila se apila, el bloque cae debajo del nombre y no hay nada
-        que cuadrar: ahí sigue fluyendo, que es lo que evita el desbordamiento
-        lateral en pantallas estrechas.
-      */}
-      <dl className="flex flex-wrap gap-x-6 gap-y-2 pl-[3.375rem] text-xs sm:grid sm:shrink-0 sm:grid-cols-[auto_auto_auto] sm:pl-0">
-        <Dato label="Tareas pendientes" valor={String(paciente.pendingTasks)} ancho="w-[3ch]" />
-        <Dato label="Próxima cita" valor={formatDateTime(paciente.nextAppointment)} ancho="w-[14ch]" />
-        <Dato label="Última actividad" valor={formatDate(paciente.lastActivity)} ancho="w-[12ch]" />
-      </dl>
-    </Link>
-  );
-}
-
-function Dato({
-  label,
-  valor,
-  ancho,
-}: {
-  label: string;
-  valor: string;
-  /** Sitio que reserva el valor, en `ch` de su propia fuente monoespaciada. */
-  ancho: string;
-}) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <dt className="text-[10px] font-medium tracking-wide text-ink-3 uppercase">
-        {label}
-      </dt>
-      {/* `truncate` es el seguro: si un valor creciera más de lo previsto se
-          recorta en su columna en vez de ensanchar la rejilla y descuadrar la
-          fila entera otra vez. */}
-      <dd className={`mono truncate text-ink-2 ${ancho}`}>{valor}</dd>
-    </div>
+      </td>
+      <td className="mono text-ink-2">{paciente.pendingTasks}</td>
+      <td className="mono whitespace-nowrap text-ink-2">
+        {formatDateTime(paciente.nextAppointment)}
+      </td>
+      <td className="mono whitespace-nowrap text-ink-2">
+        {formatDate(paciente.lastActivity)}
+      </td>
+    </tr>
   );
 }

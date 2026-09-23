@@ -10,9 +10,14 @@ export type StatusTone =
   | "danger";
 
 /**
- * Estado con punto + etiqueta (estilo Linear/Vercel): el color vive en el
- * punto, el texto queda en tinta neutra. `halo` añade un cerco sutil para
- * los estados que piden atención sin llegar a alerta.
+ * Estado: punto de color y etiqueta, sin caja.
+ *
+ * El relleno se reserva a los contadores y a lo crítico, así que una tabla con
+ * diez filas de estado no acaba siendo diez pastillas de colores compitiendo
+ * entre sí. El color va SOLO en el punto y el texto se queda en tinta neutra:
+ * el color nunca es el único portador, la palabra está siempre al lado.
+ *
+ * `halo` añade un cerco al punto para lo que pide atención sin llegar a alerta.
  */
 export function Status({
   tone = "neutral",

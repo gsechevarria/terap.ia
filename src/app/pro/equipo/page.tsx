@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Building2, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { getContextoPropio } from "@/lib/queries/contexts";
 import { getInvitacionesEquipo, getMiembros } from "@/lib/queries/organizations";
 import { EquipoPanel } from "@/app/pro/_components/EquipoPanel";
@@ -36,24 +36,25 @@ export default async function EquipoPage() {
   ]);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <header className="flex flex-col gap-2">
+    <div className="mx-auto flex max-w-3xl flex-col gap-7">
+      <header>
         <p className="section-label">
           {contexto.organization_kind === "center" ? "Centro" : "Consulta"}
         </p>
-        <h1 className="page-title flex items-center gap-3">
-          <Building2 size={22} strokeWidth={1.75} aria-hidden className="text-ink-3" />
-          {contexto.organization_name}
-        </h1>
+        <h1 className="page-title mt-1">{contexto.organization_name}</h1>
       </header>
 
       {/* La separación entre permiso administrativo y acceso clínico es la
-          regla menos intuitiva del modelo, así que se dice en la pantalla. */}
-      <p className="alert-clinical border-line bg-info-soft">
-        <Info size={18} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0 text-info" />
+          regla menos intuitiva del modelo, así que se dice en la pantalla.
+          Franja y no tarjeta: cruza el ancho y se lee antes que la tabla. */}
+      <p className="flex items-start gap-2.5 rounded-md border border-line bg-info-soft px-4 py-3 text-[13.5px] text-ink-2">
+        <Info size={17} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0 text-info" />
         <span>
-          Formar parte del equipo <strong>no da acceso a ningún expediente</strong>.
-          El acceso se concede expediente a expediente, desde la ficha de cada
+          Formar parte del equipo{" "}
+          <strong className="font-semibold text-ink">
+            no da acceso a ningún expediente
+          </strong>
+          . El acceso se concede expediente a expediente, desde la ficha de cada
           paciente, por quien ya lo atiende.
         </span>
       </p>
