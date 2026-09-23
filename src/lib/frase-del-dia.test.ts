@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { duracionEnPalabras, fraseDelDia, saludo } from "@/lib/frase-del-dia";
+import {
+  duracionEnPalabras,
+  fraseDelDia,
+  saludo,
+  sinTratamiento,
+  tratamientoYNombre,
+} from "@/lib/frase-del-dia";
 
 const base = {
   sesiones: 0,
@@ -10,7 +16,7 @@ const base = {
 };
 
 describe("saludo", () => {
-  it("cambia con la franja horaria y usa solo el nombre de pila", () => {
+  it("cambia con la franja horaria y usa el nombre de pila", () => {
     expect(saludo(9 * 60, "Laura Martín Ruiz")).toBe("Buenos días, Laura");
     expect(saludo(16 * 60, "Laura")).toBe("Buenas tardes, Laura");
     expect(saludo(22 * 60, "Laura")).toBe("Buenas noches, Laura");
@@ -20,6 +26,40 @@ describe("saludo", () => {
   it("sin nombre no deja una coma colgando", () => {
     expect(saludo(9 * 60, null)).toBe("Buenos días");
     expect(saludo(9 * 60, "   ")).toBe("Buenos días");
+  });
+
+  it("saluda a la persona, no a su tratamiento", () => {
+    // El caso que lo motivó: «Buenas noches, Dra.» saludaba al título.
+    expect(saludo(22 * 60, "Dra. Ana Romero")).toBe("Buenas noches, Dra. Ana");
+  });
+});
+
+describe("tratamientoYNombre", () => {
+  it("conserva el tratamiento y añade el nombre de pila", () => {
+    expect(tratamientoYNombre("Dra. Ana Romero")).toBe("Dra. Ana");
+    expect(tratamientoYNombre("Dr. Juan Pérez Gil")).toBe("Dr. Juan");
+    expect(tratamientoYNombre("Lic. Marta Ruiz")).toBe("Lic. Marta");
+    expect(tratamientoYNombre("Prof. Elena Sanz")).toBe("Prof. Elena");
+  });
+
+  it("no depende del punto ni de las mayúsculas", () => {
+    expect(tratamientoYNombre("dra ana romero")).toBe("dra ana");
+    expect(tratamientoYNombre("DRA. ANA ROMERO")).toBe("DRA. ANA");
+  });
+
+  it("sin tratamiento delante, el nombre de pila a secas", () => {
+    expect(tratamientoYNombre("Ana Romero")).toBe("Ana");
+    expect(tratamientoYNombre("Laura")).toBe("Laura");
+  });
+
+  it("si solo consta el tratamiento, se usa: es lo único que hay", () => {
+    expect(tratamientoYNombre("Dra.")).toBe("Dra.");
+  });
+
+  it("aguanta lo que venga mal escrito", () => {
+    expect(tratamientoYNombre(null)).toBe("");
+    expect(tratamientoYNombre("   ")).toBe("");
+    expect(tratamientoYNombre("  Dra.   Ana   Romero  ")).toBe("Dra. Ana");
   });
 });
 
@@ -111,5 +151,26 @@ describe("fraseDelDia", () => {
       expect(f.toLowerCase()).not.toContain(prohibida);
     }
     expect(f).toBe("Hoy tienes 8 sesiones entre las 08:00 y las 21:00. 3 citas sin confirmar.");
+  });
+});
+
+describe("sinTratamiento", () => {
+  it("quita el tratamiento y deja el nombre completo", () => {
+    expect(sinTratamiento("Dra. Ana Romero")).toBe("Ana Romero");
+    expect(sinTratamiento("Dr. Juan Pérez Gil")).toBe("Juan Pérez Gil");
+  });
+
+  it("deja intacto lo que no lleva tratamiento", () => {
+    expect(sinTratamiento("Ana Romero")).toBe("Ana Romero");
+    expect(sinTratamiento("Laura")).toBe("Laura");
+  });
+
+  it("si solo hay tratamiento, lo devuelve en vez de vaciarlo", () => {
+    expect(sinTratamiento("Dra.")).toBe("Dra.");
+  });
+
+  it("aguanta lo vacío y los espacios de más", () => {
+    expect(sinTratamiento(null)).toBe("");
+    expect(sinTratamiento("  Dra.   Ana   Romero ")).toBe("Ana Romero");
   });
 });
