@@ -40,7 +40,9 @@ export default async function AgendaPage({
   };
 
   return (
-    <div className="mx-auto max-w-6xl">
+    // A lo ancho, como el resto del panel: el calendario es lo que más
+    // agradece el sitio, siete columnas de días.
+    <div>
       <h1 className="page-title">Agenda</h1>
 
       {/* La columna derecha se aparta hasta `xl`: con `max-w-6xl` (1152 px) y

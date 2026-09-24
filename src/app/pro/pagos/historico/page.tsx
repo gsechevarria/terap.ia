@@ -8,7 +8,11 @@ import { getPatientsForSelect } from "@/lib/queries/appointments";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { paymentMethodLabel } from "@/lib/payment-methods";
 import { Status } from "@/components/ui/Status";
-import { BarChart } from "@/app/pro/_components/BarChart";
+import {
+  IngresosPorMes,
+  type MesDeIngresos,
+} from "@/app/pro/_components/IngresosPorMes";
+import { Migas } from "@/app/pro/_components/Migas";
 import { MethodBreakdown } from "@/app/pro/_components/MethodBreakdown";
 import {
   PRESETS,
@@ -26,12 +30,25 @@ const METHOD_LABEL: Record<string, string> = {
   none: "Sin especificar",
 };
 
-function monthLabel(ym: string): string {
-  return new Date(`${ym}-01T00:00:00`).toLocaleDateString("es-ES", {
-    month: "short",
-    year: "2-digit",
-  });
+/** «sept», con el año en el primero y en enero. Mes sin zona: anclado en UTC. */
+function monthLabel(ym: string, primero: boolean): string {
+  const [y, m] = ym.split("-").map(Number) as [number, number];
+  const d = new Date(Date.UTC(y, m - 1, 1, 12));
+  const mes = d.toLocaleDateString("es-ES", { timeZone: "UTC", month: "short" });
+  return primero || m === 1 ? `${mes} ${String(y).slice(2)}` : mes;
 }
+function addMonths(ym: string, n: number): string {
+  const [y, m] = ym.split("-").map(Number) as [number, number];
+  const d = new Date(Date.UTC(y, m - 1 + n, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+function monthHref(ym: string): string {
+  const [y, m] = ym.split("-").map(Number) as [number, number];
+  const ultimo = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return `/pro/pagos/historico?status=paid&from=${ym}-01&to=${ym}-${String(ultimo).padStart(2, "0")}`;
+}
+/** Como mucho, los 24 meses más recientes del filtro caben en la gráfica. */
+const MESES_MAX = 24;
 
 function resolveStatus(raw?: string): "paid" | "pending" | undefined {
   return raw === "paid" || raw === "pending" ? raw : undefined;
@@ -105,6 +122,7 @@ export default async function PaymentsHistoryPage({
 
   // "Hoy" fuera del render de JSX (regla de pureza): presets con la fecha actual.
   const now = new Date();
+  const mesEnCurso = presetRange("this-month", now).from.slice(0, 7);
   const presets = PRESETS.map((preset) => {
     const r = presetRange(preset.key, now);
     const p = baseParams();
@@ -130,22 +148,16 @@ export default async function PaymentsHistoryPage({
   return (
     <div className="flex flex-col gap-[22px]">
       <div>
-        <Link
-          href="/pro/pagos"
-          className="inline-flex items-center gap-1 text-[13px] text-ink-3 hover:text-ink"
-        >
-          <ChevronLeft size={15} strokeWidth={1.8} aria-hidden />
-          Pagos
-        </Link>
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
+        <Migas tramos={[{ href: "/pro/pagos", texto: "Pagos" }, { texto: "Histórico" }]} />
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="page-title">Histórico de pagos</h1>
-            <p className="mt-1.5 text-[13.5px] text-ink-2">
+            <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">
               {total} {total === 1 ? "pago" : "pagos"}
-              {rangeLabel ? `, ${rangeLabel}` : ""}
+              {rangeLabel ? `, ${rangeLabel}` : ""}.
             </p>
           </div>
-          <a href={exportHref} className="btn-ghost">
+          <a href={exportHref} className="btn-ghost mt-1.5">
             Exportar CSV
           </a>
         </div>
@@ -260,13 +272,7 @@ export default async function PaymentsHistoryPage({
               Solo lo que consta como cobrado.
             </p>
             <div className="mt-4">
-              <BarChart
-                ariaLabel="Ingresos por mes"
-                valueLabel={(n) => formatCurrency(n)}
-                data={[...history.byMonth]
-                  .reverse()
-                  .map((m) => ({ label: monthLabel(m.month), value: m.paidCents }))}
-              />
+              <IngresosPorMes meses={serieMensual(history.byMonth, mesEnCurso)} />
             </div>
           </section>
           <section className="w-full lg:w-[300px] lg:shrink-0">
@@ -285,8 +291,8 @@ export default async function PaymentsHistoryPage({
           quítalos con «Limpiar».
         </p>
       ) : (
-        <div className="table-wrap overflow-x-auto">
-          <table className="table-base">
+        <div className="overflow-x-auto">
+          <table className="table-base table-plain">
             <thead>
               <tr>
                 <th>Fecha</th>
@@ -396,4 +402,33 @@ function Cifra({
       <div className="mt-0.5 text-[12.5px] text-ink-2">{pie}</div>
     </div>
   );
+}
+
+/**
+ * Meses continuos entre el más antiguo y el más reciente con cobros del filtro
+ * —los vacíos, a cero—, como mucho los 24 últimos. Antes se saltaban los meses
+ * sin cobros y la gráfica ponía julio al lado de septiembre.
+ */
+function serieMensual(
+  byMonth: { month: string; paidCents: number }[],
+  mesEnCurso: string,
+): MesDeIngresos[] {
+  if (byMonth.length === 0) return [];
+  const ordenados = [...byMonth].sort((a, b) => a.month.localeCompare(b.month));
+  const ultimo = ordenados.at(-1)!.month;
+  let desde = ordenados[0]!.month;
+  const tope = addMonths(ultimo, -(MESES_MAX - 1));
+  if (desde < tope) desde = tope;
+  const cobrado = new Map(byMonth.map((m) => [m.month, m.paidCents]));
+  const serie: MesDeIngresos[] = [];
+  for (let ym = desde; ym <= ultimo; ym = addMonths(ym, 1)) {
+    serie.push({
+      mes: ym,
+      etiqueta: monthLabel(ym, serie.length === 0),
+      cents: cobrado.get(ym) ?? 0,
+      esMesEnCurso: ym === mesEnCurso,
+      href: monthHref(ym),
+    });
+  }
+  return serie;
 }

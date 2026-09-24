@@ -385,8 +385,19 @@ hoja y resueltas a la vista (antes plegadas); «Proponer otra hora» usa
 `FechaHoraSesion` en vez del `datetime-local`. Equipo: título «Equipo» con el
 centro en la frase, y la gestión en la columna derecha. Ajustes: bloque «Tu
 cuenta» nuevo (nombre, correo, colegiación, acreditación, consulta y rol).
-Siguen estrechas y centradas: listado de citas, ficha del paciente, evolución
-de una escala y alta de paciente.
+
+
+**Resto del panel, igual (24-sep) — ya no queda ninguna pantalla con el estilo
+antiguo.** Ficha del paciente (a lo ancho, frase de estado bajo el nombre con
+próxima cita, última sesión, tareas y cuenta; citas y diario en dos columnas),
+todas las citas, histórico de pagos (`IngresosPorMes` con meses continuos),
+evolución de una escala, alta de paciente, agenda (solo pierde el tope de
+ancho) y `/admin` (con la hoja del panel). Subpantallas con **`Migas`**
+(`src/app/pro/_components/Migas.tsx`) en vez de «← Volver». `ScoreChart` se
+limita a `max-w-3xl` dentro del propio componente: es un SVG escalado y a lo
+ancho se disparaba. **`BarChart` eliminado**: ya no lo usaba nadie. Quedan
+fuera a propósito `/registro` y `/account/password` (pantallas de entrada,
+`pantalla-acceso`) y la app del paciente, que tiene su propio sistema.
 
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 

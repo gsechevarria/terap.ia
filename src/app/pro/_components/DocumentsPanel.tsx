@@ -86,11 +86,11 @@ export function DocumentsPanel({
       {documents.length === 0 ? (
         <p className="text-sm text-ink-2">Sin documentos.</p>
       ) : (
-        <ul className="card divide-y divide-line">
+        <ul className="divide-y divide-line-soft border-y border-line">
           {documents.map((d) => (
             <li
               key={d.id}
-              className="group flex items-center justify-between px-4 py-3 text-sm"
+              className="group flex items-center justify-between py-3 text-sm"
             >
               <span className="min-w-0">
                 {d.title ?? "Documento"}

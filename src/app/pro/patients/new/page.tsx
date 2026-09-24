@@ -1,26 +1,21 @@
 import { ActionForm } from "@/components/ui/ActionForm";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { createPatientAction } from "@/lib/actions/patients";
 import { DateField } from "@/components/ui/DateField";
+import { Migas } from "@/app/pro/_components/Migas";
 
 export default function NewPatientPage() {
   return (
-    <div className="mx-auto max-w-lg">
-      <Link
-        href="/pro/patients"
-        className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink"
-      >
-        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden />
-        Pacientes
-      </Link>
-      <h1 className="page-title mt-4">Nuevo paciente</h1>
-      <p className="mt-2.5 text-[13.5px] text-ink-2">
+    // Cabecera como el resto del panel, alineada a la izquierda; el formulario
+    // conserva su ancho de lectura en vez de centrarse en la hoja.
+    <div>
+      <Migas tramos={[{ href: "/pro/patients", texto: "Pacientes" }, { texto: "Nuevo paciente" }]} />
+      <h1 className="page-title mt-3">Nuevo paciente</h1>
+      <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">
         Crea la ficha. Después podrás generar un enlace de invitación para que
         se dé de alta.
       </p>
 
-      <ActionForm action={createPatientAction} className="mt-9 flex flex-col gap-5">
+      <ActionForm action={createPatientAction} className="mt-8 flex max-w-xl flex-col gap-5">
         <label className="block">
           <span className="field-label">Nombre completo</span>
           {/* Sin `autoFocus`: mueve el foco antes de que el usuario haya leído

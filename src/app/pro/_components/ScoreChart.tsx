@@ -41,7 +41,9 @@ export function ScoreChart({
   const linePath = points.map((p, i) => `${x(i)},${y(p.score)}`).join(" ");
 
   return (
-    <figure className="w-full overflow-x-auto">
+    // Tope de ancho: el SVG escala con su contenedor, y en una hoja a lo ancho
+    // los rótulos acababan enormes. A 768 px el texto queda a su tamaño.
+    <figure className="w-full max-w-3xl overflow-x-auto">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"

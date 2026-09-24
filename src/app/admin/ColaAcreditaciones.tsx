@@ -38,18 +38,25 @@ export function ColaAcreditaciones({ profesionales }: { profesionales: Fila[] })
   const [notas, setNotas] = useState<Record<string, string>>({});
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="card-title">Acreditaciones ({profesionales.length})</h2>
+    <section className="flex min-w-0 flex-1 flex-col gap-3">
+      <h2 className="section-title">
+        Acreditaciones{" "}
+        <span className="font-normal text-ink-4">{profesionales.length}</span>
+      </h2>
       {error && <p className="text-sm text-danger">{error}</p>}
 
       {profesionales.length === 0 ? (
         <p className="empty">No hay acreditaciones pendientes de revisar.</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="border-t border-line">
           {profesionales.map((p) => {
             const e = ESTADO[p.estado];
             return (
-              <li key={p.id} className="card flex flex-col gap-3 p-4">
+              <li
+                key={p.id}
+                className="flex flex-col gap-3 py-4"
+                style={{ borderBottom: "1px solid var(--line-soft)" }}
+              >
                 <div className="flex flex-wrap items-start gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{p.nombre ?? "Sin nombre"}</p>
@@ -66,7 +73,7 @@ export function ColaAcreditaciones({ profesionales }: { profesionales: Fila[] })
                 </dl>
 
                 {p.nota && (
-                  <p className="rounded-lg bg-surface-2 px-3 py-2 text-sm text-ink-2">
+                  <p className="rounded-md bg-surface-muted px-3 py-2 text-sm text-ink-2">
                     Nota anterior: {p.nota}
                   </p>
                 )}
