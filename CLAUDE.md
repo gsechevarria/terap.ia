@@ -370,6 +370,15 @@ resumen se agrupan en una sola franja. Nueva variante **`.table-plain`** (con
 `.table-base`, sin `.table-wrap`): tabla sin caja, la de «Hoy». Las tarjetas
 del asistente del expediente (facturas, retenciones, checklist) se quedan.
 
+**Analítica en una sola pantalla (24-sep).** Seis cifras, dos series lado a lado
+(sesiones por semana, cobrado por mes) y tres bloques (asistencia a 90 días
+con las pasadas sin marcar, cuándo trabajas, uso de la app entre sesiones). El
+cálculo es puro en `src/lib/analitica.ts`, con pruebas; la consulta solo lee.
+**Se retira la «evolución agregada de escalas»**: promediaba puntuaciones de
+pacientes distintos, no describía a nadie y se leía como tendencia clínica. De
+escalas queda lo operativo: pacientes con escalas activas, respuestas e ítems de
+riesgo sin revisar. Cabe sin desplazar en escritorio; en móvil se apila.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
