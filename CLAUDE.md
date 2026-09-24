@@ -409,6 +409,15 @@ contraseña; tras entrar pregunta al servidor (`soyAdminPlataformaAction` →
 porque cualquiera con el repositorio tendría la llave del panel que aprueba
 profesionales. `verificar-produccion.mjs` comprueba la nueva redirección.
 
+⚠️ **Vercel a veces no despliega un merge a `main`.** Ha pasado dos veces el
+23 y el 24-sep (#53 y #61): CI de `main` en verde y ningún despliegue de
+producción para ese commit, ni en cola ni con error. No se ha averiguado la
+causa. Por eso, **tras cada merge se comprueba** que existe un despliegue
+`Production` para el SHA (`gh api "repos/…/deployments?sha=<sha>"`) y se pasa
+`verificar-produccion.mjs`. Si no aparece, el agente no puede lanzarlo
+(`vercel --prod` y `redeploy` están vetados): o se fusiona otro PR, que sí lo
+dispara, o una persona pulsa «Redeploy» en el panel de Vercel.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
