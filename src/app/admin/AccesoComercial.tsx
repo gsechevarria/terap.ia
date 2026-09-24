@@ -38,26 +38,29 @@ export function AccesoComercial({ organizaciones }: { organizaciones: Org[] }) {
   const [hasta, setHasta] = useState<Record<string, string>>({});
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="card-title">Acceso comercial ({organizaciones.length})</h2>
+    <section className="flex w-full flex-col gap-3 lg:w-[520px] lg:shrink-0">
+      <h2 className="section-title">
+        Acceso comercial{" "}
+        <span className="font-normal text-ink-4">{organizaciones.length}</span>
+      </h2>
       <p className="text-sm text-ink-2">
         Beta es una autorización, no una suscripción de pago. Suspender no borra
         nada ni bloquea el acceso del paciente.
       </p>
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <ul className="card divide-y divide-line">
+      <ul className="divide-y divide-line-soft border-y border-line">
         {organizaciones.map((o) => {
           const e = ESTADO[o.estado];
           return (
-            <li key={o.id} className="flex flex-col gap-3 px-4 py-4">
+            <li key={o.id} className="flex flex-col gap-3 py-4">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{o.nombre}</p>
                   <p className="text-xs text-ink-3">
                     {o.tipo === "center" ? "Centro" : "Consulta individual"}
-                    {o.concedido && ` · concedida el ${formatDate(o.concedido)}`}
-                    {o.caduca && ` · hasta ${formatDate(o.caduca)}`}
+                    {o.concedido && `, concedida el ${formatDate(o.concedido)}`}
+                    {o.caduca && `, hasta ${formatDate(o.caduca)}`}
                   </p>
                 </div>
                 {e && <Status tone={e.tono}>{e.texto}</Status>}

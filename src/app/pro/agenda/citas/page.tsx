@@ -8,6 +8,7 @@ import {
 import type { Appointment } from "@/lib/types";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { Status, type StatusTone } from "@/components/ui/Status";
+import { Migas } from "@/app/pro/_components/Migas";
 import {
   PRESETS,
   presetRange,
@@ -134,19 +135,15 @@ export default async function AllAppointmentsPage({
           : "";
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <Link
-        href="/pro/agenda"
-        className="inline-flex items-center gap-1 text-[13px] text-ink-3 transition-colors hover:text-ink"
-      >
-        <ChevronLeft className="size-3.5" strokeWidth={1.75} aria-hidden />
-        Agenda
-      </Link>
+    // A lo ancho, como el resto del panel: la tabla tiene cinco columnas y
+    // agradece el sitio. Migas en vez del «← Agenda».
+    <div>
+      <Migas tramos={[{ href: "/pro/agenda", texto: "Agenda" }, { texto: "Todas las citas" }]} />
       <h1 className="page-title mt-3">Todas las citas</h1>
-      <p className="mt-1.5 text-[13.5px] text-ink-2">
+      <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">
         {total} {total === 1 ? "cita" : "citas"}
         {scope === "upcoming" ? " próximas" : scope === "past" ? " pasadas" : ""}
-        {rangeLabel ? `, ${rangeLabel}` : ""}
+        {rangeLabel ? `, ${rangeLabel}` : ""}.
       </p>
 
       {/* Filtros (GET, sin JS). La zona se separa con una línea y aire, no con
@@ -237,9 +234,9 @@ export default async function AllAppointmentsPage({
           estado para ver más.
         </p>
       ) : (
-        <div className="table-wrap mt-6">
+        <div className="mt-6">
           <div className="overflow-x-auto">
-            <table className="table-base">
+            <table className="table-base table-plain">
               <thead>
                 <tr>
                   <th>Fecha</th>

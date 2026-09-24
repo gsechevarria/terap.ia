@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getAssignmentDetail } from "@/lib/queries/scales";
+import { getPatient } from "@/lib/queries/patients";
+import { Migas } from "@/app/pro/_components/Migas";
 import { ScoreChart } from "@/app/pro/_components/ScoreChart";
 import { StatusCritical } from "@/components/ui/Status";
 import { formatDateTime } from "@/lib/format";
@@ -12,8 +12,11 @@ export default async function ScaleEvolutionPage({
   params: Promise<{ id: string; assignmentId: string }>;
 }) {
   const { id, assignmentId } = await params;
-  const detail = await getAssignmentDetail(assignmentId);
-  if (!detail || detail.patientId !== id) notFound();
+  const [detail, patient] = await Promise.all([
+    getAssignmentDetail(assignmentId),
+    getPatient(id),
+  ]);
+  if (!detail || detail.patientId !== id || !patient) notFound();
 
   const scored = detail.responses.filter((r) => r.score != null);
   const points = scored.map((r) => ({
@@ -24,16 +27,25 @@ export default async function ScaleEvolutionPage({
   const flaggedCount = detail.responses.filter((r) => r.flagged).length;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <Link
-        href={`/pro/patients/${id}?tab=escalas`}
-        className="inline-flex items-center gap-1 text-label-sm text-ink-3 transition-colors hover:text-accent"
-      >
-        <ChevronLeft size={13} strokeWidth={1.75} aria-hidden />
-        Escalas del paciente
-      </Link>
+    // A lo ancho; la gráfica se limita sola a su ancho de lectura.
+    <div>
+      <Migas
+        tramos={[
+          { href: "/pro/patients", texto: "Pacientes" },
+          {
+            href: `/pro/patients/${id}?tab=escalas`,
+            texto: patient.full_name ?? "Sin nombre",
+          },
+          { texto: detail.scaleCode },
+        ]}
+      />
       <h1 className="page-title mt-3">{detail.scaleCode}</h1>
-      <p className="mt-1 text-body-lg text-ink-2">{detail.scaleName}</p>
+      <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">
+        {detail.scaleName}, de {patient.full_name ?? "este paciente"}.{" "}
+        {detail.responses.length === 0
+          ? "Todavía sin respuestas."
+          : `${detail.responses.length} ${detail.responses.length === 1 ? "respuesta" : "respuestas"}.`}
+      </p>
 
       {flaggedCount > 0 && (
         <div role="alert" className="alert-clinical mt-5">
@@ -90,9 +102,9 @@ export default async function ScaleEvolutionPage({
               </a>
             </div>
 
-            <div className="table-wrap">
+            <div className="max-w-3xl">
               <div className="overflow-x-auto">
-                <table className="table-base">
+                <table className="table-base table-plain">
                   <thead>
                     <tr>
                       <th>Fecha</th>

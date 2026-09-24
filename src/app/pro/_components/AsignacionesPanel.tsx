@@ -51,8 +51,8 @@ export function AsignacionesPanel({
 
       {error && <p className="text-[13px] text-danger">{error}</p>}
 
-      <div className="table-wrap">
-        <table className="table-base">
+      <div className="overflow-x-auto">
+        <table className="table-base table-plain">
           <thead>
             <tr>
               <th>Profesional</th>

@@ -207,8 +207,8 @@ export function PaymentsPanel({
           // el estado quedaban fuera de pantalla y había que desplazar en
           // horizontal justo para llegar a los dos controles que se usan. En
           // móvil cada pago es una tarjeta y todo cabe.
-          <div className="table-wrap mt-4 hidden sm:block">
-            <table className="table-base">
+          <div className="mt-4 hidden overflow-x-auto sm:block">
+            <table className="table-base table-plain">
               <thead>
                 <tr>
                   <th>Sesión</th>
@@ -306,11 +306,15 @@ export function PaymentsPanel({
 
         {/* Móvil: una tarjeta por pago, con el método y el estado a la vista. */}
         {detail.payments.length > 0 && (
-          <ul className="mt-3 flex flex-col gap-2 sm:hidden">
+          <ul className="mt-3 border-t border-line sm:hidden">
             {detail.payments.map((p) => {
               const esConsumoBono = Boolean(p.session_pack_id && p.appointment_id);
               return (
-                <li key={p.id} className="card flex flex-col gap-2.5 p-3.5">
+                <li
+                  key={p.id}
+                  className="flex flex-col gap-2.5 py-3.5"
+                  style={{ borderBottom: "1px solid var(--line-soft)" }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-[13px] font-medium text-ink">
