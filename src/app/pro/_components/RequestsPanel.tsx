@@ -6,12 +6,9 @@ import { CalendarPlus, CalendarClock, CalendarX, Clock } from "lucide-react";
 import { callAction } from "@/lib/action-result";
 import { useAction } from "@/lib/use-action";
 import { resolveRequestAction } from "@/lib/actions/appointments";
-import {
-  formatDateTime,
-  toDatetimeLocal,
-  fromDatetimeLocal,
-} from "@/lib/format";
+import { formatDateTime, toDatetimeLocal, fromDatetimeLocal } from "@/lib/format";
 import type { PendingRequest } from "@/lib/queries/appointment-requests";
+import { FechaHoraSesion } from "@/app/pro/_components/FechaHoraSesion";
 
 /**
  * Los tres tipos de solicitud, con su icono.
@@ -33,6 +30,15 @@ const RESUELTA: Record<string, { texto: string; clase: string }> = {
   declined: { texto: "Rechazada", clase: "text-ink-3" },
 };
 
+/** Cuántas resueltas se enseñan al lado; el resto no cabe ni hace falta. */
+const RESUELTAS_VISIBLES = 12;
+
+/**
+ * Solicitudes con el lenguaje de «Hoy»: lo que hay que decidir a la izquierda,
+ * como filas sobre la hoja separadas por su línea —no una tarjeta por
+ * solicitud—, y lo ya resuelto a la derecha, a la vista, en una tabla sin caja.
+ * Antes lo resuelto iba plegado en un desplegable al final.
+ */
 export function RequestsPanel({
   pending,
   resolved,
@@ -54,96 +60,95 @@ export function RequestsPanel({
     );
   }
 
+  const visibles = resolved.slice(0, RESUELTAS_VISIBLES);
+
   return (
-    <div className="flex flex-col gap-7">
-      <section className="flex flex-col gap-3">
-        <h2 className="section-title">
+    <div className="flex flex-col gap-8 lg:flex-row">
+      <section className="min-w-0 flex-1" aria-labelledby="por-decidir">
+        <h2 id="por-decidir" className="section-title mb-2.5">
           Por decidir{" "}
           <span className="font-normal text-ink-4">
             {pending.length} {pending.length === 1 ? "solicitud" : "solicitudes"}
           </span>
         </h2>
         {pending.length === 0 ? (
-          <p className="text-[13.5px] text-ink-3">
+          <p className="border-t border-line py-3 text-[13.5px] text-ink-3">
             No tienes solicitudes por decidir.
           </p>
         ) : (
-          pending.map((r) => <RequestCard key={r.id} req={r} />)
+          <ul className="border-t border-line">
+            {pending.map((r) => (
+              <RequestRow key={r.id} req={r} />
+            ))}
+          </ul>
         )}
       </section>
 
       {resolved.length > 0 && (
-        <section className="border-t border-line pt-6">
-          <details>
-            <summary className="cursor-pointer text-[13.5px] text-ink-3 hover:text-ink">
-              Resueltas ({resolved.length})
-            </summary>
-            <div className="table-wrap mt-3">
-              <table className="table-base">
-                <thead>
-                  <tr>
-                    <th>Paciente</th>
-                    <th>Solicitud</th>
-                    <th>Horario pedido</th>
-                    <th>Resultado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resolved.map((r) => {
-                    // Lo que no es aceptada ni rechazada lo retiró el propio
-                    // paciente: no es una decisión del profesional.
-                    const fin = RESUELTA[r.status] ?? {
-                      texto: "Retirada",
-                      clase: "text-ink-3",
-                    };
-                    return (
-                      <tr key={r.id}>
-                        <td className="font-medium">
-                          {r.patientName ?? "Paciente"}
-                        </td>
-                        <td className="text-ink-2">{KIND[r.kind].label}</td>
-                        <td className="text-ink-2">
-                          {r.preferred_start ? (
-                            formatDateTime(r.preferred_start)
-                          ) : (
-                            <span className="text-ink-3">Sin horario</span>
-                          )}
-                        </td>
-                        <td>
-                          <span className={`font-medium ${fin.clase}`}>
-                            {fin.texto}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </details>
+        <section className="w-full lg:w-[440px] lg:shrink-0" aria-labelledby="resueltas">
+          <h2 id="resueltas" className="section-title mb-2.5">
+            Resueltas{" "}
+            <span className="font-normal text-ink-4">
+              {resolved.length > RESUELTAS_VISIBLES
+                ? `las ${RESUELTAS_VISIBLES} últimas`
+                : resolved.length}
+            </span>
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="table-base table-plain">
+              <thead>
+                <tr>
+                  <th scope="col">Paciente</th>
+                  <th scope="col">Solicitud</th>
+                  <th scope="col" className="text-right">
+                    Resultado
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibles.map((r) => {
+                  // Lo que no es aceptada ni rechazada lo retiró el propio
+                  // paciente: no es una decisión del profesional.
+                  const fin = RESUELTA[r.status] ?? { texto: "Retirada", clase: "text-ink-3" };
+                  return (
+                    <tr key={r.id}>
+                      <td>
+                        <span className="font-medium">{r.patientName ?? "Paciente"}</span>
+                        <span className="block text-[12.5px] text-ink-3">
+                          {r.preferred_start ? formatDateTime(r.preferred_start) : "Sin horario"}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap text-ink-2">{KIND[r.kind].label}</td>
+                      <td className="text-right">
+                        <span className={`font-medium ${fin.clase}`}>{fin.texto}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
     </div>
   );
 }
 
-function RequestCard({ req }: { req: PendingRequest }) {
+function RequestRow({ req }: { req: PendingRequest }) {
   const { label, Icon } = KIND[req.kind];
   const { run, pending, error } = useAction();
-  // Sin abrir nada, aceptar usa el horario que pidió el paciente. El desplegable
+  // Sin abrir nada, aceptar usa el horario que pidió el paciente. El selector
   // solo aparece cuando el profesional quiere corregirlo o explicar un "no".
   const [mode, setMode] = useState<"idle" | "reschedule" | "decline">("idle");
-  const [when, setWhen] = useState(
-    req.preferred_start ? toDatetimeLocal(req.preferred_start) : "",
-  );
+  const inicial = req.preferred_start ? toDatetimeLocal(req.preferred_start) : "";
+  const [day, setDay] = useState(inicial.slice(0, 10));
+  const [time, setTime] = useState(inicial.slice(11, 16));
   const [note, setNote] = useState("");
 
   function accept(startsAt?: string | null) {
     const ends =
       startsAt &&
-      new Date(
-        new Date(startsAt).getTime() + req.duration_min * 60_000,
-      ).toISOString();
+      new Date(new Date(startsAt).getTime() + req.duration_min * 60_000).toISOString();
     run(() =>
       callAction(resolveRequestAction, {
         id: req.id,
@@ -154,33 +159,23 @@ function RequestCard({ req }: { req: PendingRequest }) {
     );
   }
 
-  function acceptAsProposed() {
-    accept(null);
-  }
-
   function acceptWithNewTime() {
-    const d = fromDatetimeLocal(when);
+    const d = fromDatetimeLocal(`${day}T${time}`);
     if (!d) return;
     accept(d.toISOString());
   }
 
   function decline() {
-    run(() =>
-      callAction(resolveRequestAction, {
-        id: req.id,
-        action: "decline",
-        note,
-      }),
-    );
+    run(() => callAction(resolveRequestAction, { id: req.id, action: "decline", note }));
   }
 
   return (
-    <article className="card p-4 sm:p-5">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Icon className="size-4 shrink-0 text-ink-3" strokeWidth={1.75} aria-hidden />
+    <li className="py-4" style={{ borderBottom: "1px solid var(--line-soft)" }}>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <Icon className="size-4 shrink-0 self-center text-ink-3" strokeWidth={1.75} aria-hidden />
         <Link
           href={`/pro/patients/${req.patient_id}`}
-          className="text-[13.5px] font-semibold hover:underline"
+          className="text-[14px] font-semibold hover:text-accent"
         >
           {req.patientName ?? "Paciente"}
         </Link>
@@ -190,62 +185,56 @@ function RequestCard({ req }: { req: PendingRequest }) {
         </span>
       </div>
 
-      <dl className="mt-3 flex flex-col gap-1 text-[13.5px]">
+      <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 pl-7 text-[13.5px]">
         {req.kind !== "new" && req.appointmentStart && (
-          <div className="flex gap-2">
-            <dt className="text-ink-3">Cita actual:</dt>
-            <dd className={req.kind === "cancel" ? "" : "line-through"}>
+          <div className="flex gap-1.5">
+            <dt className="text-ink-3">Cita actual</dt>
+            <dd className={req.kind === "cancel" ? "" : "text-ink-3 line-through"}>
               {formatDateTime(req.appointmentStart)}
             </dd>
           </div>
         )}
         {req.preferred_start && (
-          <div className="flex gap-2">
-            <dt className="text-ink-3">
-              {req.kind === "new" ? "Propone:" : "Prefiere:"}
-            </dt>
-            <dd className="font-medium">
+          <div className="flex gap-1.5">
+            <dt className="text-ink-3">{req.kind === "new" ? "Propone" : "Prefiere"}</dt>
+            <dd className="font-semibold">
               {formatDateTime(req.preferred_start)}
-              <span className="ml-1 font-normal text-ink-3">
-                , {req.duration_min} min
-              </span>
+              <span className="ml-1 font-normal text-ink-3">, {req.duration_min} min</span>
             </dd>
           </div>
         )}
         {req.alt_start && (
-          <div className="flex gap-2">
-            <dt className="text-ink-3">Alternativa:</dt>
+          <div className="flex gap-1.5">
+            <dt className="text-ink-3">Alternativa</dt>
             <dd>{formatDateTime(req.alt_start)}</dd>
           </div>
         )}
       </dl>
 
       {req.note && (
-        <p className="mt-2.5 rounded-lg bg-surface-muted px-3 py-2 text-[13.5px] whitespace-pre-wrap text-ink-2">
+        <p className="mt-2.5 ml-7 rounded-md bg-surface-muted px-3 py-2 text-[13.5px] whitespace-pre-wrap text-ink-2">
           “{req.note}”
         </p>
       )}
 
       {mode === "reschedule" && (
-        <div className="mt-3.5 flex flex-col gap-2 border-t border-line pt-3.5">
-          <label className="field-label" htmlFor={`when-${req.id}`}>
-            Nuevo horario
-          </label>
-          <input
-            id={`when-${req.id}`}
-            type="datetime-local"
-            value={when}
-            onChange={(e) => setWhen(e.target.value)}
-            className="field"
+        <div className="mt-3.5 ml-7 max-w-md border-t border-line-soft pt-3.5">
+          <FechaHoraSesion
+            day={day}
+            time={time}
+            minutes={req.duration_min}
+            excludeId={req.appointment_id ?? undefined}
+            onDay={setDay}
+            onTime={setTime}
           />
-          <p className="text-[12.5px] text-ink-3">
+          <p className="mt-2 text-[12.5px] text-ink-3">
             Se avisará al paciente del horario definitivo.
           </p>
         </div>
       )}
 
       {mode === "decline" && (
-        <div className="mt-3.5 flex flex-col gap-2 border-t border-line pt-3.5">
+        <div className="mt-3.5 ml-7 flex max-w-md flex-col gap-2 border-t border-line-soft pt-3.5">
           <label className="field-label" htmlFor={`note-${req.id}`}>
             Motivo (opcional, lo verá el paciente)
           </label>
@@ -260,14 +249,14 @@ function RequestCard({ req }: { req: PendingRequest }) {
         </div>
       )}
 
-      {error && <p className="mt-3 text-[13.5px] text-danger">{error}</p>}
+      {error && <p className="mt-3 ml-7 text-[13.5px] text-danger">{error}</p>}
 
-      <div className="mt-3.5 flex flex-wrap items-center gap-2">
+      <div className="mt-3 ml-7 flex flex-wrap items-center gap-2">
         {mode === "idle" && (
           <>
             <button
               type="button"
-              onClick={acceptAsProposed}
+              onClick={() => accept(null)}
               disabled={pending}
               className="btn-primary btn-sm"
             >
@@ -278,7 +267,7 @@ function RequestCard({ req }: { req: PendingRequest }) {
                 type="button"
                 onClick={() => setMode("reschedule")}
                 disabled={pending}
-                className="btn-subtle btn-sm"
+                className="btn-ghost btn-sm"
               >
                 <Clock className="size-3.5" strokeWidth={1.75} aria-hidden />
                 Proponer otra hora
@@ -288,7 +277,7 @@ function RequestCard({ req }: { req: PendingRequest }) {
               type="button"
               onClick={() => setMode("decline")}
               disabled={pending}
-              className="btn-ghost btn-sm"
+              className="btn-subtle btn-sm"
             >
               Rechazar
             </button>
@@ -300,7 +289,7 @@ function RequestCard({ req }: { req: PendingRequest }) {
             <button
               type="button"
               onClick={acceptWithNewTime}
-              disabled={pending || !when}
+              disabled={pending || !day || !time}
               className="btn-primary btn-sm"
             >
               Confirmar este horario
@@ -309,7 +298,7 @@ function RequestCard({ req }: { req: PendingRequest }) {
               type="button"
               onClick={() => setMode("idle")}
               disabled={pending}
-              className="btn-ghost btn-sm"
+              className="btn-subtle btn-sm"
             >
               Cancelar
             </button>
@@ -330,13 +319,13 @@ function RequestCard({ req }: { req: PendingRequest }) {
               type="button"
               onClick={() => setMode("idle")}
               disabled={pending}
-              className="btn-ghost btn-sm"
+              className="btn-subtle btn-sm"
             >
               Cancelar
             </button>
           </>
         )}
       </div>
-    </article>
+    </li>
   );
 }

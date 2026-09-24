@@ -379,6 +379,15 @@ pacientes distintos, no describía a nadie y se leía como tendencia clínica. D
 escalas queda lo operativo: pacientes con escalas activas, respuestas e ítems de
 riesgo sin revisar. Cabe sin desplazar en escritorio; en móvil se apila.
 
+**Solicitudes, Equipo y Ajustes, igual (24-sep).** Las tres a lo ancho, con
+título y frase, y en dos columnas. Solicitudes: por decidir como filas sobre la
+hoja y resueltas a la vista (antes plegadas); «Proponer otra hora» usa
+`FechaHoraSesion` en vez del `datetime-local`. Equipo: título «Equipo» con el
+centro en la frase, y la gestión en la columna derecha. Ajustes: bloque «Tu
+cuenta» nuevo (nombre, correo, colegiación, acreditación, consulta y rol).
+Siguen estrechas y centradas: listado de citas, ficha del paciente, evolución
+de una escala y alta de paciente.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a

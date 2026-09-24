@@ -18,7 +18,7 @@ export default async function EquipoPage() {
 
   if (!contexto?.organization_id) {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div>
         <h1 className="page-title">Equipo</h1>
         <p className="empty mt-6">
           Tu cuenta no está asociada a ninguna organización activa.
@@ -35,13 +35,22 @@ export default async function EquipoPage() {
     puedeGestionar ? getInvitacionesEquipo(contexto.organization_id) : Promise.resolve([]),
   ]);
 
+  const tipo = contexto.organization_kind === "center" ? "Centro" : "Consulta";
+  const personas = `${miembros.length} ${miembros.length === 1 ? "persona" : "personas"}`;
+  const frase = `${tipo} ${contexto.organization_name ?? ""}: ${personas} en el equipo${
+    puedeGestionar && invitaciones.length > 0
+      ? ` y ${invitaciones.length} ${invitaciones.length === 1 ? "invitación pendiente" : "invitaciones pendientes"}`
+      : ""
+  }.`;
+
+  // Cabecera como la de «Hoy»: título y una frase. El nombre del centro va en
+  // la frase, no como título con una etiqueta encima, que era la única
+  // pantalla del panel que lo hacía al revés.
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-7">
+    <div className="flex flex-col gap-[22px]">
       <header>
-        <p className="section-label">
-          {contexto.organization_kind === "center" ? "Centro" : "Consulta"}
-        </p>
-        <h1 className="page-title mt-1">{contexto.organization_name}</h1>
+        <h1 className="page-title">Equipo</h1>
+        <p className="mt-3 max-w-[600px] text-body-lg text-ink-2">{frase}</p>
       </header>
 
       {/* La separación entre permiso administrativo y acceso clínico es la
