@@ -1,131 +1,95 @@
-import { ymdInTZ, parseYMD, mondayOfYMD, formatYMD, addDaysYMD } from "@/lib/tz";
 import { allRows } from "@/lib/query-result";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfessional } from "@/lib/queries/identity";
-import { getPaymentsOverview, type MonthIncome } from "@/lib/queries/payments";
-import type { ScaleDefinition } from "@/lib/scales";
+import { getPaymentsOverview } from "@/lib/queries/payments";
+import { resumirAnalitica, type Analitica } from "@/lib/analitica";
 
-export type Analytics = {
-  patients: { active: number; archived: number };
-  noShow: {
-    total: number;
-    attended: number;
-    noShow: number;
-    lateCancel: number;
-    rate: number; // 0-1
-  };
-  occupancyByWeek: { weekStart: string; count: number }[];
-  incomeByMonth: MonthIncome[];
-  scaleEvolution: {
-    code: string;
-    max: number;
-    points: { date: string; score: number }[];
-  }[];
-};
-
-function weekStartISO(d: Date): string {
-  return formatYMD(mondayOfYMD(parseYMD(ymdInTZ(d))));
-}
-
-const WEEKS = 8;
-
-export async function getProfessionalAnalytics(): Promise<Analytics> {
+/**
+ * Lee lo que necesita la analítica y delega el cálculo en `resumirAnalitica`,
+ * que es puro y tiene pruebas. Todas las lecturas van acotadas al profesional
+ * (o a sus pacientes) además de por la RLS, y ninguna embebe otra tabla.
+ *
+ * Solo se piden los últimos 30 días de diario, respuestas y tareas: es la única
+ * ventana que se usa de ellos.
+ */
+export async function getProfessionalAnalytics(ahora: Date): Promise<Analitica | null> {
   const supabase = await createClient();
   const pro = await getCurrentProfessional();
-  const empty: Analytics = {
-    patients: { active: 0, archived: 0 },
-    noShow: { total: 0, attended: 0, noShow: 0, lateCancel: 0, rate: 0 },
-    occupancyByWeek: [],
-    incomeByMonth: [],
-    scaleEvolution: [],
-  };
-  if (!pro) return empty;
+  if (!pro) return null;
 
-  const today = parseYMD(ymdInTZ(new Date()));
+  const hace30 = new Date(ahora.getTime() - 30 * 86_400_000).toISOString();
 
-  const [patientsRes, apptRes, incomeRes, scaleRes] = await Promise.all([
-    allRows(supabase.from("patients").select("status").eq("professional_id", pro.id)),
+  const [pacientesRes, citasRes, cobros] = await Promise.all([
+    allRows(supabase
+      .from("patients")
+      .select("id, status, created_at, user_id")
+      .eq("professional_id", pro.id)),
     allRows(supabase
       .from("appointments")
-      .select("starts_at, status, attendance")
+      .select("id, patient_id, starts_at, ends_at, status, attendance")
       .eq("professional_id", pro.id)),
     getPaymentsOverview(),
-    allRows(supabase
-      .from("scale_responses")
-      .select("score, submitted_at, scales(code, definition)")),
   ]);
 
-  // Pacientes activos / archivados.
-  const patients = { active: 0, archived: 0 };
-  for (const p of patientsRes.data ?? []) {
-    if (p.status === "archived") patients.archived++;
-    else patients.active++;
-  }
+  const pacientes = pacientesRes.data ?? [];
+  const ids = pacientes.map((p) => p.id);
 
-  // No-shows y ocupación.
-  const noShow = { total: 0, attended: 0, noShow: 0, lateCancel: 0, rate: 0 };
-  const weekBuckets = new Map<string, number>();
-  for (let i = WEEKS - 1; i >= 0; i--) {
-    weekBuckets.set(formatYMD(mondayOfYMD(addDaysYMD(today, -i * 7))), 0);
-  }
-  for (const a of apptRes.data ?? []) {
-    if (a.attendance === "attended") {
-      noShow.attended++;
-      noShow.total++;
-    } else if (a.attendance === "no_show") {
-      noShow.noShow++;
-      noShow.total++;
-    } else if (a.attendance === "late_cancel") {
-      noShow.lateCancel++;
-      noShow.total++;
-    }
-    if (a.status !== "cancelled") {
-      const wk = weekStartISO(new Date(a.starts_at));
-      if (weekBuckets.has(wk)) weekBuckets.set(wk, (weekBuckets.get(wk) ?? 0) + 1);
-    }
-  }
-  noShow.rate = noShow.total > 0 ? noShow.noShow / noShow.total : 0;
-  const occupancyByWeek = [...weekBuckets.entries()].map(([weekStart, count]) => ({
-    weekStart,
-    count,
-  }));
+  const vacio = { data: [] as never[] };
+  const [escalasRes, respuestasRes, riesgoRes, diarioRes, tareasRes, completadasRes] =
+    ids.length === 0
+      ? [vacio, vacio, vacio, vacio, vacio, vacio]
+      : await Promise.all([
+          allRows(supabase
+            .from("scale_assignments")
+            .select("id, patient_id")
+            .eq("professional_id", pro.id)
+            .eq("active", true)),
+          allRows(supabase
+            .from("scale_responses")
+            .select("id, patient_id, submitted_at")
+            .in("patient_id", ids)
+            .gte("submitted_at", hace30)),
+          allRows(supabase
+            .from("scale_responses")
+            .select("id, patient_id")
+            .in("patient_id", ids)
+            .eq("flagged", true)
+            .is("acknowledged_at", null)),
+          allRows(supabase
+            .from("mood_entries")
+            .select("id, patient_id, created_at")
+            .in("patient_id", ids)
+            .gte("created_at", hace30)),
+          allRows(supabase
+            .from("tasks")
+            .select("id, patient_id, created_at")
+            .eq("professional_id", pro.id)
+            .gte("created_at", hace30)),
+          allRows(supabase
+            .from("task_completions")
+            .select("id, task_id, completed_at")
+            .in("patient_id", ids)
+            .gte("created_at", hace30)),
+        ]);
 
-  // Evolución agregada anonimizada de escalas (media por mes).
-  type Agg = { max: number; months: Map<string, { sum: number; n: number }> };
-  const byScale = new Map<string, Agg>();
-  for (const r of scaleRes.data ?? []) {
-    if (r.score == null) continue;
-    const scale = r.scales as unknown as {
-      code: string;
-      definition: ScaleDefinition;
-    } | null;
-    if (!scale) continue;
-    const agg =
-      byScale.get(scale.code) ??
-      { max: scale.definition?.scoring?.max ?? 27, months: new Map() };
-    const month = ymdInTZ(new Date(r.submitted_at)).slice(0, 7);
-    const cur = agg.months.get(month) ?? { sum: 0, n: 0 };
-    cur.sum += r.score;
-    cur.n += 1;
-    agg.months.set(month, cur);
-    byScale.set(scale.code, agg);
-  }
-  const scaleEvolution = [...byScale.entries()].map(([code, agg]) => ({
-    code,
-    max: agg.max,
-    points: [...agg.months.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([month, v]) => ({
-        date: `${month}-01`,
-        score: Math.round((v.sum / v.n) * 10) / 10,
+  return resumirAnalitica(
+    {
+      pacientes: pacientes.map((p) => ({
+        id: p.id,
+        status: p.status,
+        created_at: p.created_at,
+        tieneCuenta: p.user_id !== null,
       })),
-  }));
-
-  return {
-    patients,
-    noShow,
-    occupancyByWeek,
-    incomeByMonth: incomeRes.byMonth,
-    scaleEvolution,
-  };
+      citas: citasRes.data ?? [],
+      cobradoPorMes: cobros.byMonth,
+      pendienteCents: cobros.totalPendingCents,
+      conEscalaActiva: new Set((escalasRes.data ?? []).map((a) => a.patient_id)),
+      respuestasEscala: respuestasRes.data ?? [],
+      riesgoSinRevisar: (riesgoRes.data ?? []).length,
+      entradasDiario: diarioRes.data ?? [],
+      tareas: tareasRes.data ?? [],
+      tareasCompletadas: completadasRes.data ?? [],
+    },
+    ahora,
+  );
 }
