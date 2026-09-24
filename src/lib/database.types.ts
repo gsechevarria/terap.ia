@@ -1426,6 +1426,9 @@ Row: {
 "verification_reviewed_by": string | null;
 "verification_reviewed_at": string | null;
 "onboarding_completed_at": string | null;
+"verification_source": string | null;
+"verification_evidence": Json | null;
+"verification_checked_at": string | null;
 };
 Insert: {
 "id"?: string;
@@ -1443,6 +1446,9 @@ Insert: {
 "verification_reviewed_by"?: string | null;
 "verification_reviewed_at"?: string | null;
 "onboarding_completed_at"?: string | null;
+"verification_source"?: string | null;
+"verification_evidence"?: Json | null;
+"verification_checked_at"?: string | null;
 };
 Update: {
 "id"?: string;
@@ -1460,6 +1466,9 @@ Update: {
 "verification_reviewed_by"?: string | null;
 "verification_reviewed_at"?: string | null;
 "onboarding_completed_at"?: string | null;
+"verification_source"?: string | null;
+"verification_evidence"?: Json | null;
+"verification_checked_at"?: string | null;
 };
 Relationships: [];
 };
@@ -1884,6 +1893,7 @@ Functions: {
 "professional_owns_patient": { Args: {"p_patient_id": string | null}; Returns: boolean };
 "queue_appointment_reminders": { Args: Record<PropertyKey, never>; Returns: number };
 "register_professional": { Args: {"p_full_name": string | null;"p_practice_kind": Database["public"]["Enums"]["organization_kind"] | null;"p_org_name"?: string | null;"p_colegio"?: string | null;"p_numero_colegiado"?: string | null}; Returns: string };
+"registry_verify_professional": { Args: {"p_professional_id": string | null;"p_evidence": Json | null;"p_approve": boolean | null}; Returns: string };
 "resolve_appointment_request": { Args: {"p_id": string | null;"p_action": string | null;"p_start"?: string | null;"p_end"?: string | null;"p_note"?: string | null}; Returns: string };
 "revoke_invitation": { Args: {"p_id": string | null}; Returns: undefined };
 "revoke_member": { Args: {"p_member_id": string | null}; Returns: undefined };

@@ -40,7 +40,11 @@ export default async function EstadoRegistroPage() {
           Icono={CircleCheck}
           tono="success"
           titulo="Tu cuenta está activa"
-          texto="Tu acreditación ha sido aprobada. Ya puedes trabajar con expedientes e invitar pacientes."
+          texto={
+            contexto.verification_source === "registro"
+              ? "Tu colegiación se ha comprobado en el registro público de tu colegio. Ya puedes trabajar con expedientes e invitar pacientes."
+              : "Tu acreditación ha sido aprobada. Ya puedes trabajar con expedientes e invitar pacientes."
+          }
         >
           <Link href="/pro" className="btn-primary btn-lg self-start">
             Entrar al panel
@@ -74,6 +78,18 @@ export default async function EstadoRegistroPage() {
           titulo="Tu solicitud está en revisión"
           texto="Una persona revisa los datos de colegiación antes de habilitar la cuenta. Te avisaremos por correo en cuanto esté."
         >
+          {/* Qué dijo el registro del colegio, si se consultó: con eso la
+              persona sabe si le basta con corregir su nombre o su número. */}
+          {contexto.verification_check_detail &&
+            contexto.verification_check_verdict !== "coincide" && (
+              <p className="rounded-md bg-surface-muted px-3 py-2 text-[13px] text-ink-2">
+                Registro del colegio: {contexto.verification_check_detail}{" "}
+                {(contexto.verification_check_verdict === "nombre_distinto" ||
+                  contexto.verification_check_verdict === "no_encontrado" ||
+                  contexto.verification_check_verdict === "numero_invalido") &&
+                  "Si es un error al escribirlo, corrígelo abajo y se vuelve a comprobar."}
+              </p>
+            )}
           <p className="text-[12.5px] leading-relaxed text-ink-3">
             Mientras tanto no puedes abrir expedientes ni invitar pacientes.
             Confirmar tu correo no acredita la colegiación: son cosas distintas

@@ -5,6 +5,15 @@ import { allRows } from "@/lib/query-result";
 import { esAdminPlataforma } from "@/lib/queries/contexts";
 import { ColaAcreditaciones } from "./ColaAcreditaciones";
 import { AccesoComercial } from "./AccesoComercial";
+import { AprobacionesAutomaticas } from "./AprobacionesAutomaticas";
+
+/** Lo que se lee de la evidencia guardada; el resto no hace falta aquí. */
+type Evidencia = {
+  veredicto?: string;
+  detalle?: string;
+  url?: string | null;
+  fila?: { nombre?: string } | null;
+} | null;
 
 export const metadata: Metadata = {
   title: "Administración · terap.ia",
@@ -31,28 +40,42 @@ export default async function AdminPage() {
   if (!user) redirect("/admin/login");
   if (!(await esAdminPlataforma())) notFound();
 
-  const [{ data: profesionales }, { data: organizaciones }] = await Promise.all(
-    [
-      allRows(
-        supabase
-          .from("professionals")
-          .select(
-            "id, full_name, email, verification_status, colegio, numero_colegiado, practice_kind, verification_note, verification_reviewed_at, created_at"
-          )
-          .in("verification_status", ["pending", "provisional", "rejected"])
-          .order("created_at", { ascending: true })
-      ),
-      allRows(
-        supabase
-          .from("organizations")
-          .select(
-            "id, name, kind, created_at, organization_access(status, granted_at, expires_at, note)"
-          )
-          .order("created_at", { ascending: false })
-          .limit(200)
-      ),
-    ]
-  );
+  const [
+    { data: profesionales },
+    { data: organizaciones },
+    { data: automaticas },
+  ] = await Promise.all([
+    allRows(
+      supabase
+        .from("professionals")
+        .select(
+          "id, full_name, email, verification_status, colegio, numero_colegiado, practice_kind, verification_note, verification_reviewed_at, verification_evidence, created_at"
+        )
+        .in("verification_status", ["pending", "provisional", "rejected"])
+        .order("created_at", { ascending: true })
+    ),
+    allRows(
+      supabase
+        .from("organizations")
+        .select(
+          "id, name, kind, created_at, organization_access(status, granted_at, expires_at, note)"
+        )
+        .order("created_at", { ascending: false })
+        .limit(200)
+    ),
+    // Las aprobadas solas por el registro, las más recientes primero.
+    allRows(
+      supabase
+        .from("professionals")
+        .select(
+          "id, full_name, email, colegio, numero_colegiado, verification_reviewed_at, verification_evidence"
+        )
+        .eq("verification_status", "approved")
+        .eq("verification_source", "registro")
+        .order("verification_reviewed_at", { ascending: false })
+        .limit(30)
+    ),
+  ]);
 
   const pendientes = (profesionales ?? []).length;
   const orgs = (organizaciones ?? []).length;
@@ -80,19 +103,48 @@ export default async function AdminPage() {
         </header>
 
         <div className="flex flex-col gap-8 lg:flex-row">
-          <ColaAcreditaciones
-            profesionales={(profesionales ?? []).map((p) => ({
-              id: p.id,
-              nombre: p.full_name,
-              email: p.email,
-              estado: p.verification_status,
-              colegio: p.colegio,
-              numeroColegiado: p.numero_colegiado,
-              tipo: p.practice_kind,
-              nota: p.verification_note,
-              creado: p.created_at,
-            }))}
-          />
+          <div className="flex min-w-0 flex-1 flex-col gap-8">
+            <ColaAcreditaciones
+              profesionales={(profesionales ?? []).map((p) => ({
+                id: p.id,
+                nombre: p.full_name,
+                email: p.email,
+                estado: p.verification_status,
+                colegio: p.colegio,
+                numeroColegiado: p.numero_colegiado,
+                tipo: p.practice_kind,
+                nota: p.verification_note,
+                creado: p.created_at,
+                evidencia: (() => {
+                  const e = p.verification_evidence as Evidencia;
+                  return e?.detalle
+                    ? {
+                        veredicto: e.veredicto ?? null,
+                        detalle: e.detalle,
+                        url: e.url ?? null,
+                        nombreRegistro: e.fila?.nombre ?? null,
+                      }
+                    : null;
+                })(),
+              }))}
+            />
+
+            <AprobacionesAutomaticas
+              filas={(automaticas ?? []).map((p) => {
+                const e = p.verification_evidence as Evidencia;
+                return {
+                  id: p.id,
+                  nombre: p.full_name,
+                  email: p.email,
+                  colegio: p.colegio,
+                  numero: p.numero_colegiado,
+                  aprobada: p.verification_reviewed_at,
+                  url: e?.url ?? null,
+                  nombreRegistro: e?.fila?.nombre ?? null,
+                };
+              })}
+            />
+          </div>
 
           <AccesoComercial
             organizaciones={(organizaciones ?? []).map((o) => {

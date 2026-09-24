@@ -409,6 +409,23 @@ contraseña; tras entrar pregunta al servidor (`soyAdminPlataformaAction` →
 porque cualquiera con el repositorio tendría la llave del panel que aprueba
 profesionales. `verificar-produccion.mjs` comprueba la nueva redirección.
 
+## Verificación de la colegiación (24-sep) — migración 48 SIN APLICAR
+
+`20260924100001_verificacion_colegiacion.sql`. Al completar `/registro`, el
+servidor consulta el registro público del colegio (hoy **Madrid y Asturias**) y,
+si número exacto, nombre y «ejerciente» coinciden, **aprueba el alta sola**
+(decisión de Gabriel, con el riesgo anotado: el registro prueba que el colegiado
+existe, no que quien se registra sea él). Solo `service_role` puede aprobar por
+esa vía; un número verificado no sirve para una segunda cuenta; `/admin` lista
+las aprobadas por el registro con botón de revocar. **Cierra además un hueco
+anterior**: `professionals_update_self` dejaba a un profesional ponerse
+`verification_status = 'approved'` él mismo. Estudio de los 22 colegios y por
+qué no se integran los demás: [docs/VERIFICACION-COLEGIACION.md](docs/VERIFICACION-COLEGIACION.md).
+
+⚠️ **El PR se queda abierto hasta aplicar la migración** (lo aplica Gabriel).
+Sin ella el registro seguiría funcionando (todas las altas, pendientes), pero
+**`/admin` fallaría**: lee las columnas nuevas.
+
 ⚠️ **Vercel a veces no despliega un merge a `main`.** Ha pasado dos veces el
 23 y el 24-sep (#53 y #61): CI de `main` en verde y ningún despliegue de
 producción para ese commit, ni en cola ni con error. No se ha averiguado la
