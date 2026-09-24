@@ -20,6 +20,19 @@ describe("proxy y límites de rutas", () => {
     const result = await proxy(new NextRequest("https://example.invalid/pro/pagos"));
     expect(result.headers.get("location")).toBe("https://example.invalid/app");
   });
+  it("sin sesión, la administración lleva a su propio acceso y el resto al general", async () => {
+    setup();
+    const admin = await proxy(new NextRequest("https://example.invalid/admin"));
+    expect(admin.headers.get("location")).toBe("https://example.invalid/admin/login");
+    const pro = await proxy(new NextRequest("https://example.invalid/pro/pagos"));
+    expect(pro.headers.get("location")).toBe("https://example.invalid/login");
+    // El acceso de administración es público: sin esto, el redirect sería un bucle.
+    const puerta = await proxy(new NextRequest("https://example.invalid/admin/login"));
+    expect(puerta.headers.get("location")).toBeNull();
+    // `/administracion` no es `/admin/…`: no hereda su puerta.
+    const otra = await proxy(new NextRequest("https://example.invalid/administracion"));
+    expect(otra.headers.get("location")).toBe("https://example.invalid/login");
+  });
   it("el matcher deja fuera los artefactos que el service worker precachea", () => {
     const matcher = new RegExp(`^${config.matcher[0]}$`);
     // `cache.addAll` rechaza un redirect: si el proxy protegiera estas rutas,

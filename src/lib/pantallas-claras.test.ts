@@ -28,6 +28,7 @@ const PANTALLAS = [
   "src/app/invitacion/[token]/page.tsx",
   "src/app/unirse/[token]/page.tsx",
   "src/app/onboarding/[token]/page.tsx",
+  "src/app/admin/login/page.tsx",
 ];
 
 describe("pantallas de entrada en claro", () => {

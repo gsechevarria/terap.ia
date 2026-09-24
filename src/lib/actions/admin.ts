@@ -85,3 +85,15 @@ export async function revisarProfesionalAction(...a: Parameters<typeof revisarPr
 export async function cambiarAccesoOrganizacionAction(...a: Parameters<typeof cambiarAccesoOrganizacionImpl>) {
   return runAction(() => cambiarAccesoOrganizacionImpl(...a));
 }
+
+/**
+ * Para el acceso de `/admin/login`: tras iniciar sesión, decir si la cuenta
+ * administra la plataforma y poder avisar en vez de soltar un 404. No abre
+ * nada: `/admin` y cada RPC lo vuelven a comprobar por su cuenta.
+ */
+async function soyAdminPlataformaImpl(): Promise<boolean> {
+  return esAdminPlataforma();
+}
+export async function soyAdminPlataformaAction() {
+  return runAction(() => soyAdminPlataformaImpl());
+}

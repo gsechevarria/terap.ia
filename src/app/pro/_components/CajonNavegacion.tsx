@@ -18,10 +18,13 @@ import { ProNav } from "@/app/pro/_components/ProNav";
 export function CajonNavegacion({
   pendingRequests,
   patientCount,
+  esAdmin = false,
   children,
 }: {
   pendingRequests: number;
   patientCount: number;
+  /** Muestra la entrada de administración de plataforma. */
+  esAdmin?: boolean;
   /** Pie del cajón: identidad y conmutador de aspecto. */
   children?: React.ReactNode;
 }) {
@@ -88,7 +91,11 @@ export function CajonNavegacion({
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <ProNav pendingRequests={pendingRequests} patientCount={patientCount} />
+              <ProNav
+                pendingRequests={pendingRequests}
+                patientCount={patientCount}
+                esAdmin={esAdmin}
+              />
             </div>
             {children}
           </div>

@@ -13,7 +13,7 @@ import { SidebarPerfil } from "@/app/pro/_components/SidebarPerfil";
 import { countPendingRequests } from "@/lib/queries/appointment-requests";
 import { countActivePatients } from "@/lib/queries/patients";
 import { countAvisosAbiertos } from "@/lib/queries/scales";
-import { getContextoPropio } from "@/lib/queries/contexts";
+import { esAdminPlataforma, getContextoPropio } from "@/lib/queries/contexts";
 import { formatFechaLarga } from "@/lib/format";
 
 /** Marca: logotipo y palabra, a 18/700 como el resto del sistema. */
@@ -72,11 +72,12 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
   // sin contestar es una cita que no se agenda y un aviso sin ver es lo único
   // de esta aplicación que no puede esperar. Los cuatro son independientes
   // entre sí: en secuencia serían cuatro viajes.
-  const [pendingRequests, patientCount, avisos, contexto] = await Promise.all([
+  const [pendingRequests, patientCount, avisos, contexto, esAdmin] = await Promise.all([
     countPendingRequests(),
     countActivePatients(),
     countAvisosAbiertos(),
     getContextoPropio(),
+    esAdminPlataforma(),
   ]);
 
   // El instante se resuelve en el servidor y se formatea aquí: `formatFechaLarga`
@@ -106,7 +107,11 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
             <Marca />
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <ProNav pendingRequests={pendingRequests} patientCount={patientCount} />
+            <ProNav
+              pendingRequests={pendingRequests}
+              patientCount={patientCount}
+              esAdmin={esAdmin}
+            />
           </div>
           <div className="mt-auto pt-4">{pie}</div>
         </div>
@@ -117,6 +122,7 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
         <header className="flex min-h-[60px] shrink-0 flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-2.5 sm:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <CajonNavegacion
+              esAdmin={esAdmin}
               pendingRequests={pendingRequests}
               patientCount={patientCount}
             >

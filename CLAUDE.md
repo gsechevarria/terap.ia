@@ -399,6 +399,16 @@ ancho se disparaba. **`BarChart` eliminado**: ya no lo usaba nadie. Quedan
 fuera a propósito `/registro` y `/account/password` (pantallas de entrada,
 `pantalla-acceso`) y la app del paciente, que tiene su propio sistema.
 
+**Acceso propio de la administración (24-sep).** Sin sesión, `/admin` lleva a
+**`/admin/login`** (pública, `pantalla-acceso`) y no al acceso general, que
+soltaba en `/pro`. Es el mismo `signInWithPassword` de Supabase, solo
+contraseña; tras entrar pregunta al servidor (`soyAdminPlataformaAction` →
+`is_platform_admin()`) y, si la cuenta no administra, lo dice en vez de dar un
+404. La barra lateral del panel muestra «Administración» solo a quien lo es.
+**No hay credenciales en el código**: se pidió dejarlas fijas y se descartó,
+porque cualquiera con el repositorio tendría la llave del panel que aprueba
+profesionales. `verificar-produccion.mjs` comprueba la nueva redirección.
+
 ## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
