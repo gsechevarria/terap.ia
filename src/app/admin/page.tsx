@@ -28,7 +28,7 @@ export default async function AdminPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/admin/login");
   if (!(await esAdminPlataforma())) notFound();
 
   const [{ data: profesionales }, { data: organizaciones }] = await Promise.all(

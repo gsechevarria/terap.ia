@@ -12,6 +12,7 @@ import {
   ChartColumnIncreasing,
   Settings,
   Building2,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -47,6 +48,14 @@ const GRUPOS: { href: string; label: string; Icon: LucideIcon }[][] = [
 ];
 
 const ITEMS = GRUPOS.flat();
+
+/**
+ * Entrada de la administración de plataforma, en su propio grupo al final.
+ * Solo se pinta si el servidor ha dicho que la cuenta administra
+ * (`is_platform_admin()`); ocultarla no protege nada —`/admin` lo comprueba por
+ * su cuenta—, pero evita tener que escribir la dirección a mano.
+ */
+const ADMIN = { href: "/admin", label: "Administración", Icon: ShieldCheck };
 
 function isActive(pathname: string, href: string): boolean {
   // `/pro` es ahora «Hoy», una pantalla concreta, así que su coincidencia es
@@ -90,14 +99,17 @@ function claseEnlace(active: boolean): string {
 export function ProNav({
   pendingRequests = 0,
   patientCount = 0,
+  esAdmin = false,
 }: {
   pendingRequests?: number;
   patientCount?: number;
+  esAdmin?: boolean;
 }) {
   const pathname = usePathname();
+  const grupos = esAdmin ? [...GRUPOS, [ADMIN]] : GRUPOS;
   return (
     <nav className="flex flex-col gap-0.5 text-[14px]">
-      {GRUPOS.map((grupo, i) => (
+      {grupos.map((grupo, i) => (
         <div key={i} className="flex flex-col gap-0.5">
           {i > 0 && <div className="mx-2.5 my-3 h-px bg-line-strong" aria-hidden />}
           {grupo.map(({ href, label, Icon }) => {

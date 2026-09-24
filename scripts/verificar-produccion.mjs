@@ -113,8 +113,19 @@ async function rutasPrivadas() {
     );
   }
 
+  // La administración tiene su propio acceso: por el general se acababa en /pro.
+  {
+    const res = await pedir("/admin");
+    const destino = res.headers.get("location") ?? "";
+    comprobar(
+      "/admin redirige a su propio acceso",
+      [301, 302, 303, 307, 308].includes(res.status) && destino.includes("/admin/login"),
+      `status ${res.status}${destino ? ` → ${destino}` : ""}`,
+    );
+  }
+
   console.log("\nRutas públicas");
-  for (const ruta of ["/", "/login"]) {
+  for (const ruta of ["/", "/login", "/admin/login"]) {
     const res = await pedir(ruta);
     comprobar(`${ruta} responde 200`, res.status === 200, `status ${res.status}`);
   }

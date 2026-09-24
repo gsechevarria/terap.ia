@@ -28,6 +28,9 @@ const PUBLIC_PREFIXES = [
   "/unirse",
   "/registro",
   "/acceso",
+  // Acceso propio de la administración de plataforma. Solo es la puerta: quien
+  // decide si se entra es `/admin`, que mira `is_platform_admin()` en servidor.
+  "/admin/login",
 ];
 
 function isPublicPath(pathname: string): boolean {
@@ -89,10 +92,12 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   const role = getUserRole(user);
 
-  // Sin sesión → solo rutas públicas.
+  // Sin sesión → solo rutas públicas. La administración tiene su propio acceso:
+  // por el general se acababa en `/pro` y había que volver a escribir `/admin`.
   if (!user) {
     if (isPublicPath(pathname)) return response;
-    return withCookies(response, new URL("/login", request.url));
+    const esAdmin = pathname === "/admin" || pathname.startsWith("/admin/");
+    return withCookies(response, new URL(esAdmin ? "/admin/login" : "/login", request.url));
   }
 
   // Con sesión en / o /login → llevar a su home por rol.
