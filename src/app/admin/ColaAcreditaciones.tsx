@@ -17,6 +17,13 @@ type Fila = {
   tipo: "solo" | "center" | null;
   nota: string | null;
   creado: string;
+  /** Última consulta al registro del colegio, si la hubo. */
+  evidencia: {
+    veredicto: string | null;
+    detalle: string;
+    url: string | null;
+    nombreRegistro: string | null;
+  } | null;
 };
 
 const ESTADO: Record<string, { texto: string; tono: StatusTone }> = {
@@ -71,6 +78,27 @@ export function ColaAcreditaciones({ profesionales }: { profesionales: Fila[] })
                   <Dato t="Tipo" v={p.tipo === "center" ? "Centro" : p.tipo === "solo" ? "Consulta individual" : "—"} />
                   <Dato t="Solicitud" v={formatDate(p.creado)} />
                 </dl>
+
+                {/* Lo que devolvió el registro del colegio: con esto se decide
+                    sin tener que ir a buscarlo, y el enlace deja repetirlo. */}
+                {p.evidencia && (
+                  <p className="text-sm text-ink-2">
+                    <span className="text-ink-3">Registro del colegio:</span>{" "}
+                    {p.evidencia.detalle}
+                    {p.evidencia.nombreRegistro &&
+                      ` Allí figura como «${p.evidencia.nombreRegistro}».`}{" "}
+                    {p.evidencia.url && (
+                      <a
+                        href={p.evidencia.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-accent hover:underline"
+                      >
+                        Ver en el registro
+                      </a>
+                    )}
+                  </p>
+                )}
 
                 {p.nota && (
                   <p className="rounded-md bg-surface-muted px-3 py-2 text-sm text-ink-2">

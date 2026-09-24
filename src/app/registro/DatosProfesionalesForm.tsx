@@ -6,6 +6,11 @@ import { Building2, UserRound } from "lucide-react";
 import { callAction } from "@/lib/action-result";
 import { useAction } from "@/lib/use-action";
 import { registrarProfesionalAction } from "@/lib/actions/organizations";
+import { createClient } from "@/lib/supabase/client";
+import { COLEGIOS, colegioPorClaveONombre } from "@/lib/colegios";
+
+/** Otro colegio: se escribe a mano y lo revisa una persona. */
+const OTRO = "otro";
 
 /**
  * Paso 3: datos profesionales y tipo de consulta.
@@ -22,20 +27,30 @@ export function DatosProfesionalesForm({ nombreSugerido }: { nombreSugerido: str
   const [nombre, setNombre] = useState(nombreSugerido);
   const [centro, setCentro] = useState("");
   const [colegio, setColegio] = useState("");
+  const [otroColegio, setOtroColegio] = useState("");
   const [numero, setNumero] = useState("");
+  const elegido = colegio === OTRO ? null : colegioPorClaveONombre(colegio);
+  const seComprueba = Boolean(elegido?.integracion);
 
   function enviar(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    let aprobada = false;
     run(
-      () =>
-        callAction(registrarProfesionalAction, {
+      async () => {
+        const r = await callAction(registrarProfesionalAction, {
           fullName: nombre,
           practiceKind: tipo,
           orgName: tipo === "center" ? centro : nombre,
-          colegio,
+          colegio: colegio === OTRO ? otroColegio : colegio,
           numeroColegiado: numero,
-        }),
-      () => router.push("/registro/estado"),
+        });
+        aprobada = r.resultado === "approved";
+        // El rol lo acaba de cambiar el servidor, pero la sesión del navegador
+        // lleva el de antes dentro del token. Sin renovarla, la base de datos
+        // seguiría viendo una cuenta pendiente hasta que caducara (hasta 1 h).
+        if (aprobada) await createClient().auth.refreshSession();
+      },
+      () => router.push(aprobada ? "/pro" : "/registro/estado"),
     );
   }
 
@@ -101,13 +116,33 @@ export function DatosProfesionalesForm({ nombreSugerido }: { nombreSugerido: str
             <label className="field-label" htmlFor="pro-colegio">
               Colegio profesional
             </label>
-            <input
+            <select
               id="pro-colegio"
               className="field"
               value={colegio}
               onChange={(e) => setColegio(e.target.value)}
-              placeholder="COP Madrid"
-            />
+              required
+            >
+              <option value="" disabled>
+                Elige tu colegio
+              </option>
+              {COLEGIOS.map((c) => (
+                <option key={c.clave} value={c.clave}>
+                  {c.nombre}
+                </option>
+              ))}
+              <option value={OTRO}>Otro colegio</option>
+            </select>
+            {colegio === OTRO && (
+              <input
+                aria-label="Nombre del colegio"
+                className="field mt-2"
+                value={otroColegio}
+                onChange={(e) => setOtroColegio(e.target.value)}
+                placeholder="Nombre del colegio"
+                required
+              />
+            )}
           </div>
           <div>
             <label className="field-label" htmlFor="pro-numero">
@@ -118,13 +153,27 @@ export function DatosProfesionalesForm({ nombreSugerido }: { nombreSugerido: str
               className="field"
               value={numero}
               onChange={(e) => setNumero(e.target.value)}
-              placeholder="M-12345"
+              placeholder={elegido?.clave === "cop-madrid" ? "M-12345" : "Tu número"}
+              required
             />
           </div>
         </div>
+        {/* Se dice ANTES de enviar qué va a pasar con estos datos. */}
         <p className="text-[12.5px] leading-relaxed text-ink-3">
-          Estos datos los revisa una persona antes de habilitar tu cuenta. Hasta
-          entonces no podrás abrir expedientes ni invitar pacientes.
+          {seComprueba ? (
+            <>
+              Los comprobamos al momento en el registro público de tu colegio:
+              si el número, tu nombre y la situación de ejerciente coinciden, tu
+              cuenta queda habilitada en el acto. Escribe tu nombre y apellidos
+              tal como figuran en tu colegio. Si algo no coincide, lo revisa una
+              persona.
+            </>
+          ) : (
+            <>
+              Estos datos los revisa una persona antes de habilitar tu cuenta.
+              Hasta entonces no podrás abrir expedientes ni invitar pacientes.
+            </>
+          )}
         </p>
       </div>
 

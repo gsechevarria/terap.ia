@@ -8,6 +8,11 @@ import { createClient } from "@/lib/supabase/server";
 import { enviarCorreo } from "@/lib/email/enviar";
 import { invitacionProfesional } from "@/lib/email/plantillas";
 import { urlDeInvitacionProfesional } from "@/lib/urls";
+import { colegioPorClaveONombre } from "@/lib/colegios";
+import {
+  verificarAltaEnRegistro,
+  type ResultadoVerificacion,
+} from "@/lib/colegios/servidor";
 
 /*
  * Registro profesional, equipo del centro y asignación de expedientes.
@@ -32,10 +37,13 @@ export type DatosRegistro = {
  * Alta profesional. Idempotente: reintentarla tras una interrupción actualiza
  * el mismo perfil y la misma organización, sin duplicar ninguno.
  *
- * NO concede el rol operativo. La cuenta queda en `professional_pending` hasta
- * que un administrador de plataforma apruebe la acreditación.
+ * NO concede el rol operativo por sí misma. La cuenta queda en
+ * `professional_pending` y, justo después, el servidor consulta el registro
+ * público del colegio: si número, nombre y situación coinciden, se aprueba
+ * sola (`registry_verify_professional`, solo `service_role`); si no, espera a
+ * una persona con el motivo anotado.
  */
-async function registrarProfesionalImpl(datos: DatosRegistro) {
+async function registrarProfesionalImpl(datos: DatosRegistro): Promise<ResultadoVerificacion> {
   const nombre = datos.fullName.trim();
   if (nombre.length < 2) throw new ActionInputError("Escribe tu nombre completo.");
   if (datos.practiceKind !== "solo" && datos.practiceKind !== "center") {
@@ -45,17 +53,31 @@ async function registrarProfesionalImpl(datos: DatosRegistro) {
     throw new ActionInputError("Escribe el nombre del centro.");
   }
 
+  // Del selector llega la clave; se guarda el nombre, que es lo que lee una
+  // persona. Un texto que no es ningún colegio conocido se guarda tal cual.
+  const colegio = colegioPorClaveONombre(datos.colegio);
+  const colegioGuardado = colegio?.nombre ?? (datos.colegio?.trim() || null);
+  const numero = datos.numeroColegiado?.trim() || null;
+
   const supabase = await createClient();
-  const { error } = await supabase.rpc("register_professional", {
+  const { data: professionalId, error } = await supabase.rpc("register_professional", {
     p_full_name: nombre,
     p_practice_kind: datos.practiceKind,
     p_org_name: datos.orgName?.trim() || null,
-    p_colegio: datos.colegio?.trim() || null,
-    p_numero_colegiado: datos.numeroColegiado?.trim() || null,
+    p_colegio: colegioGuardado,
+    p_numero_colegiado: numero,
   });
   if (error) throw new Error(error.message);
 
+  const verificacion = await verificarAltaEnRegistro({
+    professionalId,
+    colegio: colegio?.clave ?? colegioGuardado,
+    numero,
+    nombre,
+  });
+
   revalidatePath("/registro/estado");
+  return verificacion;
 }
 
 // --- Equipo del centro ------------------------------------------------------

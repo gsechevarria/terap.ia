@@ -36,6 +36,10 @@ export type ContextoPropio = {
   full_name: string | null;
   verification_status: "pending" | "approved" | "rejected" | "provisional" | null;
   verification_note: string | null;
+  verification_source: "manual" | "registro" | null;
+  /** Veredicto y motivo de la última consulta al registro del colegio. */
+  verification_check_verdict: string | null;
+  verification_check_detail: string | null;
   practice_kind: "solo" | "center" | null;
   colegio: string | null;
   numero_colegiado: string | null;

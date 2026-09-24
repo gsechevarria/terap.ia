@@ -401,6 +401,75 @@ export async function sqlRegressions(db) {
   await assert.rejects(q('insert into platform_admins(user_id) values($1)', [regUid]));
  }));
 
+ // --- Verificación por el registro del colegio (20260924100001) -------------
+ const comoServidor = async (fn) => {
+  await db.exec('set role service_role');
+  try { return await fn(); } finally { await db.exec('reset role'); }
+ };
+ const evidencia = (numero) => JSON.stringify({
+  veredicto: 'coincide', integracion: 'cop-madrid', numeroConsultado: numero,
+  url: 'https://example.invalid/?q=' + numero, consultadoEn: '2026-09-24T10:00:00Z',
+  fila: { nombre: 'PERSONA FICTICIA', numero, situacion: 'Ejerciente', titulacion: null },
+  nombreDeclarado: 'Persona Ficticia', detalle: 'prueba',
+ });
+ await test('Nadie se autoaprueba escribiendo su propia fila', () => user(regUid, async () => {
+  for (const cambio of [
+   "verification_status='approved'", "verification_source='registro'",
+   "verification_evidence='{}'::jsonb", "numero_colegiado='M-99999'", "full_name='Otra Persona'",
+  ]) {
+   await assert.rejects(q(`update professionals set ${cambio} where id=$1`, [regPro]), undefined, cambio);
+  }
+ }));
+ await test('Una cuenta autenticada no puede aprobar por la vía del registro', () => user(regUid, async () => {
+  await assert.rejects(q('select registry_verify_professional($1,$2::jsonb,true)', [regPro, evidencia('M-00001')]));
+ }));
+ const verUid = await nuevaCuenta('verificada@example.invalid', null);
+ let verPro;
+ await user(verUid, async () => {
+  verPro = (await q("select register_professional('Persona Ficticia','solo',null,'COP Madrid','M-00001') id"))[0].id;
+ });
+ await test('El servidor aprueba por el registro y concede el rol', async () => {
+  const r = (await comoServidor(() => q('select registry_verify_professional($1,$2::jsonb,true) r', [verPro, evidencia('M-00001')])))[0].r;
+  assert.equal(r, 'approved');
+  const p = (await q('select verification_status s, verification_source o, verification_reviewed_by b, verification_evidence e from professionals where id=$1', [verPro]))[0];
+  assert.equal(p.s, 'approved'); assert.equal(p.o, 'registro'); assert.equal(p.b, null);
+  assert.equal(p.e.numeroConsultado, 'M-00001');
+  assert.equal((await q("select raw_app_meta_data->>'role' r from auth.users where id=$1", [verUid]))[0].r, 'professional');
+ });
+ await test('Lo ya decidido no se vuelve a aprobar', async () => {
+  const r = (await comoServidor(() => q('select registry_verify_professional($1,$2::jsonb,true) r', [verPro, evidencia('M-00001')])))[0].r;
+  assert.equal(r, 'not_pending');
+ });
+ await test('Un número ya verificado no aprueba una segunda cuenta', async () => {
+  const otraUid = await nuevaCuenta('impostora@example.invalid', null);
+  let otraPro;
+  await user(otraUid, async () => {
+   otraPro = (await q("select register_professional('Persona Ficticia','solo',null,'COP Madrid','M-00001') id"))[0].id;
+  });
+  const r = (await comoServidor(() => q('select registry_verify_professional($1,$2::jsonb,true) r', [otraPro, evidencia('M-00001')])))[0].r;
+  assert.equal(r, 'duplicate');
+  assert.equal((await q('select verification_status s from professionals where id=$1', [otraPro]))[0].s, 'pending');
+  assert.equal((await q("select raw_app_meta_data->>'role' r from auth.users where id=$1", [otraUid]))[0].r, 'professional_pending');
+ });
+ await test('Sin coincidencia solo se guarda la evidencia', async () => {
+  const noUid = await nuevaCuenta('sin-coincidencia@example.invalid', null);
+  let noPro;
+  await user(noUid, async () => {
+   noPro = (await q("select register_professional('Otra Ficticia','solo',null,'COP Madrid','M-00002') id"))[0].id;
+  });
+  const r = (await comoServidor(() => q('select registry_verify_professional($1,$2::jsonb,false) r', [noPro, evidencia('M-00002')])))[0].r;
+  assert.equal(r, 'recorded');
+  const p = (await q('select verification_status s, verification_checked_at c from professionals where id=$1', [noPro]))[0];
+  assert.equal(p.s, 'pending'); assert.ok(p.c);
+ });
+ await test('Con la acreditación aprobada, el asistente no cambia número ni nombre', async () => {
+  await user(verUid, async () => {
+   await q("select register_professional('Persona Suplantada','solo',null,'COP Madrid','M-00003')");
+  });
+  const p = (await q('select full_name n, numero_colegiado c from professionals where id=$1', [verPro]))[0];
+  assert.equal(p.n, 'Persona Ficticia'); assert.equal(p.c, 'M-00001');
+ });
+
  // --- Administracion de plataforma -----------------------------------------
  const adminUid = await nuevaCuenta('admin@example.invalid', null);
  await q('insert into platform_admins(user_id,note) values($1,$2)', [adminUid, 'alta fuera de banda']);
