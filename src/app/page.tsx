@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CabeceraLanding } from "./_landing/CabeceraLanding";
 import { lora, manrope } from "./_landing/fuentes";
 import "./_landing/landing.css";
+import { EnlacesLegales } from "@/app/_legal/PaginaLegal";
 
 /**
  * Portada pública. Transcripción fiel de la landing aprobada (versión 3,
@@ -412,6 +413,7 @@ export default function Home() {
         <p>El espacio que conecta tu consulta.</p>
         <span>© {new Date().getFullYear()} Terap</span>
         <a href="#">Volver arriba ↑</a>
+        <EnlacesLegales />
       </footer>
     </div>
   );

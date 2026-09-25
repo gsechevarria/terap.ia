@@ -470,10 +470,55 @@ export async function sqlRegressions(db) {
   assert.equal(p.n, 'Persona Ficticia'); assert.equal(p.c, 'M-00001');
  });
 
+ // --- Altas incompletas (20260925100001) ------------------------------------
+ await test('Una alta a medias se reconoce, y una con datos no', async () => {
+  const medias = randomUUID();
+  await q("insert into auth.users(id,email,email_confirmed_at) values($1,'a-medias@example.invalid',now())", [medias]);
+  const sinConfirmar = randomUUID();
+  await q("insert into auth.users(id,email) values($1,'sin-confirmar@example.invalid')", [sinConfirmar]);
+  await db.exec('set role service_role');
+  try {
+   assert.equal((await q("select incomplete_signup_user_id('A-Medias@example.invalid') id"))[0].id, medias);
+   assert.equal((await q("select incomplete_signup_user_id('sin-confirmar@example.invalid') id"))[0].id, null);
+   // Con ficha profesional (pendiente o no), con expediente o administradora: nunca.
+   assert.equal((await q("select incomplete_signup_user_id('registro@example.invalid') id"))[0].id, null);
+   assert.equal((await q("select incomplete_signup_user_id($1) id", [patUid1 + '@example.invalid']))[0].id, null);
+   assert.equal((await q("select incomplete_signup_user_id('no-existe@example.invalid') id"))[0].id, null);
+  } finally { await db.exec('reset role'); }
+ });
+ await test('Una cuenta autenticada no puede buscar altas a medias', () => user(regUid, async () => {
+  await assert.rejects(q("select incomplete_signup_user_id('a-medias@example.invalid')"));
+ }));
+
  // --- Administracion de plataforma -----------------------------------------
  const adminUid = await nuevaCuenta('admin@example.invalid', null);
  await q('insert into platform_admins(user_id,note) values($1,$2)', [adminUid, 'alta fuera de banda']);
- await test('Aprobar concede el rol profesional', () => user(adminUid, async () => {
+ // La administración exige sesión `aal2` (segundo factor). `comoAdmin` es la
+ // sesión de un administrador que ya lo ha pasado; `user(adminUid, …)` a secas,
+ // la que solo ha puesto la contraseña.
+ const comoAdmin = async (fn) => {
+  await q("select set_config('request.jwt.claims',$1,false)", [JSON.stringify({ aal: 'aal2' })]);
+  try { return await user(adminUid, fn); }
+  finally { await q("select set_config('request.jwt.claims','',false)"); }
+ };
+ await test('Sin segundo factor, un administrador no administra nada', () => user(adminUid, async () => {
+  assert.equal((await q('select is_platform_admin() b'))[0].b, false);
+  assert.equal((await q('select is_platform_admin_account() b'))[0].b, true);
+  await assert.rejects(q("select admin_review_professional($1,'approved')", [regPro]));
+ }));
+ await test('Con el segundo factor, sí', () => comoAdmin(async () => {
+  assert.equal((await q('select is_platform_admin() b'))[0].b, true);
+ }));
+ await test('Quien no es administrador no lo es ni con segundo factor', async () => {
+  await q("select set_config('request.jwt.claims',$1,false)", [JSON.stringify({ aal: 'aal2' })]);
+  try {
+   await user(regUid, async () => {
+    assert.equal((await q('select is_platform_admin() b'))[0].b, false);
+    assert.equal((await q('select is_platform_admin_account() b'))[0].b, false);
+   });
+  } finally { await q("select set_config('request.jwt.claims','',false)"); }
+ });
+ await test('Aprobar concede el rol profesional', () => comoAdmin(async () => {
   await q("select admin_review_professional($1,'approved','Colegiacion comprobada')", [regPro]);
   assert.equal((await q('select verification_status s from professionals where id=$1', [regPro]))[0].s, 'approved');
  }));
@@ -481,12 +526,12 @@ export async function sqlRegressions(db) {
   assert.equal((await q("select raw_app_meta_data->>'role' r from auth.users where id=$1", [regUid]))[0].r, 'professional');
  });
  await test('Rechazar retira el rol operativo', async () => {
-  await user(adminUid, async () => { await q("select admin_review_professional($1,'rejected','Sin acreditar')", [regPro]); });
+  await comoAdmin(async () => { await q("select admin_review_professional($1,'rejected','Sin acreditar')", [regPro]); });
   assert.equal((await q("select raw_app_meta_data->>'role' r from auth.users where id=$1", [regUid]))[0].r, 'professional_pending');
-  await user(adminUid, async () => { await q("select admin_review_professional($1,'approved')", [regPro]); });
+  await comoAdmin(async () => { await q("select admin_review_professional($1,'approved')", [regPro]); });
   assert.equal((await q("select raw_app_meta_data->>'role' r from auth.users where id=$1", [regUid]))[0].r, 'professional');
  });
- await test('El acceso beta registra quien lo concedio y cuando', () => user(adminUid, async () => {
+ await test('El acceso beta registra quien lo concedio y cuando', () => comoAdmin(async () => {
   await q("select admin_set_org_access($1,'beta',null,'Centro piloto')", [regOrg]);
   const a = (await q('select status,granted_by,granted_at from organization_access where organization_id=$1', [regOrg]))[0];
   assert.equal(a.status, 'beta'); assert.equal(a.granted_by, adminUid); assert.ok(a.granted_at);
@@ -496,7 +541,7 @@ export async function sqlRegressions(db) {
  const colUid = await nuevaCuenta('colega@example.invalid', null);
  let colPro;
  await user(colUid, async () => { colPro = (await q("select register_professional('Colega','solo') id"))[0].id; });
- await user(adminUid, async () => { await q("select admin_review_professional($1,'approved')", [colPro]); });
+ await comoAdmin(async () => { await q("select admin_review_professional($1,'approved')", [colPro]); });
 
  await test('Solo quien administra invita al centro', () => user(colUid, () => assert.rejects(
    q("select issue_professional_invitation($1,'x@example.invalid',$2)", [regOrg, sha('otro')]))));

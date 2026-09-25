@@ -7,6 +7,7 @@ import { Brandmark } from "@/components/ui/Brandmark";
 import { getContextoPropio } from "@/lib/queries/contexts";
 import { CrearCuentaForm } from "./CrearCuentaForm";
 import { DatosProfesionalesForm } from "./DatosProfesionalesForm";
+import { EnlacesLegales } from "@/app/_legal/PaginaLegal";
 
 export const metadata: Metadata = { title: "Alta profesional · terap.ia" };
 
@@ -78,6 +79,8 @@ export default async function RegistroPage() {
       ) : (
         <DatosProfesionalesForm nombreSugerido={user.user_metadata?.full_name ?? ""} />
       )}
+
+      <EnlacesLegales className="text-[12.5px] text-ink-3 [&_a:hover]:text-ink" />
     </main>
   );
 }

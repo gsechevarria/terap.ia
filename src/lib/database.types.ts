@@ -1877,9 +1877,11 @@ Functions: {
 "get_onboarding_consent": { Args: {"p_token"?: string | null}; Returns: Json };
 "has_consent_for_record": { Args: {"p_patient_id": string | null}; Returns: boolean };
 "has_current_consent": { Args: Record<PropertyKey, never>; Returns: boolean };
+"incomplete_signup_user_id": { Args: {"p_email": string | null}; Returns: string };
 "invitation_preview": { Args: {"p_token": string | null}; Returns: ({"valid": boolean;"professional_name": string;"expires_at": string;"organization_name": string;"email": string})[] };
 "is_org_member": { Args: {"p_org": string | null}; Returns: boolean };
 "is_platform_admin": { Args: Record<PropertyKey, never>; Returns: boolean };
+"is_platform_admin_account": { Args: Record<PropertyKey, never>; Returns: boolean };
 "issue_invitation": { Args: {"p_patient_id": string | null;"p_token_hash": string | null;"p_email"?: string | null;"p_ttl_hours"?: number | null}; Returns: ({"invitation_id": string;"expires_at": string;"recipient": string})[] };
 "issue_professional_invitation": { Args: {"p_org": string | null;"p_email": string | null;"p_token_hash": string | null;"p_role"?: Database["public"]["Enums"]["org_member_role"] | null;"p_can_invite"?: boolean | null;"p_ttl_hours"?: number | null}; Returns: string };
 "mark_notification_read": { Args: {"p_id": string | null}; Returns: undefined };

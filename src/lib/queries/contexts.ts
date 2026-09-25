@@ -121,9 +121,26 @@ export async function getContextos(): Promise<Contexto[]> {
   return [...pro, ...pac];
 }
 
-/** ¿Es administrador de plataforma? Lo decide el servidor, nunca el cliente. */
+/**
+ * ¿Puede administrar la plataforma AHORA? Exige cuenta administradora y sesión
+ * con el segundo factor pasado (`aal2`); lo decide la base, nunca el cliente.
+ */
 export async function esAdminPlataforma(): Promise<boolean> {
   const supabase = await createClient();
   const { data } = await checked(supabase.rpc("is_platform_admin"));
   return data === true;
+}
+
+/**
+ * ¿La cuenta figura como administradora, haya pasado o no el segundo factor?
+ * Solo decide qué pantalla enseñar —pedir el código, o el enlace de la barra
+ * lateral—. No autoriza nada: para eso está `esAdminPlataforma()`.
+ */
+export async function esCuentaAdminPlataforma(): Promise<boolean> {
+  // Sin `checked` a propósito: la barra lateral del panel la llama en cada
+  // página, y un fallo aquí no debe tumbar el panel por un enlace. Si falla,
+  // se responde «no» y el enlace no aparece.
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("is_platform_admin_account");
+  return !error && data === true;
 }

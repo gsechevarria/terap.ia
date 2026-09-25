@@ -42,12 +42,11 @@ export function AdminLoginForm() {
       return;
     }
 
-    // Se pregunta al servidor, que es quien lo sabe (`is_platform_admin()`).
-    // Si no lo es, se dice claro en vez de mandar a un 404 sin explicación.
+    // Se pregunta al servidor si la cuenta es administradora. Si lo es, la
+    // página vuelve a pintarse y pide el segundo factor; si no, se dice claro
+    // en vez de mandar a un 404 sin explicación.
     const r = await soyAdminPlataformaAction();
     if (r.success && r.data) {
-      // `replace`: volver atrás no debe traer de vuelta el formulario.
-      router.replace("/admin");
       router.refresh();
       return;
     }

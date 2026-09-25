@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { allRows } from "@/lib/query-result";
-import { esAdminPlataforma } from "@/lib/queries/contexts";
+import { esAdminPlataforma, esCuentaAdminPlataforma } from "@/lib/queries/contexts";
 import { ColaAcreditaciones } from "./ColaAcreditaciones";
 import { AccesoComercial } from "./AccesoComercial";
 import { AprobacionesAutomaticas } from "./AprobacionesAutomaticas";
@@ -38,7 +38,12 @@ export default async function AdminPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
-  if (!(await esAdminPlataforma())) notFound();
+  if (!(await esAdminPlataforma())) {
+    // Administradora sin el segundo factor pasado: a por él. Cualquier otra
+    // cuenta, 404 — un 403 confirmaría que la ruta existe.
+    if (await esCuentaAdminPlataforma()) redirect("/admin/login");
+    notFound();
+  }
 
   const [
     { data: profesionales },

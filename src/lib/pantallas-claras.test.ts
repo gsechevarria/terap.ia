@@ -29,6 +29,8 @@ const PANTALLAS = [
   "src/app/unirse/[token]/page.tsx",
   "src/app/onboarding/[token]/page.tsx",
   "src/app/admin/login/page.tsx",
+  // Las legales usan el armazón común, que lleva la clase.
+  "src/app/_legal/PaginaLegal.tsx",
 ];
 
 describe("pantallas de entrada en claro", () => {

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { runAction } from "@/lib/action-server";
 import { ActionInputError } from "@/lib/action-result";
 import { createClient } from "@/lib/supabase/server";
-import { esAdminPlataforma } from "@/lib/queries/contexts";
+import { esAdminPlataforma, esCuentaAdminPlataforma } from "@/lib/queries/contexts";
 
 /*
  * Administración de plataforma.
@@ -87,12 +87,12 @@ export async function cambiarAccesoOrganizacionAction(...a: Parameters<typeof ca
 }
 
 /**
- * Para el acceso de `/admin/login`: tras iniciar sesión, decir si la cuenta
- * administra la plataforma y poder avisar en vez de soltar un 404. No abre
- * nada: `/admin` y cada RPC lo vuelven a comprobar por su cuenta.
+ * Para el acceso de `/admin/login`: tras la contraseña, decir si la cuenta es
+ * administradora —para pedirle entonces el segundo factor— y poder avisar en
+ * vez de soltar un 404. No abre nada: `/admin` y cada RPC exigen además `aal2`.
  */
 async function soyAdminPlataformaImpl(): Promise<boolean> {
-  return esAdminPlataforma();
+  return esCuentaAdminPlataforma();
 }
 export async function soyAdminPlataformaAction() {
   return runAction(() => soyAdminPlataformaImpl());

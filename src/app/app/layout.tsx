@@ -50,7 +50,14 @@ export default async function PatientLayout({ children }: { children: ReactNode 
   if (role === ROLES.PROFESSIONAL) redirect("/pro");
   if (role !== ROLES.PATIENT) redirect("/login?error=sin-rol");
 
-  if (!(await hasSignedConsent())) redirect("/onboarding/current");
+  if (!(await hasSignedConsent())) {
+    // Un alta profesional a medias nace con rol de paciente (el rol operativo
+    // solo llega al completar el alta), y aquí acababa en «pide a tu
+    // profesional un enlace», que a un psicólogo no le dice nada. Se le lleva
+    // a terminar su alta. `alta` solo enruta: no concede nada.
+    if (user.user_metadata?.alta === "profesional") redirect("/registro");
+    redirect("/onboarding/current");
+  }
 
   const nativo = await esAppNativa();
 

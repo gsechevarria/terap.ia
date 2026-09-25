@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { esAdminPlataforma } from "@/lib/queries/contexts";
+import { esAdminPlataforma, esCuentaAdminPlataforma } from "@/lib/queries/contexts";
 import { Brandmark } from "@/components/ui/Brandmark";
 import { AdminLoginForm } from "./AdminLoginForm";
+import { SegundoFactor } from "./SegundoFactor";
 
 export const metadata: Metadata = {
   title: "Administración · terap.ia",
@@ -27,13 +28,15 @@ export default async function AdminLoginPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (user && (await esAdminPlataforma())) redirect("/admin");
+  // Contraseña ya puesta en una cuenta administradora: falta el segundo factor.
+  const pedirCodigo = Boolean(user) && (await esCuentaAdminPlataforma());
 
   return (
     <main className="pantalla-acceso relative flex flex-1 flex-col items-center justify-center gap-6 p-6">
       <Link href="/" className="inline-flex items-center" aria-label="terap.ia, ir al inicio">
         <Brandmark height={96} />
       </Link>
-      <AdminLoginForm />
+      {pedirCodigo ? <SegundoFactor /> : <AdminLoginForm />}
       <p className="text-center text-[13px] text-ink-3">
         ¿Buscas tu consulta?{" "}
         <Link href="/login" className="font-medium text-accent hover:underline">

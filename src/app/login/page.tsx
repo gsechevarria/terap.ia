@@ -2,6 +2,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { LoginForm } from "@/app/login/LoginForm";
 import { Brandmark } from "@/components/ui/Brandmark";
+import { EnlacesLegales } from "@/app/_legal/PaginaLegal";
 
 export default async function LoginPage({
   searchParams,
@@ -38,6 +39,8 @@ export default async function LoginPage({
           </Link>
         </p>
       )}
+
+      <EnlacesLegales className="text-[12.5px] text-ink-3 [&_a:hover]:text-ink" />
     </main>
   );
 }
