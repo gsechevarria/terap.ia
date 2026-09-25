@@ -409,7 +409,7 @@ contraseña; tras entrar pregunta al servidor (`soyAdminPlataformaAction` →
 porque cualquiera con el repositorio tendría la llave del panel que aprueba
 profesionales. `verificar-produccion.mjs` comprueba la nueva redirección.
 
-## Doble factor en /admin, altas incompletas y páginas legales (25-sep) — migración 49 SIN APLICAR
+## Doble factor en /admin, altas incompletas y páginas legales (25-sep) — migración 49 APLICADA, en producción
 
 `20260925100001_admin_mfa_y_alta_incompleta.sql`.
 
@@ -431,8 +431,11 @@ profesionales. `verificar-produccion.mjs` comprueba la nueva redirección.
   genéricas y con los datos del titular entre corchetes, enlazadas desde la
   portada, el acceso y el registro. Pendientes de revisión de Gabriel.
 
-⚠️ **El PR se queda abierto hasta aplicar la migración.** Sin ella `/admin`
-seguiría funcionando SIN segundo factor y el reinicio de altas fallaría.
+**Migración aplicada y TOTP activado en Supabase** (declaración de Gabriel,
+25-sep). PR #65 fusionado después, commit `63f0988` en producción,
+`verificar-produccion.mjs` 58/58. Aplicada desde el editor: el historial del CLI
+sigue desincronizado. **Sin probar todavía:** el alta del factor con una app
+real y el reinicio de un alta a medias en producción.
 
 **En pausa por decisión del 25-sep:** aceptación de condiciones en el registro,
 derechos RGPD en la app, DPA, dominio de correo, doble factor del panel,
