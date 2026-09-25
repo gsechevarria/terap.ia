@@ -5,7 +5,7 @@ import { getMyAppointmentsSplit } from "@/lib/queries/appointments";
 import { addDaysYMD, formatYMD, parseYMD, todayYMD } from "@/lib/tz";
 import { RequestAppointmentForm } from "@/app/app/_components/RequestAppointmentForm";
 
-export const metadata = { title: "Pedir cita · terap.ia" };
+export const metadata = { title: "Pedir cita · Terap" };
 
 export default async function RequestAppointmentPage({
   searchParams,

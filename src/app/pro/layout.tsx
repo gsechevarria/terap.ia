@@ -6,6 +6,7 @@ import { Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { MarcaTerap } from "@/components/ui/MarcaTerap";
 import { ProNav } from "@/app/pro/_components/ProNav";
 import { CajonNavegacion } from "@/app/pro/_components/CajonNavegacion";
 import { BuscadorCabecera } from "@/app/pro/_components/BuscadorCabecera";
@@ -16,26 +17,11 @@ import { countAvisosAbiertos } from "@/lib/queries/scales";
 import { esCuentaAdminPlataforma, getContextoPropio } from "@/lib/queries/contexts";
 import { formatFechaLarga } from "@/lib/format";
 
-/** Marca: logotipo y palabra, a 18/700 como el resto del sistema. */
+/** Marca de Terap, la de la portada (`MarcaTerap`). Lleva a «Hoy». */
 function Marca() {
   return (
-    <Link
-      href="/pro"
-      className="inline-flex shrink-0 items-center gap-[9px] text-ink"
-      aria-label="terap.ia, ir a Hoy"
-    >
-      <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden>
-        <rect width="32" height="32" rx="8" fill="var(--accent-solid)" />
-        <path
-          d="M9 21c2.5-6 11.5-6 14 0"
-          fill="none"
-          stroke="#FFFFFF"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-        />
-        <circle cx="16" cy="11.5" r="2.6" fill="#FFFFFF" />
-      </svg>
-      <span className="text-[18px] font-bold tracking-[-0.02em]">terap.ia</span>
+    <Link href="/pro" className="inline-flex shrink-0 items-center text-ink" aria-label="Terap, ir a Hoy">
+      <MarcaTerap tamano={21} />
     </Link>
   );
 }

@@ -87,7 +87,7 @@ export async function comprobarColegiacion(
       headers: {
         // Se identifica: es una consulta legítima a un registro público, no
         // un navegador disfrazado.
-        "User-Agent": "terap.ia (verificacion de colegiacion; +https://terap.vercel.app)",
+        "User-Agent": "Terap (verificacion de colegiacion; +https://terap.vercel.app)",
         Accept: "text/html",
         ...(peticion.cuerpo ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
       },

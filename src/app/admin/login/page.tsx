@@ -8,7 +8,7 @@ import { AdminLoginForm } from "./AdminLoginForm";
 import { SegundoFactor } from "./SegundoFactor";
 
 export const metadata: Metadata = {
-  title: "Administración · terap.ia",
+  title: "Administración · Terap",
   robots: { index: false, follow: false },
 };
 
@@ -33,7 +33,7 @@ export default async function AdminLoginPage() {
 
   return (
     <main className="pantalla-acceso relative flex flex-1 flex-col items-center justify-center gap-6 p-6">
-      <Link href="/" className="inline-flex items-center" aria-label="terap.ia, ir al inicio">
+      <Link href="/" className="inline-flex items-center" aria-label="Terap, ir al inicio">
         <Brandmark height={96} />
       </Link>
       {pedirCodigo ? <SegundoFactor /> : <AdminLoginForm />}

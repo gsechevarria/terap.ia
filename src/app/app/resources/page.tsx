@@ -2,7 +2,7 @@ import { Download, ExternalLink, FileText, Link2 } from "lucide-react";
 import { getMyDocuments, getMyResources } from "@/lib/queries/wellbeing";
 import { formatDate } from "@/lib/format";
 
-export const metadata = { title: "Recursos · terap.ia" };
+export const metadata = { title: "Recursos · Terap" };
 
 export default async function PatientResourcesPage() {
   const [resources, documents] = await Promise.all([

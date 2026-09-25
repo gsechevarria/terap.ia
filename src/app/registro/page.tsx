@@ -9,7 +9,7 @@ import { CrearCuentaForm } from "./CrearCuentaForm";
 import { DatosProfesionalesForm } from "./DatosProfesionalesForm";
 import { EnlacesLegales } from "@/app/_legal/PaginaLegal";
 
-export const metadata: Metadata = { title: "Alta profesional · terap.ia" };
+export const metadata: Metadata = { title: "Alta profesional · Terap" };
 
 /**
  * Alta profesional, en tres pasos y sin inventarse ninguno:

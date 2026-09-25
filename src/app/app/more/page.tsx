@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/format";
 import { SignOutForm } from "@/components/SignOutForm";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
-export const metadata = { title: "Más · terap.ia" };
+export const metadata = { title: "Más · Terap" };
 
 function Fila({
   href,
@@ -95,7 +95,7 @@ export default async function MorePage() {
         </div>
         <p className="tp-section-desc">
           En claro se ve el diseño nuevo. En oscuro se usan los tonos oscuros de
-          terap.ia.
+          Terap.
         </p>
         <div style={{ marginTop: 14 }}>
           <ThemeToggle />

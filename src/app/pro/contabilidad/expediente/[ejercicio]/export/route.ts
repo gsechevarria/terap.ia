@@ -138,7 +138,7 @@ export async function GET(
 
   // --- Índice legible -------------------------------------------------------
   const indice = [
-    `EXPEDIENTE FISCAL ${ejercicio} — terap.ia`,
+    `EXPEDIENTE FISCAL ${ejercicio} — Terap`,
     `Generado: ${momento.toLocaleString("es-ES")}`,
     "",
     completo

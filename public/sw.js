@@ -1,5 +1,7 @@
 // Service worker de terap.ia: instalable + Web Push + fallback sin conexión.
-const CACHE = "terapia-shell-v1";
+// v2: iconos con la marca de Terap. Subir la versión obliga a la PWA instalada
+// a descargarlos de nuevo en vez de seguir sirviendo los antiguos de la caché.
+const CACHE = "terapia-shell-v2";
 // Mínimo imprescindible: la página de "sin conexión" y los iconos. NADA de
 // datos: aquí no se cachea ni una respuesta de la API, que serían datos de
 // salud persistidos en el disco del dispositivo.
@@ -55,7 +57,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = {};
   }
-  const title = data.title || "terap.ia";
+  const title = data.title || "Terap";
   const options = {
     body: data.body || "",
     icon: "/icon-192.png",

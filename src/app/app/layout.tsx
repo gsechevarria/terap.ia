@@ -66,7 +66,7 @@ export default async function PatientLayout({ children }: { children: ReactNode 
       <div className="tp-app">
         <div className="tp-shell">
           <header className="tp-header">
-            <Link href="/app" className="tp-wordmark" aria-label="terap.ia, inicio">
+            <Link href="/app" className="tp-wordmark" aria-label="Terap, inicio">
               <Brandmark height={30} />
             </Link>
             {/* El 024 es el mismo destino verificado que ya usaba la app; la

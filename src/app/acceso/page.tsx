@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LogIn, Stethoscope, UserRound } from "lucide-react";
 import { Brandmark } from "@/components/ui/Brandmark";
 
-export const metadata: Metadata = { title: "Entrar en terap.ia" };
+export const metadata: Metadata = { title: "Entrar en Terap" };
 
 /**
  * Las tres entradas del producto.

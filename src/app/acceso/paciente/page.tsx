@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, MailQuestion } from "lucide-react";
 import { Brandmark } from "@/components/ui/Brandmark";
 
-export const metadata: Metadata = { title: "Acceso de pacientes · terap.ia" };
+export const metadata: Metadata = { title: "Acceso de pacientes · Terap" };
 
 /**
  * No hay alta pública de pacientes, y esta pantalla existe para decirlo.

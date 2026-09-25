@@ -33,10 +33,10 @@ const schibsted = Schibsted_Grotesk({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "terap.ia",
+  title: "Terap",
   description:
     "Espacio de bienestar mental entre profesional y paciente de consulta privada.",
-  appleWebApp: { capable: true, title: "terap.ia", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Terap", statusBarStyle: "default" },
   // `apple` DEBE ser PNG: Safari no admite SVG en `apple-touch-icon`, y al
   // añadir a pantalla de inicio en iOS ponía una captura de la página en vez
   // del logo.

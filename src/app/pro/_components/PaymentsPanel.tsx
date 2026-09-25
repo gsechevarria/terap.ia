@@ -382,7 +382,7 @@ export function PaymentsPanel({
       </section>
 
       <p className="border-t border-line pt-5 text-[12.5px] text-ink-3">
-        terap.ia hace seguimiento de pagos; no emite facturas.
+        Terap hace seguimiento de pagos; no emite facturas.
       </p>
     </div>
   );

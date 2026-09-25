@@ -34,11 +34,11 @@ export async function requireBiometricUnlock(): Promise<boolean> {
     const info = await BiometricAuth.checkBiometry();
     if (!info.isAvailable) return true; // ver nota de arriba
     await BiometricAuth.authenticate({
-      reason: "Desbloquea terap.ia",
+      reason: "Desbloquea Terap",
       cancelTitle: "Cancelar",
       allowDeviceCredential: true,
       iosFallbackTitle: "Usar código",
-      androidTitle: "terap.ia",
+      androidTitle: "Terap",
       androidSubtitle: "Verifica tu identidad",
     });
     return true;

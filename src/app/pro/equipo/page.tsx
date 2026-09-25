@@ -4,7 +4,7 @@ import { getContextoPropio } from "@/lib/queries/contexts";
 import { getInvitacionesEquipo, getMiembros } from "@/lib/queries/organizations";
 import { EquipoPanel } from "@/app/pro/_components/EquipoPanel";
 
-export const metadata: Metadata = { title: "Equipo · terap.ia" };
+export const metadata: Metadata = { title: "Equipo · Terap" };
 
 /**
  * Equipo del centro.

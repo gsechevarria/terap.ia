@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PaginaLegal } from "@/app/_legal/PaginaLegal";
 
-export const metadata: Metadata = { title: "Política de privacidad · terap.ia" };
+export const metadata: Metadata = { title: "Política de privacidad · Terap" };
 
 /**
  * Política de privacidad (arts. 13 y 14 RGPD). Borrador: ver `PaginaLegal`.
@@ -16,7 +16,7 @@ export default function PrivacidadPage() {
     <PaginaLegal titulo="Política de privacidad" actualizado="25 de septiembre de 2026">
       <section>
         <h2>Quién trata tus datos</h2>
-        <p className="mt-2">En terap.ia hay dos papeles distintos, y conviene separarlos:</p>
+        <p className="mt-2">En Terap hay dos papeles distintos, y conviene separarlos:</p>
         <ul>
           <li>
             <strong>Datos de la cuenta y del servicio</strong> (quién se

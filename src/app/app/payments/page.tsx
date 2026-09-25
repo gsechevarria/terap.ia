@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { formatCurrency, formatDate } from "@/lib/format";
 
-export const metadata = { title: "Pagos · terap.ia" };
+export const metadata = { title: "Pagos · Terap" };
 
 export default async function PatientPaymentsPage() {
   const { payments, debtCents, packRemaining } = await getMyPaymentSummary();

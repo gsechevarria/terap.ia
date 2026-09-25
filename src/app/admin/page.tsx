@@ -16,7 +16,7 @@ type Evidencia = {
 } | null;
 
 export const metadata: Metadata = {
-  title: "Administración · terap.ia",
+  title: "Administración · Terap",
   robots: { index: false, follow: false },
 };
 

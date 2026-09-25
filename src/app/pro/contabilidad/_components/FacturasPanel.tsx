@@ -116,7 +116,7 @@ export function FacturasPanel({
             <h2 className="card-title">Libro registro de facturas emitidas</h2>
             <p className="mt-1.5 text-body-sm text-ink-2">
               Aquí se <strong className="font-medium text-ink">anotan</strong> las
-              facturas emitidas fuera de la aplicación. terap.ia no emite
+              facturas emitidas fuera de la aplicación. Terap no emite
               facturas ni genera ningún documento: eso es lo que la mantiene
               fuera del alcance de Verifactu.
             </p>
