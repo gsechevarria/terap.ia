@@ -434,8 +434,10 @@ profesionales. `verificar-produccion.mjs` comprueba la nueva redirección.
 **Migración aplicada y TOTP activado en Supabase** (declaración de Gabriel,
 25-sep). PR #65 fusionado después, commit `63f0988` en producción,
 `verificar-produccion.mjs` 58/58. Aplicada desde el editor: el historial del CLI
-sigue desincronizado. **Sin probar todavía:** el alta del factor con una app
-real y el reinicio de un alta a medias en producción.
+sigue desincronizado. **Doble factor probado por Gabriel en producción el
+25-sep** con una app de autenticación real: alta del factor y entrada con
+código, correctos (declaración suya). **Sin probar todavía:** el reinicio de un
+alta a medias en producción.
 
 **En pausa por decisión del 25-sep:** aceptación de condiciones en el registro,
 derechos RGPD en la app, DPA, dominio de correo, doble factor del panel,
