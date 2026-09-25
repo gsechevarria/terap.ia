@@ -379,7 +379,7 @@ export default async function PaymentsHistoryPage({
       )}
 
       <p className="text-[12.5px] text-ink-4">
-        Seguimiento de pagos para la gestoría. terap.ia no emite facturas.
+        Seguimiento de pagos para la gestoría. Terap no emite facturas.
       </p>
     </div>
   );

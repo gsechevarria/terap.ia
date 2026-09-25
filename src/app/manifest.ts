@@ -6,8 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
     // `start_url`: cambiarla convertiría la app instalada en OTRA aplicación
     // distinta y el usuario acabaría con dos iconos.
     id: "/app",
-    name: "terap.ia",
-    short_name: "terap.ia",
+    name: "Terap",
+    short_name: "Terap",
     description:
       "Espacio de bienestar mental entre tu profesional de psicología y tú.",
     start_url: "/app",

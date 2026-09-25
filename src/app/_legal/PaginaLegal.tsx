@@ -23,7 +23,7 @@ export function PaginaLegal({
 }) {
   return (
     <main className="pantalla-acceso mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-5 py-10">
-      <Link href="/" className="inline-flex self-start" aria-label="terap.ia, ir al inicio">
+      <Link href="/" className="inline-flex self-start" aria-label="Terap, ir al inicio">
         <Brandmark height={40} />
       </Link>
 

@@ -409,6 +409,23 @@ contraseña; tras entrar pregunta al servidor (`soyAdminPlataformaAction` →
 porque cualquiera con el repositorio tendría la llave del panel que aprueba
 profesionales. `verificar-produccion.mjs` comprueba la nueva redirección.
 
+## Marca: «Terap», nada de «terap.ia» (25-sep)
+
+La marca de la portada pasa a toda la aplicación: **`MarcaTerap`**
+(`src/components/ui/MarcaTerap.tsx`), cuadrado `#172e3a` con tres esquinas
+redondeadas y la inferior izquierda casi en pico, «t» lima `#d2ed87` **trazada
+como vector** (Android no trae Georgia) y «terap.» en Manrope 800. La usan la
+barra lateral, el cajón móvil y `Brandmark` (acceso, registro, app del paciente,
+legales). Iconos de la PWA, `favicon.ico` y `logo-mark.svg` regenerados con
+`npm run gen:icons` (ahora con `sharp`, que ya trae Next); caché del service
+worker a `v2` para que la PWA instalada los recoja. Textos visibles, títulos,
+manifiesto, PDF del expediente y avisos push dicen **Terap**.
+**Se quedan como «terap.ia» a propósito:** el texto del consentimiento
+(`src/lib/consent.ts`, documento versionado y firmado: cambiarlo exige una
+versión nueva, decisión de Gabriel), el `UID` de los `.ics` (cambiarlo
+duplicaría las citas en los calendarios), el `PRODID`, el `VAPID_SUBJECT` y los
+comentarios. En modo oscuro el cuadrado no cambia de color: es de marca.
+
 ## Doble factor en /admin, altas incompletas y páginas legales (25-sep) — migración 49 APLICADA, en producción
 
 `20260925100001_admin_mfa_y_alta_incompleta.sql`.

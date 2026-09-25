@@ -58,8 +58,8 @@ export function SegundoFactor() {
       }
       const alta = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: "terap.ia administración",
-        issuer: "terap.ia",
+        friendlyName: "Terap administración",
+        issuer: "Terap",
       });
       if (alta.error) {
         setEstado({ tipo: "error-carga", mensaje: authErrorMessage(alta.error) });

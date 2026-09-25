@@ -4,7 +4,7 @@ import { getMyPreferences } from "@/lib/queries/notifications";
 import { PushToggle } from "@/components/PushToggle";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
 
-export const metadata = { title: "Notificaciones · terap.ia" };
+export const metadata = { title: "Notificaciones · Terap" };
 
 export default async function PatientSettingsPage() {
   const prefs = await getMyPreferences();

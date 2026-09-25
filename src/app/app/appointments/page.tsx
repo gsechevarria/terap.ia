@@ -16,7 +16,7 @@ import {
 import { PatientAppointmentItem } from "@/app/app/_components/PatientAppointmentItem";
 import { AppointmentsTabs } from "@/app/app/_components/AppointmentsTabs";
 
-export const metadata = { title: "Mis citas · terap.ia" };
+export const metadata = { title: "Mis citas · Terap" };
 
 /** Estado tal y como está en la base. Una cita pasada NO se da por realizada. */
 const ESTADO: Record<string, string> = {

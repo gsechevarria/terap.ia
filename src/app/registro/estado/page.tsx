@@ -7,7 +7,7 @@ import { Brandmark } from "@/components/ui/Brandmark";
 import { SignOutForm } from "@/components/SignOutForm";
 import { getContextoPropio } from "@/lib/queries/contexts";
 
-export const metadata: Metadata = { title: "Estado de tu alta · terap.ia" };
+export const metadata: Metadata = { title: "Estado de tu alta · Terap" };
 
 /**
  * Estado de la solicitud profesional.

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PaginaLegal } from "@/app/_legal/PaginaLegal";
 
-export const metadata: Metadata = { title: "Aviso legal · terap.ia" };
+export const metadata: Metadata = { title: "Aviso legal · Terap" };
 
 /** Aviso legal (art. 10 LSSI). Borrador: ver `PaginaLegal`. */
 export default function AvisoLegalPage() {
@@ -13,7 +13,7 @@ export default function AvisoLegalPage() {
         <p className="mt-2">
           En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la
           sociedad de la información y de comercio electrónico (LSSI), se
-          informa de que este sitio y la aplicación terap.ia son titularidad de:
+          informa de que este sitio y la aplicación Terap son titularidad de:
         </p>
         <ul>
           <li><strong>Titular:</strong> [Razón social o nombre del titular]</li>
@@ -25,9 +25,9 @@ export default function AvisoLegalPage() {
       </section>
 
       <section>
-        <h2>Qué es terap.ia</h2>
+        <h2>Qué es Terap</h2>
         <p className="mt-2">
-          terap.ia es una herramienta de gestión para profesionales de la
+          Terap es una herramienta de gestión para profesionales de la
           psicología en consulta privada y para sus pacientes: agenda, citas,
           tareas, cuestionarios que el profesional activa, diario de ánimo,
           seguimiento de cobros y estimaciones fiscales orientativas.

@@ -1,14 +1,15 @@
-/**
- * Logotipo de terap.ia: muestra el logo completo subido (`/logo.png`, PNG con
- * fondo transparente: emblema + palabra), recortando el margen transparente
- * para que el lockup ocupe la caja. Controlado por `height` (px); el ancho
- * sigue la proporción del contenido. Si cambias la imagen y el encuadre no
- * cuadra, ajusta CONTENT_RATIO / MARK_ZOOM / MARK_POS.
- */
-const CONTENT_RATIO = 1.24; // ancho/alto del contenido del logo (emblema+texto)
-const MARK_ZOOM = "225%"; // ampliación para recortar el margen de la imagen
-const MARK_POS = "49% 47%"; // centro del contenido dentro de la imagen
+import { MarcaTerap } from "@/components/ui/MarcaTerap";
 
+/**
+ * Logotipo de las pantallas de entrada, de la app del paciente y de las
+ * páginas legales. Antes era la imagen `/logo.png` (emblema y palabra de
+ * «terap.ia»); ahora es la marca de Terap (`MarcaTerap`).
+ *
+ * Conserva la firma de antes —`height`, el alto aproximado del logotipo en
+ * px— para no tocar a quien la usa. El logotipo nuevo es apaisado, así que el
+ * cuerpo de la palabra se acota: a 120 px de alto no cabría en la tarjeta del
+ * acceso.
+ */
 export function Brandmark({
   height = 40,
   className = "",
@@ -16,18 +17,6 @@ export function Brandmark({
   height?: number;
   className?: string;
 }) {
-  return (
-    <span
-      role="img"
-      aria-label="terap.ia"
-      className={`inline-block shrink-0 bg-no-repeat ${className}`}
-      style={{
-        height,
-        width: Math.round(height * CONTENT_RATIO),
-        backgroundImage: "url(/logo.png)",
-        backgroundSize: MARK_ZOOM,
-        backgroundPosition: MARK_POS,
-      }}
-    />
-  );
+  const tamano = Math.min(44, Math.max(16, Math.round(height * 0.45)));
+  return <MarcaTerap tamano={tamano} className={className} />;
 }

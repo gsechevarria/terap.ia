@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { ProNav } from "@/app/pro/_components/ProNav";
+import { MarcaTerap } from "@/components/ui/MarcaTerap";
 
 /**
  * Barra lateral en forma de cajón, por debajo de 1024 px.
@@ -78,8 +79,8 @@ export function CajonNavegacion({
           />
           <div className="absolute inset-y-0 left-0 flex w-[264px] max-w-[85vw] flex-col gap-4 bg-canvas p-4">
             <div className="flex items-center justify-between">
-              <span className="text-[18px] font-bold tracking-[-0.02em] text-ink">
-                terap.ia
+              <span className="text-ink">
+                <MarcaTerap tamano={20} />
               </span>
               <button
                 type="button"

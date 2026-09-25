@@ -108,7 +108,7 @@ export function NativeGate({
         </p>
       ) : (
         <>
-          <p className="text-lg font-medium">terap.ia está bloqueada</p>
+          <p className="text-lg font-medium">Terap está bloqueada</p>
           <p className="text-sm text-ink-2">
             Verifica tu identidad para continuar.
           </p>

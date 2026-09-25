@@ -12,7 +12,7 @@ import { formatDateTime } from "@/lib/format";
  * Por eso tampoco hay aquí ni un script de analítica ni una fuente remota.
  */
 export const metadata: Metadata = {
-  title: "Tu invitación · terap.ia",
+  title: "Tu invitación · Terap",
   referrer: "no-referrer",
   robots: { index: false, follow: false },
 };

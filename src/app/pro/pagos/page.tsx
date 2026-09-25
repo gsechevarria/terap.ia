@@ -241,7 +241,7 @@ export default async function PaymentsOverviewPage() {
       </section>
 
       <p className="text-[12.5px] text-ink-4">
-        Export para la gestoría. terap.ia no emite facturas.
+        Export para la gestoría. Terap no emite facturas.
       </p>
     </div>
   );

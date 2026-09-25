@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PaginaLegal } from "@/app/_legal/PaginaLegal";
 
-export const metadata: Metadata = { title: "Política de cookies · terap.ia" };
+export const metadata: Metadata = { title: "Política de cookies · Terap" };
 
 /**
  * Política de cookies. Borrador: ver `PaginaLegal`.
@@ -18,7 +18,7 @@ export default function CookiesPage() {
       <section>
         <h2>Resumen</h2>
         <p className="mt-2">
-          terap.ia <strong>solo usa cookies y almacenamiento técnicos</strong>,
+          Terap <strong>solo usa cookies y almacenamiento técnicos</strong>,
           imprescindibles para que funcione. No hay cookies de analítica, de
           publicidad ni de terceros, así que no se pide consentimiento para
           ellas (art. 22.2 LSSI).
@@ -51,7 +51,7 @@ export default function CookiesPage() {
                 <td>Hasta que lo borres</td>
               </tr>
               <tr>
-                <td className="whitespace-nowrap">terapia-shell-v1</td>
+                <td className="whitespace-nowrap">terapia-shell-v2</td>
                 <td>Caché del navegador</td>
                 <td>
                   Guardar los archivos estáticos de la aplicación (iconos, página

@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
             }
             try {
               await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify({
-                title: "terap.ia", body: "Tienes una novedad en tu cuenta.",
+                title: "Terap", body: "Tienes una novedad en tu cuenta.",
                 url: safeNotificationPath(payload.url), tag: n.id,
               }), { timeout: 5000, TTL: 3600 });
               await checked(admin.from("notification_deliveries").upsert({ notification_id: n.id, subscription_id: sub.id }));

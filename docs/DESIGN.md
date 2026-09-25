@@ -249,7 +249,7 @@ es la cosa**.
 franja reglamentaria          30 px, --banner-bg, texto --banner-ink a 12,5 px
 └── lienzo --canvas
     ├── barra lateral         236 px, SOBRE el lienzo, sin panel ni borde
-    │   ├── marca             logo 24 px + palabra a 18/700
+    │   ├── marca             MarcaTerap: cuadrado #172e3a con «t» #d2ed87 + «terap.» en Manrope 800
     │   ├── navegación        elementos de 36 px, radio 7, icono 17 px trazo 1,7
     │   │                     activo: fondo --surface, peso 600, icono --accent
     │   │                     grupos separados por línea, SIN títulos de grupo

@@ -1,7 +1,7 @@
 import { getRequestsForProfessional } from "@/lib/queries/appointment-requests";
 import { RequestsPanel } from "@/app/pro/_components/RequestsPanel";
 
-export const metadata = { title: "Solicitudes · terap.ia" };
+export const metadata = { title: "Solicitudes · Terap" };
 
 /** «hoy», «ayer», «hace 3 días». */
 function haceCuanto(desdeISO: string, ahora: Date): string {

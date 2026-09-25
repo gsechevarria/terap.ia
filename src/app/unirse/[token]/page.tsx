@@ -9,7 +9,7 @@ import { getContextoPropio } from "@/lib/queries/contexts";
 import { AceptarEquipoForm } from "./AceptarEquipoForm";
 
 export const metadata: Metadata = {
-  title: "Unirte a un centro · terap.ia",
+  title: "Unirte a un centro · Terap",
   referrer: "no-referrer",
   robots: { index: false, follow: false },
 };

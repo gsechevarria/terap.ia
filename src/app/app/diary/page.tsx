@@ -6,7 +6,7 @@ import { WeeklyMood } from "@/app/app/_components/WeeklyMood";
 import { fechaCompactaYMD } from "@/app/app/_ui/fechas";
 import { esEscalaActual, etiquetaAnimo } from "@/lib/diario";
 
-export const metadata = { title: "Mi diario · terap.ia" };
+export const metadata = { title: "Mi diario · Terap" };
 
 export default async function PatientDiaryPage() {
   const entries = await getMyMoodEntries();
