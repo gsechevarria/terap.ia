@@ -31,6 +31,10 @@ const PUBLIC_PREFIXES = [
   // Acceso propio de la administración de plataforma. Solo es la puerta: quien
   // decide si se entra es `/admin`, que mira `is_platform_admin()` en servidor.
   "/admin/login",
+  // Información legal: tiene que poder leerse sin cuenta, antes de crearla.
+  "/aviso-legal",
+  "/privacidad",
+  "/cookies",
 ];
 
 function isPublicPath(pathname: string): boolean {

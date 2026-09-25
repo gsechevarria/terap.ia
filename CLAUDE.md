@@ -409,6 +409,38 @@ contraseña; tras entrar pregunta al servidor (`soyAdminPlataformaAction` →
 porque cualquiera con el repositorio tendría la llave del panel que aprueba
 profesionales. `verificar-produccion.mjs` comprueba la nueva redirección.
 
+## Doble factor en /admin, altas incompletas y páginas legales (25-sep) — migración 49 SIN APLICAR
+
+`20260925100001_admin_mfa_y_alta_incompleta.sql`.
+
+- **Doble factor (TOTP de Supabase) en la administración.** `is_platform_admin()`
+  exige ahora sesión `aal2`, así que se aplica EN LA BASE a todas las RPC y a la
+  lectura de `/admin`; `is_platform_admin_account()` solo dice si pedir el
+  código. Primer uso, recuperación y requisito de Supabase en
+  [docs/ADMIN-DOBLE-FACTOR.md](docs/ADMIN-DOBLE-FACTOR.md). **El primero que
+  entre con la contraseña da de alta el factor**: hacerlo nada más desplegar.
+  El panel del profesional NO pide segundo factor (aplazado).
+- **Alta incompleta, siempre desde cero** (decisión de Gabriel). Si alguien
+  vuelve a registrarse con el correo de un alta a medias, el servidor borra esa
+  cuenta vacía (`incomplete_signup_user_id`, solo `service_role`, exige que no
+  tenga ficha, expediente, rol profesional ni administración) y el `signUp` se
+  repite con correo nuevo. Si inicia sesión en vez de registrarse, `/app` la
+  lleva a `/registro` (marca `user_metadata.alta = "profesional"`, que solo
+  enruta).
+- **Páginas legales en borrador**: `/aviso-legal`, `/privacidad`, `/cookies`,
+  genéricas y con los datos del titular entre corchetes, enlazadas desde la
+  portada, el acceso y el registro. Pendientes de revisión de Gabriel.
+
+⚠️ **El PR se queda abierto hasta aplicar la migración.** Sin ella `/admin`
+seguiría funcionando SIN segundo factor y el reinicio de altas fallaría.
+
+**En pausa por decisión del 25-sep:** aceptación de condiciones en el registro,
+derechos RGPD en la app, DPA, dominio de correo, doble factor del panel,
+cierre por inactividad, Sentry y el resto de la deuda de seguridad; **la agenda
+se congela como está en producción**; **no hay app nativa por ahora** (Capacitor
+y Expo parados); verificación en dispositivos y los PR de Dependabot, sin
+acción.
+
 ## Verificación de la colegiación (24-sep) — migración 48 APLICADA, en producción
 
 `20260924100001_verificacion_colegiacion.sql`. Al completar `/registro`, el
@@ -438,7 +470,7 @@ causa. Por eso, **tras cada merge se comprueba** que existe un despliegue
 (`vercel --prod` y `redeploy` están vetados): o se fusiona otro PR, que sí lo
 dispara, o una persona pulsa «Redeploy» en el panel de Vercel.
 
-## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 SIN APLICAR
+## Diario emocional: cuatro caras y dos escalas (19-sep) — migración 47 aplicada
 
 `20260919100001_diario_escala_4.sql`. El selector pasa de cinco opciones a
 cuatro, con nota opcional y mensajes de apoyo.
@@ -458,8 +490,9 @@ explícito al pasarse del límite, que antes se recortaba en silencio.
 
 Detalle, despliegue y reversión: [docs/DIARIO-EMOCIONAL.md](docs/DIARIO-EMOCIONAL.md).
 
-⚠️ **El PR se queda abierto hasta aplicar la migración**: el código escribe
-`mood_scale` y sobre el esquema viejo fallaría toda escritura del diario.
+**Aplicada** (declaración de Gabriel, 25-sep: `mood_entries` tiene
+`mood_scale`). El PR #48 se había fusionado antes de anotarlo; el diario
+funciona en producción.
 
 ## Orden de borrado del vaciado de la demo, corregido (17-sep)
 

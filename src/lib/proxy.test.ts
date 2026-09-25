@@ -33,6 +33,13 @@ describe("proxy y límites de rutas", () => {
     const otra = await proxy(new NextRequest("https://example.invalid/administracion"));
     expect(otra.headers.get("location")).toBe("https://example.invalid/login");
   });
+  it("las páginas legales se leen sin sesión", async () => {
+    setup();
+    for (const ruta of ["/aviso-legal", "/privacidad", "/cookies"]) {
+      const r = await proxy(new NextRequest(`https://example.invalid${ruta}`));
+      expect(r.headers.get("location"), ruta).toBeNull();
+    }
+  });
   it("el matcher deja fuera los artefactos que el service worker precachea", () => {
     const matcher = new RegExp(`^${config.matcher[0]}$`);
     // `cache.addAll` rechaza un redirect: si el proxy protegiera estas rutas,

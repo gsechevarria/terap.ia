@@ -125,7 +125,7 @@ async function rutasPrivadas() {
   }
 
   console.log("\nRutas públicas");
-  for (const ruta of ["/", "/login", "/admin/login"]) {
+  for (const ruta of ["/", "/login", "/admin/login", "/aviso-legal", "/privacidad", "/cookies"]) {
     const res = await pedir(ruta);
     comprobar(`${ruta} responde 200`, res.status === 200, `status ${res.status}`);
   }

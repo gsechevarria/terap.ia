@@ -13,7 +13,7 @@ import { SidebarPerfil } from "@/app/pro/_components/SidebarPerfil";
 import { countPendingRequests } from "@/lib/queries/appointment-requests";
 import { countActivePatients } from "@/lib/queries/patients";
 import { countAvisosAbiertos } from "@/lib/queries/scales";
-import { esAdminPlataforma, getContextoPropio } from "@/lib/queries/contexts";
+import { esCuentaAdminPlataforma, getContextoPropio } from "@/lib/queries/contexts";
 import { formatFechaLarga } from "@/lib/format";
 
 /** Marca: logotipo y palabra, a 18/700 como el resto del sistema. */
@@ -77,7 +77,9 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
     countActivePatients(),
     countAvisosAbiertos(),
     getContextoPropio(),
-    esAdminPlataforma(),
+    // La cuenta, no la sesión: el enlace se enseña aunque falte el segundo
+    // factor, que se pide al entrar.
+    esCuentaAdminPlataforma(),
   ]);
 
   // El instante se resuelve en el servidor y se formatea aquí: `formatFechaLarga`
