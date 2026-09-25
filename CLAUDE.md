@@ -696,6 +696,9 @@ commits de la revisión: `supabase/scripts/reparar-historial.sql`,
   notificaciones se programa desde **Supabase (`pg_cron` + `pg_net`)**, no desde
   Vercel.
 - **Vercel** para el despliegue (plan Hobby; no se ha contratado ninguno mayor).
+  **Funciones en `fra1` (Fráncfort)** desde el 25-sep (`vercel.json` → `regions`),
+  junto a Supabase: en la región por defecto (`iad1`, Washington) cada consulta
+  cruzaba el Atlántico. `verificar-produccion.mjs` lo comprueba con `x-vercel-id`.
 - App paciente: **PWA** (envoltura Capacitor 8 presente, ver Sesión 10 y el
   bloque de estado actual).
 - Pruebas: **Vitest 4** (lógica pura) + **PGlite 0.5.8** (PostgreSQL embebido

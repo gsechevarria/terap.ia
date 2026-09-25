@@ -159,6 +159,13 @@ async function handlers() {
   const salud = await pedir("/api/health");
   comprobar("/api/health responde 200 o 503", [200, 503].includes(salud.status), `status ${salud.status}`);
   if (salud.status === 503) anotar("/api/health", "responde 503: la base no contesta");
+
+  // La función tiene que correr en Fráncfort, junto a Supabase. En la región
+  // por defecto de Vercel (iad1, Washington) cada consulta cruzaba el
+  // Atlántico: /api/health tardaba 340-800 ms con una sola consulta.
+  // `x-vercel-id` es «<borde>::<región de la función>::<id>».
+  const region = (salud.headers.get("x-vercel-id") ?? "").split("::")[1] ?? "";
+  comprobar("la función corre en fra1, junto a Supabase", region === "fra1", `región ${region || "desconocida"}`);
 }
 
 // --- PWA --------------------------------------------------------------------
