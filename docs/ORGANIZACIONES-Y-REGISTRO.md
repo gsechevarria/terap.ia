@@ -185,6 +185,10 @@ citas, el nombre del profesional ni nada del expediente.
 
 ### El dominio: la restricción que muerde
 
+> **Resuelto el 28-sep-2026:** dominio `mail.terap.es` verificado en Resend y
+> `EMAIL_FROM = Terap <no-responder@mail.terap.es>`. Se conserva la explicación
+> porque sigue siendo lo primero que mirar si un envío vuelve con 403.
+
 Resend **no entrega a terceros desde un dominio sin verificar**. Con el
 remitente de pruebas `onboarding@resend.dev` solo llega a la dirección de la
 propia cuenta de Resend; cualquier otra devuelve `403 validation_error` y queda
