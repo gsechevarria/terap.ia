@@ -13,7 +13,9 @@
  * Solo hace peticiones de lectura. No envía credenciales ni escribe nada.
  */
 
-const BASE = (process.argv[2] ?? "https://terap.vercel.app").replace(/\/$/, "");
+// Dominio propio desde el 28-sep-2026. `terap.vercel.app` sigue sirviendo la
+// misma aplicación: se puede pasar como argumento para comprobarlo.
+const BASE = (process.argv[2] ?? "https://terap.es").replace(/\/$/, "");
 const TIMEOUT_MS = 25_000;
 
 let ok = 0;
