@@ -518,6 +518,13 @@ editor, así que **el historial del CLI vuelve a estar desincronizado**.
 **Sin probar todavía:** un alta real de punta a punta en producción, y que la
 función de Vercel alcance las webs de los colegios.
 
+**«Corregir mis datos» (28-sep).** Volvía a la misma pantalla: `/registro`
+manda a su estado a quien ya tiene ficha. Ahora abre **`/registro/corregir`**,
+el mismo formulario con lo guardado; `register_professional` actualiza perfil
+y organización sin duplicarlos y se vuelve a consultar el registro del
+colegio. Solo con la solicitud en `pending`: aprobada, la función ya no
+cambia nombre ni colegiación; rechazada, lo decide una persona. Sin migración.
+
 ⚠️ **Vercel a veces no despliega un merge a `main`.** Ha pasado dos veces el
 23 y el 24-sep (#53 y #61): CI de `main` en verde y ningún despliegue de
 producción para ese commit, ni en cola ni con error. No se ha averiguado la

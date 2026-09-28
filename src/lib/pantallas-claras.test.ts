@@ -25,6 +25,7 @@ const PANTALLAS = [
   "src/app/login/page.tsx",
   "src/app/registro/page.tsx",
   "src/app/registro/estado/page.tsx",
+  "src/app/registro/corregir/page.tsx",
   "src/app/invitacion/[token]/page.tsx",
   "src/app/unirse/[token]/page.tsx",
   "src/app/onboarding/[token]/page.tsx",
