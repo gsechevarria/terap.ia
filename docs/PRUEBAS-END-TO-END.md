@@ -84,8 +84,9 @@ y llega a cualquier dirección. Pero el SMTP por defecto de Supabase tiene un
 últimas no llegarán. Espacia los registros o configura un SMTP propio en
 Supabase → Authentication → Emails.
 
-**Invitaciones de paciente y de equipo** salen por Resend y, mientras
-`EMAIL_FROM` sea `onboarding@resend.dev`, **solo se entregan a
+**Invitaciones de paciente y de equipo** salen por Resend desde
+`no-responder@mail.terap.es` (dominio verificado el 28-sep-2026) y llegan a
+cualquier dirección. Antes, con `onboarding@resend.dev`, **solo se entregaban a
 `gsechevarria@gmail.com`**. Un alias con `+` probablemente sea rechazado. No
 bloquea nada: la invitación se crea igual y el panel te da el enlace para
 abrirlo tú. Si quieres probar el correo de verdad, verifica un subdominio

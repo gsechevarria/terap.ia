@@ -262,13 +262,10 @@ Correo por **Resend** (API HTTP, sin dependencia npm). **Configurado y
 comprobado de punta a punta el 17-sep**: invitación emitida → correo `sent` con
 identificador de proveedor. `npm run correos` lista los intentos con su estado.
 
-⚠️ **Limitado a una sola dirección hasta que haya dominio verificado.**
-`EMAIL_FROM` es hoy `onboarding@resend.dev`, el remitente de pruebas de Resend,
-que **solo entrega a la dirección de la cuenta de Resend**
-(`gsechevarria@gmail.com`); a cualquier otra devuelve 403 y queda `failed` con
-el motivo. Para invitar a un paciente de verdad hay que verificar un dominio en
-Resend —se recomienda un **subdominio** como `terap.darstelecom.es`, para no
-tocar la reputación ni el DMARC del correo corporativo— y cambiar `EMAIL_FROM`.
+~~⚠️ **Limitado a una sola dirección hasta que haya dominio verificado.**~~
+**Superado el 28-sep:** dominio `mail.terap.es` verificado en Resend y
+`EMAIL_FROM = Terap <no-responder@mail.terap.es>`; las invitaciones llegan a
+cualquier dirección. Ver «Dominio propio: terap.es».
 
 Que el correo falle **no bloquea nada**: la invitación se crea igual y la
 interfaz da el enlace para entregarlo por otra vía, con el mismo token, la
@@ -424,11 +421,26 @@ Comprobado el 28-sep: `net._http_response` con 200 tras dejar `terap.es` como
 principal. `verificar-produccion.mjs` apunta ya a `https://terap.es` (59/59) y
 acepta otra URL como argumento.
 
-**Sin hacer todavía (decisión de Gabriel):** redirigir `terap.vercel.app` al
-dominio nuevo, y verificar un subdominio en Resend para cambiar `EMAIL_FROM` y
-que las invitaciones lleguen a cualquier dirección. Sesión, PWA instalada y
-suscripciones push van por dominio: en `terap.es` hay que volver a entrar,
-instalar y activar los avisos.
+**Hecho también el 28-sep** (declaración de Gabriel, comprobado por él):
+
+- `terap.vercel.app` **redirige a `terap.es`** (307), rutas incluidas.
+- **Correo desde `mail.terap.es`.** Los DNS de `terap.es` **los lleva IONOS**, no
+  Vercel (servidores `ns10xx.ui-dns.*`; el A `@` y el CNAME `www` apuntan a
+  Vercel desde IONOS). Subdominio `mail.terap.es` verificado en Resend, región
+  **eu-west-1**, con DKIM `resend._domainkey.mail`, MX y SPF en `send.mail`
+  (comprobados por DNS público). El correo propio de IONOS en `@` (MX, SPF,
+  DKIM `s1`/`s2-ionos`) y su DMARC (CNAME `_dmarc` → `dmarc.ionos.es`) no se
+  tocaron: **no añadir otro `_dmarc`**. `EMAIL_FROM` en Vercel:
+  `Terap <no-responder@mail.terap.es>`.
+- **Supabase Auth envía por SMTP propio** (`smtp.resend.com:465`, remitente
+  `no-responder@mail.terap.es`): confirmación de cuenta y recuperación de
+  contraseña salen de Terap y ya no dependen del límite del SMTP por defecto de
+  Supabase.
+- Invitación a una dirección ajena y recuperación de contraseña, **probadas por
+  Gabriel**.
+
+Sesión, PWA instalada y suscripciones push van por dominio: en `terap.es` hay que
+volver a entrar, instalar y activar los avisos.
 
 ## Marca: «Terap», nada de «terap.ia» (25-sep)
 
