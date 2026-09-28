@@ -158,18 +158,18 @@ export default function Home() {
                 Ver a tamaño completo ↗
               </a>
             </div>
-            {/* Captura del panel real, sin recortar ni recomprimir. No es la
-                del paquete de entrega: aquella mostraba el correo personal de
-                la sesión, legible, y esto es una página pública. Esta se hizo
-                con la cuenta de demostración y no enseña ninguna cuenta.
+            {/* Captura del panel real («Hoy», rediseño de septiembre), sin
+                recortar ni recomprimir. La barra lateral enseñaba el correo de
+                la sesión y esto es una página pública: se tapó con el color
+                del lienzo, y ese es el único retoque.
                 Las medidas son las suyas de verdad, para que el hueco quede
                 reservado y la composición no salte al cargar. */}
             <img
               src="/landing-terap/interfaz.png"
-              alt="Interfaz original de Terap: pacientes, expedientes en seguimiento, etiquetas, tareas pendientes, próxima cita y última actividad"
+              alt="Pantalla «Hoy» de Terap: resumen del día, siguiente sesión, agenda de hoy, horas reservadas de la semana, pacientes sin próxima cita y ocupación de la agenda"
               loading="lazy"
-              width={1685}
-              height={927}
+              width={1891}
+              height={998}
             />
             <div className="screen-caption">
               <span>Así es Terap por dentro.</span>
