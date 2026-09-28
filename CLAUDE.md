@@ -20,7 +20,7 @@ adelante, como apps nativas iOS/Android envueltas con Capacitor.
 
 | | |
 |---|---|
-| Producción | https://terap.vercel.app |
+| Producción | **https://terap.es** desde el 28-sep (principal; `www.terap.es` redirige con 308). `terap.vercel.app` sigue sirviendo la misma aplicación |
 | Repositorio | `github.com/gsechevarria/terap.ia` (remoto `origin`; todo entra por PR) |
 | Commit en producción | `11fdfc7` (#36). CI de `main` en verde y `verificar-produccion.mjs` 50/50 después del despliegue. |
 | Verificación de producción | `node scripts/verificar-produccion.mjs` → **50/50** sobre el commit desplegado (17-sep). Sin credenciales, solo lectura. |
@@ -408,6 +408,27 @@ contraseña; tras entrar pregunta al servidor (`soyAdminPlataformaAction` →
 **No hay credenciales en el código**: se pidió dejarlas fijas y se descartó,
 porque cualquiera con el repositorio tendría la llave del panel que aprueba
 profesionales. `verificar-produccion.mjs` comprueba la nueva redirección.
+
+## Dominio propio: terap.es (28-sep)
+
+Comprado en Vercel. **`terap.es` es el principal** y `www.terap.es` redirige a
+él con 308. Configurado por Gabriel: dominio en Vercel,
+`NEXT_PUBLIC_SITE_URL = https://terap.es`, «Site URL» y Redirect URLs de
+Supabase (se conserva `terap.vercel.app` en la lista durante la transición) y
+la URL de la tarea `terap-notifications` de `pg_cron`.
+
+⚠️ **La tarea programada tiene que llamar al dominio PRINCIPAL.** `net.http_get`
+no sigue redirecciones: con `www` como principal, la llamada a `terap.es`
+devolvía 308 y los recordatorios habrían dejado de salir sin ningún error.
+Comprobado el 28-sep: `net._http_response` con 200 tras dejar `terap.es` como
+principal. `verificar-produccion.mjs` apunta ya a `https://terap.es` (59/59) y
+acepta otra URL como argumento.
+
+**Sin hacer todavía (decisión de Gabriel):** redirigir `terap.vercel.app` al
+dominio nuevo, y verificar un subdominio en Resend para cambiar `EMAIL_FROM` y
+que las invitaciones lleguen a cualquier dirección. Sesión, PWA instalada y
+suscripciones push van por dominio: en `terap.es` hay que volver a entrar,
+instalar y activar los avisos.
 
 ## Marca: «Terap», nada de «terap.ia» (25-sep)
 
