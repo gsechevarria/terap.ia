@@ -154,9 +154,6 @@ export default function Home() {
           <div className="real-product">
             <div className="screen-header">
               <span>TERAP / TU ESPACIO DE TRABAJO</span>
-              <a href="/landing-terap/interfaz.png" target="_blank" rel="noopener">
-                Ver a tamaño completo ↗
-              </a>
             </div>
             {/* Captura del panel real («Hoy», rediseño de septiembre), sin
                 recortar ni recomprimir. La barra lateral enseñaba el correo de
