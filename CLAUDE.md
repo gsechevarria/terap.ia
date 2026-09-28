@@ -173,8 +173,10 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   Las imágenes van con `<img>` y **no** con `next/image`, que reescribiría el
   fichero: la entrega pide conservar la captura sin conversión con pérdida.
   La captura del panel **no es la del paquete**: aquella mostraba un correo
-  personal legible en la sesión. La publicada se hizo con la cuenta de
-  demostración. El paquete de entrega (`terap-landing/`) está en `.gitignore`.
+  personal legible en la sesión. **Desde el 28-sep** es la pantalla «Hoy» del
+  panel rediseñado, con el correo de la barra lateral tapado con el color del
+  lienzo: es página pública, y cualquier captura nueva se revisa por lo mismo.
+  El paquete de entrega (`terap-landing/`) está en `.gitignore`.
 - **El expediente se descarga en un ZIP** desde el paso de revisión
   (`/pro/contabilidad/expediente/[ejercicio]/export`): resumen en PDF, libros en
   XLSX y CSV, los registros del expediente en `registros/*.csv`, índice,
