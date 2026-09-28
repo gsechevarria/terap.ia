@@ -18,17 +18,32 @@ const OTRO = "otro";
  * El tipo decide cómo nace la organización —una consulta individual o un
  * centro— y es lo único estructural que se elige aquí. Si el alta se
  * interrumpe y se repite, la acción actualiza el mismo perfil y la misma
- * organización: no se duplican ni una ni otra.
+ * organización: no se duplican ni una ni otra. Por eso el mismo formulario
+ * sirve para corregir los datos de una solicitud en revisión: `inicial`
+ * trae lo guardado.
  */
-export function DatosProfesionalesForm({ nombreSugerido }: { nombreSugerido: string }) {
+export function DatosProfesionalesForm({
+  nombreSugerido,
+  inicial,
+  textoEnviar = "Enviar solicitud",
+}: {
+  nombreSugerido: string;
+  inicial?: { tipo: "solo" | "center"; centro: string; colegio: string; numero: string };
+  textoEnviar?: string;
+}) {
+  // Se guarda el NOMBRE del colegio, y el selector trabaja con la clave: un
+  // nombre que no es de la lista vuelve como «Otro colegio» con su texto.
+  const colegioInicial = colegioPorClaveONombre(inicial?.colegio);
   const router = useRouter();
   const { run, pending, error } = useAction({ refresh: false });
-  const [tipo, setTipo] = useState<"solo" | "center">("solo");
+  const [tipo, setTipo] = useState<"solo" | "center">(inicial?.tipo ?? "solo");
   const [nombre, setNombre] = useState(nombreSugerido);
-  const [centro, setCentro] = useState("");
-  const [colegio, setColegio] = useState("");
-  const [otroColegio, setOtroColegio] = useState("");
-  const [numero, setNumero] = useState("");
+  const [centro, setCentro] = useState(inicial?.centro ?? "");
+  const [colegio, setColegio] = useState(
+    colegioInicial?.clave ?? (inicial?.colegio ? OTRO : ""),
+  );
+  const [otroColegio, setOtroColegio] = useState(colegioInicial ? "" : (inicial?.colegio ?? ""));
+  const [numero, setNumero] = useState(inicial?.numero ?? "");
   const elegido = colegio === OTRO ? null : colegioPorClaveONombre(colegio);
   const seComprueba = Boolean(elegido?.integracion);
 
@@ -184,7 +199,7 @@ export function DatosProfesionalesForm({ nombreSugerido }: { nombreSugerido: str
       )}
 
       <button type="submit" disabled={pending} className="btn-primary btn-lg">
-        {pending ? "Enviando…" : "Enviar solicitud"}
+        {pending ? "Enviando…" : textoEnviar}
       </button>
     </form>
   );

@@ -87,7 +87,7 @@ export default async function EstadoRegistroPage() {
                 {(contexto.verification_check_verdict === "nombre_distinto" ||
                   contexto.verification_check_verdict === "no_encontrado" ||
                   contexto.verification_check_verdict === "numero_invalido") &&
-                  "Si es un error al escribirlo, corrígelo abajo y se vuelve a comprobar."}
+                  "Si es un error al escribirlo, corrígelo en «Corregir mis datos» y se vuelve a comprobar."}
               </p>
             )}
           <p className="text-[12.5px] leading-relaxed text-ink-3">
@@ -112,12 +112,18 @@ export default async function EstadoRegistroPage() {
       </dl>
 
       <div className="flex items-center justify-between gap-3">
-        <Link
-          href="/registro"
-          className="text-[13px] text-ink-3 transition-colors hover:text-ink"
-        >
-          Corregir mis datos
-        </Link>
+        {/* Solo en revisión: aprobada, el alta ya no cambia nombre ni
+            colegiación, y rechazada lo decide una persona. */}
+        {estado === "pending" ? (
+          <Link
+            href="/registro/corregir"
+            className="text-[13px] text-ink-3 transition-colors hover:text-ink"
+          >
+            Corregir mis datos
+          </Link>
+        ) : (
+          <span />
+        )}
         <SignOutForm />
       </div>
     </main>
