@@ -351,9 +351,10 @@ migraciones. **Sin revisión visual en este entorno.**
 acciones y consultas REALES contra Supabase local. 41 casos correctos y **7
 fallos confirmados** marcados `it.fails`. Los graves: **H0, las citas
 recurrentes no se pueden crear** (insert con `id` NULL) y **H5, la
-comprobación de subidas lee `metadata.size/mimetype`**, que Storage ya no
-rellena (falla en local; en producción, sin comprobar). Informe completo:
-[docs/SINCRONIZACION.md](docs/SINCRONIZACION.md). Sin arreglar todavía.
+comprobación de subidas leía `metadata.size/mimetype`**, que Storage ya no
+rellena: **corregido el 6-oct** (confirmado en producción por Gabriel), junto
+con el botón de elegir archivo, que no se veía (`.campo-archivo`). Informe completo:
+[docs/SINCRONIZACION.md](docs/SINCRONIZACION.md). El resto, sin arreglar todavía.
 
 ## Pauta de medicación (6-oct) — migración 50 APLICADA, en producción
 

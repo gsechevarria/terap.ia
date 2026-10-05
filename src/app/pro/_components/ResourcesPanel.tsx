@@ -142,7 +142,7 @@ export function ResourcesPanel({
             </label>
             <label className="block">
               <span className="field-label">Archivo</span>
-              <input ref={fileRef} type="file" className="text-[13px] text-ink-2" />
+              <input ref={fileRef} type="file" accept={fileKind === "pdf" ? "application/pdf" : "audio/*"} className="campo-archivo" />
             </label>
             <button
               type="button"

@@ -60,7 +60,7 @@ export function DocumentsPanel({
           <div className="flex items-end gap-2">
             <label className="block">
               <span className="field-label">Archivo</span>
-              <input ref={fileRef} type="file" className="text-sm text-ink-2" />
+              <input ref={fileRef} type="file" className="campo-archivo" />
             </label>
             <button
               type="button"
