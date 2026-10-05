@@ -21,7 +21,7 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 - **41 correctos.** Cada dominio se replica bien en las dos direcciones.
 - **7 fallos confirmados.**
 
-**Estado a 6-oct, tras las correcciones:** los siete están corregidos (H0, H1, H2, H3 ×2, H4 y H5) y la batería tiene 52 casos, todos correctos y sin ninguna marca `it.fails`. H3 lleva la migración `20261006120001_solicitudes_por_asignacion`. Siguen abiertos H6 a H9. Lo que sigue es el diagnóstico original.
+**Estado a 6-oct, tras las correcciones:** los siete están corregidos (H0, H1, H2, H3 ×2, H4 y H5) y la batería tiene 52 casos, todos correctos y sin ninguna marca `it.fails`. H3 lleva la migración `20261006120001_solicitudes_por_asignacion`. H6, H7 y H8 se corrigieron también el 6-oct, con `RefrescoAutomatico` y el ajuste del formulario del diario. H9 lleva la migración `20261006130001_aviso_cambio_cita`. Lo que sigue es el diagnóstico original.
 
 | Dominio | Profesional → paciente | Paciente → profesional |
 |---|---|---|
@@ -83,7 +83,7 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 - **Efecto:** con dos filas PostgREST devuelve error y todas las pantallas de `/app` caen en la página de error.
 - **Contexto:** el modelo de organizaciones del 16-sep permite expresamente que una persona sea paciente en dos centros.
 
-**H6 · Una pantalla ya abierta no se actualiza sola.** Afecta a los dos lados.
+**H6 · Una pantalla ya abierta no se actualizaba sola. CORREGIDO el 6-oct:** `src/components/RefrescoAutomatico.tsx`, montado en los layouts de `/app` y `/pro`, hace `router.refresh()` en cuatro casos: al volver a la app tras más de 10 s fuera, al reconectar, al volver con atrás o adelante desde la caché del navegador, y cada 2 minutos mientras la pantalla está a la vista. El estado de los formularios se conserva. Diagnóstico original: afecta a los dos lados.
 
 - **Causa:** no hay tiempo real, ni sondeo, ni refresco al volver la app al primer plano.
 - **Cuánto dura:** el paciente con la PWA abierta ve lo que había al cargar hasta que navega a otra pantalla, recarga o hace él mismo una acción. Pueden ser horas si la app estaba en segundo plano.
@@ -94,8 +94,8 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 ### Bajos
 
 - **H2 · Una cita futura cancelada desaparecía de la ficha. CORREGIDO el 6-oct:** ahora sale en «Próximas citas» con su estado. «Próximas citas» excluye las canceladas e «Historial» exige que ya haya pasado. Sigue visible en la agenda y en «Todas las citas».
-- **H7 · El formulario del diario puede quedarse con el valor de la carga.** `MoodEntryForm` guarda en estado lo recibido al montarse. Se nota con el mismo paciente en dos dispositivos o al cruzar la medianoche con la app abierta.
-- **H8 · Los contadores de la barra lateral del panel no se actualizan al cambiar de sección.** Afecta a «Solicitudes» y al punto de avisos, porque el layout no se vuelve a pedir en navegaciones internas. Se actualizan al recargar.
+- **H7 · El formulario del diario podía quedarse con el valor de la carga. CORREGIDO el 6-oct:** se ajusta cuando cambia el registro de hoy o el día. De paso, el editor de etiquetas de la ficha se vuelve a montar si cambian las etiquetas. `MoodEntryForm` guarda en estado lo recibido al montarse. Se nota con el mismo paciente en dos dispositivos o al cruzar la medianoche con la app abierta.
+- **H8 · Los contadores de la barra lateral no se actualizaban al cambiar de sección. CORREGIDO el 6-oct:** `RefrescoAutomatico` refresca también al navegar si el último refresco tiene más de un minuto. Afecta a «Solicitudes» y al punto de avisos, porque el layout no se vuelve a pedir en navegaciones internas. Se actualizan al recargar.
 - **H9 · Mover o cancelar una cita no avisa al paciente.** Solo se avisa al crearla. Es una decisión de producto, no un fallo.
 
 ### Lo que NO es un problema, aunque lo parezca

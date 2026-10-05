@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { MarcaTerap } from "@/components/ui/MarcaTerap";
 import { ProNav } from "@/app/pro/_components/ProNav";
 import { CajonNavegacion } from "@/app/pro/_components/CajonNavegacion";
+import { RefrescoAutomatico } from "@/components/RefrescoAutomatico";
 import { BuscadorCabecera } from "@/app/pro/_components/BuscadorCabecera";
 import { SidebarPerfil } from "@/app/pro/_components/SidebarPerfil";
 import { countPendingRequests } from "@/lib/queries/appointment-requests";
@@ -87,6 +88,7 @@ export default async function ProLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-[calc(100dvh-var(--banner-h))] bg-canvas">
       <ServiceWorkerRegister />
+      <RefrescoAutomatico />
 
       {/* Barra lateral (escritorio): sobre el lienzo, sin panel ni borde. */}
       <aside className="hidden shrink-0 lg:block lg:w-[var(--sidebar-w)]">

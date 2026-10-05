@@ -8,6 +8,7 @@ import { Brandmark } from "@/components/ui/Brandmark";
 import { ROLES, getUserRole } from "@/lib/auth/roles";
 import { ServiceWorkerRegister } from "@/app/app/_components/ServiceWorkerRegister";
 import { NativeGate } from "@/app/app/_components/NativeGate";
+import { RefrescoAutomatico } from "@/components/RefrescoAutomatico";
 import { AppTabBar } from "@/app/app/_components/AppTabBar";
 import { ScrollReset } from "@/app/app/_components/ScrollReset";
 import { esAppNativa } from "@/lib/native-request";
@@ -86,6 +87,7 @@ export default async function PatientLayout({ children }: { children: ReactNode 
         </div>
         <ScrollReset />
         <ServiceWorkerRegister />
+        <RefrescoAutomatico />
       </div>
     </NativeGate>
   );
