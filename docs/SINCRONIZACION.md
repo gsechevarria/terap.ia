@@ -19,14 +19,16 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 **48 casos:**
 
 - **41 correctos.** Cada dominio se replica bien en las dos direcciones.
-- **7 fallos confirmados.** Están marcados con `it.fails` y una referencia `[H…]`. Cuando se arregle uno, su prueba empezará a fallar y obligará a quitar la marca.
+- **7 fallos confirmados.**
+
+**Estado a 6-oct, tras las correcciones:** los siete están corregidos (H0, H1, H2, H3 ×2, H4 y H5) y la batería tiene 52 casos, todos correctos y sin ninguna marca `it.fails`. H3 lleva la migración `20261006120001_solicitudes_por_asignacion`. Siguen abiertos H6 a H9. Lo que sigue es el diagnóstico original.
 
 | Dominio | Profesional → paciente | Paciente → profesional |
 |---|---|---|
 | Ficha | Cambio de nombre: ✅ | — |
 | Tareas | Crear, editar y borrar: ✅ | Completar con respuesta: ✅ |
 | Citas sueltas | Crear con videollamada, mover, cancelar y borrar: ✅ | Confirmar y cancelar: ✅ |
-| Citas recurrentes | ❌ **H0** | — |
+| Citas recurrentes | **H0** corregido: la serie completa, a la misma hora de Madrid | — |
 | Asistencia | Acudió genera deuda y pendiente la deshace: ✅. En una cita futura se rechaza: ✅ | — |
 | Solicitudes | Aceptar crea la cita y cierra la solicitud: ✅ | Pedir, contador y retirar: ✅ |
 | Escalas | Activar, desactivar y opt-in: ✅ | Responder; deja de estar pendiente: ✅ |
@@ -44,7 +46,7 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 
 ### Graves
 
-**H0 · Las citas recurrentes no se pueden crear. Confirmado.**
+**H0 · Las citas recurrentes no se podían crear. CORREGIDO el 6-oct:** cada fila lleva su id. Además, una fecha de fin enviada como día suelto ya incluye ese día; el formulario del panel ya enviaba 23:59 y no estaba afectado.
 
 - **Dónde:** `createAppointmentAction`, en `src/lib/actions/appointments.ts`.
 - **Por qué:** inserta la serie en un solo `insert` y solo la cita madre lleva `id`. supabase-js manda el resto con `id` NULL, y la base rechaza la serie entera.
@@ -63,19 +65,19 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 
 ### Medios
 
-**H1 · Una sesión en curso desaparece del inicio del paciente.**
+**H1 · Una sesión en curso desaparecía del inicio del paciente. CORREGIDO el 6-oct:** se muestra hasta que termina, rotulada «Sesión en curso · Ahora».
 
 - **Dónde:** `getUpcomingAppointments` filtra `starts_at > ahora`.
 - **Efecto:** a los cinco minutos de empezar, la tarjeta «Próxima sesión» y su botón de videollamada desaparecen. Es justo cuando el paciente llega tarde y lo busca.
 - **Contraste:** «Citas» sí la muestra, porque filtra por `ends_at`.
 
-**H3 · En un centro, el colaborador asignado no ve las solicitudes de cita ni tiene al paciente en su listado.**
+**H3 · En un centro, el colaborador asignado no veía las solicitudes ni tenía al paciente en su listado. CORREGIDO el 6-oct:** las consultas dejan de filtrar por profesional de referencia y confían en la RLS, que da los expedientes asignados. Lo mismo `requireOwnedPatient`: antes el colaborador abría la ficha y no podía crear ni una tarea. La migración `20261006120001` deja resolver la solicitud a cualquier asignado. Una cita nueva va a la agenda de quien acepta; una movida, a la de quien la tenía.
 
 - **Dónde:** `getRequestsForProfessional`, `countPendingRequests` y `listPatientsWithOverview` filtran por el profesional de referencia.
 - **Efecto:** el colaborador sí abre la ficha, ve las tareas y ve al paciente en «Hoy», porque la RLS se lo permite.
 - **Alcance:** solo afecta a centros con más de un profesional.
 
-**H4 · Una cuenta con expediente en dos consultas rompe la app del paciente.**
+**H4 · Una cuenta con expediente en dos consultas rompía la app del paciente. CORREGIDO el 6-oct:** `getCurrentPatient` usa el mismo expediente al que van las escrituras del paciente (`current_patient_id()`, el activo y consentido más antiguo). Elegir entre consultas desde la app queda como funcionalidad aparte.
 
 - **Dónde:** `getCurrentPatient` hace `.maybeSingle()` sobre `user_id`.
 - **Efecto:** con dos filas PostgREST devuelve error y todas las pantallas de `/app` caen en la página de error.
@@ -91,7 +93,7 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 
 ### Bajos
 
-- **H2 · Una cita futura cancelada desaparece de la ficha.** «Próximas citas» excluye las canceladas e «Historial» exige que ya haya pasado. Sigue visible en la agenda y en «Todas las citas».
+- **H2 · Una cita futura cancelada desaparecía de la ficha. CORREGIDO el 6-oct:** ahora sale en «Próximas citas» con su estado. «Próximas citas» excluye las canceladas e «Historial» exige que ya haya pasado. Sigue visible en la agenda y en «Todas las citas».
 - **H7 · El formulario del diario puede quedarse con el valor de la carga.** `MoodEntryForm` guarda en estado lo recibido al montarse. Se nota con el mismo paciente en dos dispositivos o al cruzar la medianoche con la app abierta.
 - **H8 · Los contadores de la barra lateral del panel no se actualizan al cambiar de sección.** Afecta a «Solicitudes» y al punto de avisos, porque el layout no se vuelve a pedir en navegaciones internas. Se actualizan al recargar.
 - **H9 · Mover o cancelar una cita no avisa al paciente.** Solo se avisa al crearla. Es una decisión de producto, no un fallo.

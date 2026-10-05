@@ -50,8 +50,10 @@ export async function listPatientsWithOverview(
 
   let query = supabase
     .from("patients")
-    .select("id, full_name, email, status, tags, user_id")
-    .eq("professional_id", pro.id);
+    .select("id, full_name, email, status, tags, user_id");
+  // Sin filtro por profesional de referencia: la RLS limita a los
+  // expedientes con asignación clínica viva, que es lo que ve cada uno en un
+  // centro (hallazgo H3 de docs/SINCRONIZACION.md).
 
   if (filters.status && filters.status !== "all") {
     query = query.eq("status", filters.status);
@@ -173,8 +175,7 @@ export async function listPatientTags(): Promise<string[]> {
   if (!pro) return [];
   const { data } = await allRows(supabase
     .from("patients")
-    .select("tags")
-    .eq("professional_id", pro.id));
+    .select("tags"));
   const set = new Set<string>();
   for (const row of data ?? []) for (const t of row.tags ?? []) set.add(t);
   return [...set].sort();
@@ -191,7 +192,9 @@ export async function countActivePatients(): Promise<number> {
   const { count } = await checked(supabase
     .from("patients")
     .select("id", { count: "exact", head: true })
-    .eq("professional_id", pro.id)
+    // Sin filtro por profesional de referencia: la RLS limita a los
+    // expedientes con asignación clínica viva, que es lo que ve cada uno en un
+    // centro (hallazgo H3 de docs/SINCRONIZACION.md).
     .eq("status", "active"));
   return count ?? 0;
 }

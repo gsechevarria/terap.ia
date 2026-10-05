@@ -55,6 +55,7 @@ import { getMyDocuments, getMyMoodEntries, getMyResources } from "@/lib/queries/
 import { getMiMedicacion } from "@/lib/queries/medicacion";
 import { listPatientsWithOverview } from "@/lib/queries/patients";
 import { hasSignedConsent } from "@/lib/queries/consent";
+import { fromWallClock, ymdInTZ, ymdParts } from "@/lib/tz";
 
 let pro: Actor;
 let paciente: Actor;
@@ -237,26 +238,48 @@ describe("citas", () => {
     expect(data?.status).toBe("cancelled");
   });
 
-  // [H0] Crear una serie falla siempre: el insert en bloque lleva `id` solo en
-  // la cita madre y supabase-js manda el resto con id NULL. Ver
-  // docs/SINCRONIZACION.md. Al arreglarlo, quitar `.fails`.
-  it.fails("[H0] serie semanal: el paciente recibe todas las repeticiones", async () => {
+  // [H0, corregido el 6-oct] Crear una serie fallaba siempre: el insert en
+  // bloque mandaba las repeticiones con id NULL.
+  it("[H0] serie semanal: el paciente recibe todas las repeticiones, a la misma hora de Madrid", async () => {
     const base = new Date(Date.now() + 10 * 86_400_000);
     base.setUTCHours(9, 0, 0, 0);
-    const finSerie = new Date(base.getTime() + 21 * 86_400_000).toISOString().slice(0, 10);
+    // «Hasta» como lo manda el formulario (NewAppointment): 23:59 de ese día en Madrid.
+    const [y, m, d] = ymdParts(ymdInTZ(new Date(base.getTime() + 21 * 86_400_000)));
     await como(pro, () =>
       ok(createAppointmentAction({
         patientId,
         startsAt: base.toISOString(),
         endsAt: new Date(base.getTime() + 3_600_000).toISOString(),
         freq: "weekly",
-        until: finSerie,
+        until: fromWallClock(y, m, d, 23, 59).toISOString(),
       })),
     );
-    const serie = (await como(paciente, getMyAppointmentsSplit)).upcoming.filter(
-      (a) => new Date(a.starts_at).getUTCHours() === 9 && new Date(a.starts_at).getTime() >= base.getTime(),
-    );
+    const proximas = (await como(paciente, getMyAppointmentsSplit)).upcoming;
+    const madre = proximas.find((a) => new Date(a.starts_at).getTime() === base.getTime())!;
+    expect(madre, "la cita madre de la serie no llega al paciente").toBeDefined();
+    const serie = proximas.filter((a) => a.id === madre.id || a.parent_appointment_id === madre.id);
     expect(serie.length).toBe(4);
+    // La hora de pared en Madrid se conserva aunque cambie el horario de verano.
+    const horaMadrid = (iso: string) =>
+      new Date(iso).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" });
+    expect(new Set(serie.map((a) => horaMadrid(a.starts_at))).size).toBe(1);
+  });
+
+  it("serie con «hasta» como día suelto: incluye la repetición de ese día", async () => {
+    const base = new Date(Date.now() + 40 * 86_400_000);
+    base.setUTCHours(15, 0, 0, 0);
+    await como(pro, () =>
+      ok(createAppointmentAction({
+        patientId,
+        startsAt: base.toISOString(),
+        endsAt: new Date(base.getTime() + 3_600_000).toISOString(),
+        freq: "biweekly",
+        until: ymdInTZ(new Date(base.getTime() + 14 * 86_400_000)),
+      })),
+    );
+    const proximas = (await como(paciente, getMyAppointmentsSplit)).upcoming;
+    const madre = proximas.find((a) => new Date(a.starts_at).getTime() === base.getTime())!;
+    expect(proximas.filter((a) => a.id === madre.id || a.parent_appointment_id === madre.id).length).toBe(2);
   });
 
   it("borrar (profesional): desaparece de la app del paciente", async () => {

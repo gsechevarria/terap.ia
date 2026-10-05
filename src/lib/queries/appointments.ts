@@ -158,7 +158,9 @@ export async function getPatientsForSelect(): Promise<
     allRows(supabase
       .from("patients")
       .select("id, full_name, user_id")
-      .eq("professional_id", pro.id)
+      // Sin filtro por profesional de referencia: la RLS limita a los
+      // expedientes con asignación clínica viva, que es lo que ve cada uno en un
+      // centro (hallazgo H3 de docs/SINCRONIZACION.md).
       .eq("status", "active")
       .order("full_name", { ascending: true })),
     // Sesiones de bono disponibles por paciente: lo que permite avisar al
@@ -167,7 +169,6 @@ export async function getPatientsForSelect(): Promise<
     allRows(supabase
       .from("session_packs")
       .select("patient_id, total_sessions, used_sessions")
-      .eq("professional_id", pro.id)
       .eq("active", true)),
   ]);
 
