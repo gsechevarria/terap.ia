@@ -169,12 +169,11 @@ function GastoFields({
         </label>
         <label className="block">
           <span className="field-label">Justificante (opcional)</span>
-          {/* El campo no baja de 16 px: por debajo, iOS hace zoom al enfocar. */}
           <input
             type="file"
             name="adjunto"
             accept="image/*,application/pdf"
-            className="field"
+            className="campo-archivo"
           />
         </label>
       </div>

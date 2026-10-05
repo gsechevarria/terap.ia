@@ -32,7 +32,7 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 | Escalas | Activar, desactivar y opt-in: ✅ | Responder; deja de estar pendiente: ✅ |
 | Pagos y bonos | Deuda, cobro y sesiones de bono: ✅ | — |
 | Recursos | Por paciente, generales y borrado: ✅ | — |
-| Documentos | Compartir y dejar de compartir, también el acceso al archivo: ✅. Subida: ❌ **H5** | — |
+| Documentos y recursos en archivo | Subida real, compartir y dejar de compartir, también el acceso al archivo: ✅. **H5** corregido | — |
 | Diario | — | Registrar y borrar: ✅ |
 | Medicación | Apagado, activado, editar, retirar, situación y volver a apagar: ✅ | — |
 | Notas privadas | No cruzan: ✅ | — |
@@ -52,7 +52,7 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 - **Desde cuándo:** viene de un cambio del 7 de agosto, y ninguna prueba creaba series.
 - **Arreglo:** dar un `crypto.randomUUID()` a cada fila.
 
-**H5 · Subir archivos falla con esta versión de Storage. Muy probable también en producción.**
+**H5 · Subir archivos fallaba. CORREGIDO el 6-oct.** Gabriel lo confirmó en producción. Ahora se leen `size` y `contentType`, con `metadata` como respaldo. Además, el botón nativo para elegir el archivo no se veía, porque el reinicio de estilos lo dejaba como texto; ahora tiene la clase `.campo-archivo` en los cuatro selectores: documentos, recursos, alta de gasto y sustitución de justificante. Lo que sigue es el diagnóstico original.
 
 - **Dónde:** `requireUploadedFile`, en `src/lib/upload-server.ts`.
 - **Por qué:** compara `info().metadata.size` y `metadata.mimetype`, pero Storage devuelve el tamaño y el tipo en `size` y `contentType`, y deja `metadata` vacío.

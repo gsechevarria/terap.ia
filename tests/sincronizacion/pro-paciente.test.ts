@@ -32,7 +32,7 @@ import {
 import { createScaleAssignmentAction, setScaleAssignmentActiveAction } from "@/lib/actions/scales";
 import { submitScaleResponseAction } from "@/lib/actions/scale-responses";
 import { addPackAction, registerPaymentAction, setPaymentStatusAction, upsertPriceAction } from "@/lib/actions/payments";
-import { addResourceLinkAction, deleteResourceAction } from "@/lib/actions/resources";
+import { addResourceFileAction, addResourceLinkAction, deleteResourceAction } from "@/lib/actions/resources";
 import { addDocumentAction, setDocumentSharedAction } from "@/lib/actions/documents";
 import { prepareUploadAction } from "@/lib/actions/uploads";
 import { addMoodEntryAction } from "@/lib/actions/mood";
@@ -400,23 +400,39 @@ describe("recursos y documentos", () => {
     return subida.path;
   }
 
-  // [H5] `requireUploadedFile` compara `info().metadata.size/mimetype`, y esta
-  // versión de Storage los devuelve en `size`/`contentType` con `metadata` {}.
-  // Ver docs/SINCRONIZACION.md. Al arreglarlo, quitar `.fails`.
-  it.fails("[H5] documento: el alta por la acción real acepta una subida válida", async () => {
+  // [H5, corregido el 6-oct] `requireUploadedFile` leía solo `metadata`, que
+  // Storage ya no rellena, y rechazaba toda subida.
+  it("documento: el alta por la acción real acepta una subida válida y el paciente lo ve al compartirlo", async () => {
     const ruta = await subirPdf();
     await como(pro, async () => {
       const fd = new FormData();
       fd.set("patientId", patientId);
-      fd.set("title", "Informe.pdf");
+      fd.set("title", "Informe subido");
       fd.set("file_path", ruta);
       await ok(addDocumentAction(fd));
     });
+    const { data: doc } = await pro.db.from("documents").select("id").eq("storage_path", ruta).single();
+    expect(doc, "la acción no registró el documento").not.toBeNull();
+    await como(pro, () => ok(setDocumentSharedAction(doc!.id, patientId, true)));
+    expect((await como(paciente, getMyDocuments)).some((d) => d.title === "Informe subido")).toBe(true);
+  });
+
+  it("recurso en archivo: la subida real llega a Recursos del paciente", async () => {
+    const ruta = await subirPdf();
+    await como(pro, async () => {
+      const fd = new FormData();
+      fd.set("patientId", patientId);
+      fd.set("title", "Guía en PDF");
+      fd.set("kind", "pdf");
+      fd.set("file_path", ruta);
+      await ok(addResourceFileAction(fd));
+    });
+    expect((await como(paciente, getMyResources)).some((r) => r.title === "Guía en PDF")).toBe(true);
   });
 
   it("documento: solo lo ve (y lo descarga) si el profesional lo comparte", async () => {
-    // Fila registrada tras una subida real; se salta solo la comprobación de
-    // [H5], que es lo que hoy impide usar la acción.
+    // Fila registrada directamente tras una subida real: aquí lo que se prueba
+    // es la compartición, también del archivo en Storage.
     const ruta = await subirPdf();
     const { data: doc, error } = await pro.db
       .from("documents")

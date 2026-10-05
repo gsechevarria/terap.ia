@@ -385,6 +385,29 @@ body {
     @apply mb-1.5 block text-[12.5px] font-medium text-ink-2;
   }
 
+  /* ---- Selector de archivo ---------------------------------------------
+     El reinicio de Tailwind deja el botón nativo de `<input type="file">`
+     como texto plano: en la ficha no se veía ningún botón para elegir el
+     archivo. Se conserva el control nativo (formulario, teclado, lector de
+     pantalla, `name` para los formularios por FormData) y solo se le da la
+     forma de `.btn-ghost` a su botón, con el nombre del archivo al lado. */
+  .campo-archivo {
+    @apply block w-full max-w-full cursor-pointer text-[13.5px] text-ink-2;
+  }
+  .campo-archivo::file-selector-button {
+    @apply mr-3 inline-flex h-9 cursor-pointer items-center rounded-lg border border-line-strong bg-surface px-3.5 text-[13.5px] font-medium text-ink transition-colors duration-150;
+  }
+  .campo-archivo:hover::file-selector-button {
+    @apply bg-surface-muted;
+  }
+  .campo-archivo:focus-visible {
+    outline: none;
+  }
+  .campo-archivo:focus-visible::file-selector-button {
+    border-color: var(--accent);
+    box-shadow: var(--ring);
+  }
+
   /* ---- Superficies -----------------------------------------------------
      `sheet` es la hoja de trabajo del panel: lo único blanco de la pantalla.
      `card` es la tarjeta corriente. Ninguna lleva sombra. */

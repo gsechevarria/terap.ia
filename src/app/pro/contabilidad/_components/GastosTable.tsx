@@ -147,7 +147,7 @@ export function GastosTable({
                     </label>
                     <label className="block">
                       <span className="field-label">Reemplazar justificante</span>
-                      <input type="file" name="adjunto" accept="image/*,application/pdf" className="field" />
+                      <input type="file" name="adjunto" accept="image/*,application/pdf" className="campo-archivo" />
                     </label>
                     <div className="flex items-end gap-2 sm:col-span-3">
                       <SubmitButton disabled={pending} className="btn-primary btn-sm">

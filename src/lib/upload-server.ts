@@ -10,6 +10,14 @@ export async function requireUploadedFile(path: string, bucket: "files" | "recei
   if (resourceKind && !(resourceKind === "pdf" ? data.mime === "application/pdf" : resourceKind === "audio" && data.mime.startsWith("audio/"))) throw new ActionInputError("El tipo de recurso no coincide con el archivo.");
   const info = await supabase.storage.from(bucket).info(path);
   if (info.error || !info.data) throw new ActionInputError("La subida del archivo no se ha completado.");
-  if (info.data.metadata?.size !== data.size_bytes || info.data.metadata?.mimetype !== data.mime) throw new ActionInputError("El archivo no coincide con la subida autorizada.");
+  // Storage devuelve el tamaño y el tipo en `size` y `contentType`; versiones
+  // anteriores los ponían en `metadata.size` / `metadata.mimetype`, que hoy
+  // llega vacío. Leer solo `metadata` rechazaba TODA subida (documentos,
+  // recursos y justificantes) con «no coincide». Se acepta cualquiera de las
+  // dos formas; la comprobación sigue siendo la misma.
+  const meta = (info.data.metadata ?? {}) as { size?: number; mimetype?: string };
+  const size = info.data.size ?? meta.size;
+  const mime = info.data.contentType ?? meta.mimetype;
+  if (size !== data.size_bytes || mime !== data.mime) throw new ActionInputError("El archivo no coincide con la subida autorizada.");
   return path;
 }
