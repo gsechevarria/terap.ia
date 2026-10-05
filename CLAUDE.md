@@ -345,6 +345,16 @@ bloqueos según la duración. La ocupación la da `getDayBusyAction`, con el
 criterio de `findConflict`; es ayuda para elegir, no la barrera. Sin
 migraciones. **Sin revisión visual en este entorno.**
 
+## Prueba de sincronización profesional ⇄ paciente (6-oct)
+
+`npm run test:sincronizacion` (`tests/sincronizacion/`, también en la CI):
+acciones y consultas REALES contra Supabase local. 41 casos correctos y **7
+fallos confirmados** marcados `it.fails`. Los graves: **H0, las citas
+recurrentes no se pueden crear** (insert con `id` NULL) y **H5, la
+comprobación de subidas lee `metadata.size/mimetype`**, que Storage ya no
+rellena (falla en local; en producción, sin comprobar). Informe completo:
+[docs/SINCRONIZACION.md](docs/SINCRONIZACION.md). Sin arreglar todavía.
+
 ## Pauta de medicación (6-oct) — migración 50 APLICADA, en producción
 
 `20261006100001_medicacion.sql`. Pestaña «Medicación» en la ficha con casilla
