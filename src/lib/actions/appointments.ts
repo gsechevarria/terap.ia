@@ -16,6 +16,7 @@ import { safeExternalUrl } from "@/lib/url";
 import { TZ, fromWallClock, ymdParts } from "@/lib/tz";
 import { occurrenceAt, type Freq } from "@/lib/recurrence";
 import type { TablesInsert } from "@/lib/types";
+import { MENSAJE_ASISTENCIA_FUTURA, puedeRegistrarAsistencia } from "@/lib/asistencia";
 
 const RECURRENCE_CAP = 26;
 
@@ -318,7 +319,7 @@ async function updateAppointmentActionImpl(input: {
 }
 
 export type SetAttendanceResult = { warning?: string };
-type Attendance = "pending" | "attended" | "no_show" | "late_cancel";
+type Attendance = import("@/lib/asistencia").Asistencia;
 
 async function changeAppointment(id: string, action: string, attendance?: Attendance): Promise<SetAttendanceResult> {
   await requireProfessional();
@@ -340,6 +341,24 @@ async function deleteAppointmentActionImpl(id: string) {
   return changeAppointment(id, "delete");
 }
 async function setAttendanceActionImpl(id: string, attendance: Attendance): Promise<SetAttendanceResult> {
+  // La hora se lee de la base, no del cliente: si el diálogo acaba de mover la
+  // cita al pasado, esta lectura ya ve la hora nueva. «Pendiente» no consulta
+  // nada porque siempre se permite (así se deshace un registro por error).
+  if (attendance !== "pending") {
+    const pro = await requireProfessional();
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("starts_at")
+      .eq("id", id)
+      .eq("professional_id", pro.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw new ActionInputError("No se encuentra la cita.");
+    if (!puedeRegistrarAsistencia(attendance, data.starts_at)) {
+      throw new ActionInputError(MENSAJE_ASISTENCIA_FUTURA);
+    }
+  }
   return changeAppointment(id, "attendance", attendance);
 }
 

@@ -23,6 +23,7 @@ import {
 } from "@/lib/tz";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import { EditarCitaDialog } from "@/app/pro/_components/EditarCita";
+import { puedeEmitirJustificante } from "@/lib/asistencia";
 import {
   NewAppointment,
   type PacienteSelect,
@@ -786,7 +787,7 @@ function ApptPreview({
         >
           Añadir al calendario
         </a>
-        {appt.attendance === "attended" && (
+        {puedeEmitirJustificante(appt) && (
           <a
             href={`/appointments/${appt.id}/justificante`}
             className="text-ink-3 underline underline-offset-2 hover:text-ink"

@@ -103,7 +103,10 @@ export async function getPatientAppointments(
       .select("*")
       .eq("patient_id", patientId)
       .gt("starts_at", ahora)
-      .in("status", ["scheduled", "confirmed"])
+      // `completed` también: una cita futura marcada «acudió» antes de que se
+      // impidiera no cabía en ninguna lista (ni próxima ni pasada) y no había
+      // forma de verla desde la ficha para devolverla a «pendiente».
+      .in("status", ["scheduled", "confirmed", "completed"])
       .order("starts_at", { ascending: true })),
     allRows(supabase
       .from("appointments")

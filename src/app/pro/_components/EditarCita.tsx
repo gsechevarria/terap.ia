@@ -21,6 +21,11 @@ import {
 import { fromDatetimeLocal, toDatetimeLocal } from "@/lib/format";
 import { actionErrorMessage } from "@/lib/errors";
 import { FechaHoraSesion } from "@/app/pro/_components/FechaHoraSesion";
+import {
+  MENSAJE_ASISTENCIA_FUTURA,
+  citaEmpezada,
+  puedeRegistrarAsistencia,
+} from "@/lib/asistencia";
 import type { AgendaAppointment } from "@/lib/queries/appointments";
 
 const DURATIONS = [30, 45, 60, 90] as const;
@@ -83,6 +88,18 @@ export function EditarCitaDialog({
     ? Math.max(5, parseInt(customMin, 10) || 0)
     : duration;
 
+  /*
+   * ¿Ha empezado la cita con la fecha que hay ahora en el formulario? Si se
+   * mueve al pasado en este mismo diálogo, se puede registrar la asistencia a
+   * la vez. El servidor vuelve a comprobarlo con la hora guardada.
+   * `Date.now()` en el render es aceptable aquí: el diálogo solo existe en el
+   * cliente, tras un clic, así que no hay HTML de servidor con el que chocar.
+   */
+  const inicioFormulario = fromDatetimeLocal(`${day}T${time}`);
+  const empezada = inicioFormulario
+    ? citaEmpezada(inicioFormulario.toISOString())
+    : citaEmpezada(appt.starts_at);
+
   function clearConflict() {
     if (conflict) setConflict("");
   }
@@ -108,6 +125,14 @@ export function EditarCitaDialog({
     }
     if (!minutes || minutes < 5) {
       setError("La duración debe ser de al menos 5 minutos.");
+      return;
+    }
+    if (
+      attendance !== appt.attendance &&
+      inicioFormulario &&
+      !puedeRegistrarAsistencia(attendance, inicioFormulario.toISOString())
+    ) {
+      setError(MENSAJE_ASISTENCIA_FUTURA);
       return;
     }
     // El valor del input se interpreta como hora de Madrid, no como hora del
@@ -296,10 +321,26 @@ export function EditarCitaDialog({
               className="field"
             >
               <option value="pending">Pendiente</option>
-              <option value="attended">Acudió</option>
-              <option value="no_show">No acudió</option>
-              <option value="late_cancel">Canceló tarde</option>
+              {/* En una cita futura solo cabe «Pendiente». Si ya traía otro
+                  valor (marcada antes de esta regla), se sigue viendo para que
+                  se entienda el estado, pero no se puede volver a elegir. */}
+              <option value="attended" disabled={!empezada && attendance !== "attended"}>
+                Acudió
+              </option>
+              <option value="no_show" disabled={!empezada && attendance !== "no_show"}>
+                No acudió
+              </option>
+              <option value="late_cancel" disabled={!empezada && attendance !== "late_cancel"}>
+                Canceló tarde
+              </option>
             </select>
+            {!empezada && (
+              <span className="mt-1 block text-[12.5px] text-ink-3">
+                {attendance === "pending"
+                  ? "Se registra cuando la cita haya empezado."
+                  : "Esta cita aún no ha empezado: vuelve a ponerla en «Pendiente»."}
+              </span>
+            )}
           </label>
         </div>
 
