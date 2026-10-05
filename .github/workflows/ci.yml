@@ -87,3 +87,10 @@ jobs:
         run: npm run test:integration
         env:
           TZ: UTC
+
+      # Acciones y consultas REALES de la app: lo que escribe un lado tiene que
+      # leerlo el otro. Mismo Supabase local desechable. Ver docs/SINCRONIZACION.md.
+      - name: Sincronización profesional ⇄ paciente
+        run: npm run test:sincronizacion
+        env:
+          TZ: UTC
