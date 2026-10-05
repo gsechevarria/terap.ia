@@ -83,11 +83,14 @@ bloqueado por DPA + base jurídica del art. 9 RGPD + decisión explícita.
   (`NEXT_PUBLIC_NATIVE_PUSH_ENABLED=false`, no hay emisor FCM/APNs) y el
   **fallback por correo se retiró de la interfaz** (nunca se implementó el
   envío). Sentry requiere activación explícita y no envía texto libre ni trazas.
-- **Dependencias:** Next.js **16.3.4**, Node **`>=24.15 <25`**, SheetJS **0.20.3**
-  desde el tarball oficial fijado por integridad (sustituye a `xlsx@0.18.5`, así
-  que **ya no existe la excepción de `npm audit`**). `npm audit --audit-level=low`
-  → 0 vulnerabilidades, incluyendo desarrollo. Ver
-  [docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md).
+- **Dependencias:** Next.js **16.3.8** (5-oct, por un aviso crítico de
+  ejecución remota en `next/og`, que la aplicación no usa), Node **`>=24.15 <25`**,
+  SheetJS **0.20.3** desde el tarball oficial fijado por integridad.
+  **La auditoría pasa por `npm run audit`** (`scripts/auditoria-dependencias.mjs`,
+  también en la CI): tolera solo los avisos de una lista con fecha de revisión y
+  falla con cualquier otro. Hoy hay **una** excepción, `braces`
+  (GHSA-vfj7-8cjw-p6xm), sin versión corregida publicada y que solo llega por
+  ESLint. Ver [docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md).
 - **Batería de pruebas.** `npm test` = **160 pruebas de lógica** (vitest, 10
   ficheros, sin BD). `npm run test:types` = **51 regresiones SQL** sobre
   PostgreSQL embebido (**PGlite**), que ejecuta las 41 migraciones y comprueba
@@ -748,7 +751,7 @@ commits de la revisión: `supabase/scripts/reparar-historial.sql`,
 
 ## Stack
 
-- **Next.js 16.3.4** (App Router, TypeScript strict) + **React 19.2.4** +
+- **Next.js 16.3.8** (App Router, TypeScript strict) + **React 19.2.4** +
   **Tailwind CSS v4** (config CSS-based, sin `tailwind.config.js`).
 - **Node `>=24.15 <25`** (declarado en `engines`; CI y Vercel con esa versión).
 - **Supabase** (EU-Frankfurt): Auth, Postgres, RLS, Storage. El cron de
@@ -1760,7 +1763,7 @@ npm test              # vitest: 160 pruebas de lógica pura, sin BD
 npm run test:types    # 51 regresiones SQL + tipos, sobre PGlite (41 migraciones)
 npm run test:integration   # 14 escenarios HTTP contra Supabase LOCAL (nunca el remoto)
 npm run build
-npm audit --audit-level=low
+npm run audit         # npm audit con excepciones por aviso (docs/DEPENDENCIAS.md)
 ```
 
 <!-- Reglas del agente para esta versión de Next.js -->

@@ -29,7 +29,7 @@ npm run typecheck
 npm test
 npm run test:types
 npm run build
-npm audit --audit-level=low
+npm run audit          # npm audit con excepciones documentadas, umbral low
 ```
 
 `npm test` corre en UTC en la CI a propósito, que es la zona del runtime de
@@ -85,7 +85,7 @@ gh pr checks --watch
 ```
 
 Son tres jobs: calidad (lint · typecheck · test · test:types · build),
-auditoría (`npm audit --audit-level=high`) e integración contra Supabase local.
+auditoría (`scripts/auditoria-dependencias.mjs --audit-level=high`) e integración contra Supabase local.
 El PR genera además un preview de Vercel: si el cambio se ve, ábrelo y míralo.
 
 ## 7 · Merge — esto despliega en producción

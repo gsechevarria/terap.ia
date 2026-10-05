@@ -61,7 +61,8 @@ jobs:
           node-version-file: package.json
           cache: npm
       - run: npm ci
-      - run: npm audit --audit-level=high
+      # Con excepciones por identificador de aviso: ver docs/DEPENDENCIAS.md.
+      - run: node scripts/auditoria-dependencias.mjs --audit-level=high
 
   integracion:
     name: Integración contra Supabase local
