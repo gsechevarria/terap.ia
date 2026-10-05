@@ -786,6 +786,15 @@ function ApptPreview({
         >
           Añadir al calendario
         </a>
+        {appt.attendance === "attended" && (
+          <a
+            href={`/appointments/${appt.id}/justificante`}
+            className="text-ink-3 underline underline-offset-2 hover:text-ink"
+            title="PDF para firmar y entregar al paciente"
+          >
+            Justificante
+          </a>
+        )}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3">
         <Link href={`/pro/patients/${appt.patient_id}`} className="btn-ghost h-7 text-xs">

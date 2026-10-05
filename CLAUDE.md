@@ -345,6 +345,17 @@ bloqueos según la duración. La ocupación la da `getDayBusyAction`, con el
 criterio de `findConflict`; es ayuda para elegir, no la barrera. Sin
 migraciones. **Sin revisión visual en este entorno.**
 
+**Justificante de asistencia (6-oct).** Enlace «Justificante» en la agenda,
+«Todas las citas» y la ficha, **solo en citas marcadas «acudió»** (la ruta
+devuelve 409 en las demás: sería un documento falso con los datos del
+profesional). `/appointments/[id]/justificante` → PDF A4 de una página
+(`src/lib/justificante.ts`, pdf-lib) con nombre y colegiación del profesional
+que atendió la cita, nombre del paciente, día y hora en Madrid y fecha de
+emisión. **Ni un dato clínico**: el generador recibe un tipo cerrado, no la
+cita. Firma y sello en blanco; la **localidad no está en el esquema** y va como
+campo rellenable del PDF, igual que la colegiación si la ficha no la tiene.
+Solo lo emite el profesional; el paciente no lo ve en su app.
+
 **Modificar cita fuera de la agenda (5-oct).** El diálogo «Modificar cita»
 sale de `AgendaCalendar` a `src/app/pro/_components/EditarCita.tsx` y se abre
 también desde «Todas las citas» y la pestaña Citas de la ficha (botón

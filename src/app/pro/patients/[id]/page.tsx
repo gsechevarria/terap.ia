@@ -360,6 +360,15 @@ function FilaCita({
         >
           Añadir al calendario
         </a>
+        {cita.attendance === "attended" && (
+          <a
+            href={`/appointments/${cita.id}/justificante`}
+            className="text-[12.5px] text-ink-3 underline underline-offset-2 hover:text-ink"
+            title="PDF para firmar y entregar al paciente"
+          >
+            Justificante
+          </a>
+        )}
         <BotonModificarCita appt={{ ...cita, patientName }} />
       </div>
     </li>
