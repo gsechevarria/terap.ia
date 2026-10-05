@@ -299,6 +299,15 @@ export default async function AllAppointmentsPage({
                         >
                           Añadir al calendario
                         </a>
+                        {a.attendance === "attended" && (
+                          <a
+                            href={`/appointments/${a.id}/justificante`}
+                            className="mr-3 text-[12.5px] text-ink-3 underline underline-offset-2 hover:text-ink"
+                            title="PDF para firmar y entregar al paciente"
+                          >
+                            Justificante
+                          </a>
+                        )}
                         <BotonModificarCita appt={a} />
                       </td>
                     </tr>

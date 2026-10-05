@@ -148,7 +148,11 @@ async function handlers() {
 
   // El proxy llega antes que el handler: sin sesión corta con un redirect, y el
   // 401 del handler es la segunda capa, alcanzable solo con sesión iniciada.
-  for (const ruta of ["/files?path=x/y.pdf", "/receipts?path=x/y.pdf"]) {
+  for (const ruta of [
+    "/files?path=x/y.pdf",
+    "/receipts?path=x/y.pdf",
+    "/appointments/00000000-0000-0000-0000-000000000000/justificante",
+  ]) {
     const res = await pedir(ruta);
     const destino = res.headers.get("location") ?? "";
     comprobar(
