@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { Eye, EyeOff, Info } from "lucide-react";
 import { callAction } from "@/lib/action-result";
 import { useAction } from "@/lib/use-action";
 import {
@@ -30,8 +29,9 @@ import { formatDate, formatDateTime } from "@/lib/format";
 
 /*
  * Pestaña «Medicación» de la ficha. Transcripción de la pauta del médico del
- * paciente: el panel no calcula, no compara y no sugiere nada. Lo dice arriba
- * para que nadie lo lea como una herramienta de prescripción.
+ * paciente: el panel no calcula, no compara y no sugiere nada. Sin avisos en
+ * pantalla por decisión del 6-oct; el «Prescrito por» obligatorio ya lo deja
+ * claro.
  */
 
 type Borrador = {
@@ -90,13 +90,11 @@ export function MedicacionPanel({
   ajustes,
   medicamentos,
   cambios,
-  tieneCuenta,
 }: {
   patientId: string;
   ajustes: AjustesMedicacion;
   medicamentos: Medicamento[];
   cambios: CambioMedicacion[];
-  tieneCuenta: boolean;
 }) {
   const { run, pending, error } = useAction();
   const [editando, setEditando] = useState<string | "nuevo" | null>(null);
@@ -106,15 +104,6 @@ export function MedicacionPanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <p className="flex max-w-3xl items-start gap-2 text-[13.5px] text-ink-2">
-        <Info className="mt-0.5 size-4 shrink-0 text-ink-3" aria-hidden />
-        <span>
-          Anota aquí la pauta que ha indicado el médico o psiquiatra del
-          paciente. Terap no prescribe, no revisa dosis ni comprueba
-          interacciones: muestra lo que anotas, tal cual.
-        </span>
-      </p>
-
       {/* Visibilidad y situación */}
       <section className="flex flex-col gap-5">
         <div className="max-w-xl">
@@ -123,27 +112,12 @@ export function MedicacionPanel({
               type="checkbox"
               checked={ajustes.visible_paciente}
               disabled={pending}
-              aria-describedby="medicacion-visibilidad"
               onChange={(e) =>
                 run(() => callAction(setVisibilidadMedicacionAction, patientId, e.target.checked))
               }
             />
             Mostrar la pauta en la app del paciente
           </label>
-          <p id="medicacion-visibilidad" className="mt-1 pl-6 text-[12.5px] text-ink-3">
-            {ajustes.visible_paciente ? (
-              <span className="inline-flex items-center gap-1">
-                <Eye className="size-3.5" aria-hidden /> La ve en «Mi medicación».
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1">
-                <EyeOff className="size-3.5" aria-hidden /> No la ve. Lo anotado se conserva.
-              </span>
-            )}
-            {ajustes.visible_paciente && !tieneCuenta && (
-              <> Aún no tiene cuenta en la app: la verá cuando entre.</>
-            )}
-          </p>
         </div>
 
         <div>

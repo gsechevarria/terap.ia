@@ -279,7 +279,7 @@ export default async function PatientDetailPage({
           {tab === "pagos" && <PaymentsTab patientId={id} />}
           {tab === "diario" && <DiaryTab patientId={id} />}
           {tab === "medicacion" && (
-            <MedicacionTab patientId={id} tieneCuenta={Boolean(patient.user_id)} />
+            <MedicacionTab patientId={id} />
           )}
           {tab === "recursos" && <ResourcesTab patientId={id} />}
           {tab === "documentos" && <DocumentsTab patientId={id} />}
@@ -449,13 +449,7 @@ async function PaymentsTab({ patientId }: { patientId: string }) {
   return <PaymentsPanel patientId={patientId} detail={detail} />;
 }
 
-async function MedicacionTab({
-  patientId,
-  tieneCuenta,
-}: {
-  patientId: string;
-  tieneCuenta: boolean;
-}) {
+async function MedicacionTab({ patientId }: { patientId: string }) {
   const { ajustes, medicamentos, cambios } = await getMedicacionProfesional(patientId);
   return (
     <MedicacionPanel
@@ -463,7 +457,6 @@ async function MedicacionTab({
       ajustes={ajustes}
       medicamentos={medicamentos}
       cambios={cambios}
-      tieneCuenta={tieneCuenta}
     />
   );
 }
