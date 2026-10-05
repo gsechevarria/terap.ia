@@ -690,5 +690,72 @@ export async function sqlRegressions(db) {
   await user(uid1, async () => assert.equal((await q('select id from patients where id=$1', [centroPat])).length, 0));
  });
 
+
+ // --- Pauta de medicación (20261006100001) ------------------------------------
+ // Profesional uid2 con su paciente pat2 (cuenta patUid2). uid1 y patUid1 son
+ // ajenos a ese expediente.
+ const medAlta = "insert into medication_entries(patient_id,professional_id,nombre,dosis,momentos,prescrito_por) values($1,$2,'Fármaco ficticio','1 comprimido','{manana}','Dra. Ficticia') returning id";
+ let med;
+ await test('Medicación: el profesional asignado da de alta y queda registrado', () => user(uid2, async () => {
+  med = (await q(medAlta, [pat2, pro2]))[0].id;
+  const log = await q("select accion, professional_id from medication_changes where entry_id=$1", [med]);
+  assert.deepEqual(log.map((r) => r.accion), ['alta']);
+  assert.equal(log[0].professional_id, pro2);
+ }));
+ await test('Medicación: el paciente no ve nada mientras el módulo está apagado', async () => {
+  await user(patUid2, async () => assert.equal((await q('select id from medication_entries')).length, 0));
+  await user(uid2, () => q('insert into patient_medication(patient_id,requiere_medicacion) values($1,true)', [pat2]));
+  await user(patUid2, async () => {
+   assert.equal((await q('select id from medication_entries')).length, 0);
+   assert.equal((await q('select patient_id from patient_medication')).length, 0);
+  });
+ });
+ await test('Medicación: activado, el paciente lee su pauta y no la de otro', async () => {
+  await user(uid2, () => q('update patient_medication set visible_paciente=true where patient_id=$1', [pat2]));
+  await user(patUid2, async () => {
+   assert.deepEqual((await q('select id from medication_entries')).map((r) => r.id), [med]);
+   assert.equal((await q('select visible_paciente from patient_medication'))[0].visible_paciente, true);
+  });
+  await user(patUid1, async () => assert.equal((await q('select id from medication_entries')).length, 0));
+ });
+ await test('Medicación: el paciente no escribe ni ve el registro de cambios', () => user(patUid2, async () => {
+  await assert.rejects(q(medAlta, [pat2, pro2]));
+  assert.equal((await q("update medication_entries set dosis='10 comprimidos' where id=$1 returning id", [med])).length, 0);
+  assert.equal((await q('update patient_medication set visible_paciente=false where patient_id=$1 returning patient_id', [pat2])).length, 0);
+  assert.equal((await q('select id from medication_changes')).length, 0);
+ }));
+ await test('Medicación: un profesional ajeno no lee ni escribe la pauta', () => user(uid1, async () => {
+  assert.equal((await q('select id from medication_entries where id=$1', [med])).length, 0);
+  await assert.rejects(q(medAlta, [pat2, pro1]));
+  assert.equal((await q("update medication_entries set dosis='x' where id=$1 returning id", [med])).length, 0);
+  assert.equal((await q('select id from medication_changes where patient_id=$1', [pat2])).length, 0);
+ }));
+ await test('Medicación: nadie borra; se retira y queda en el registro', () => user(uid2, async () => {
+  await assert.rejects(q('delete from medication_entries where id=$1', [med]));
+  await assert.rejects(q('delete from medication_changes where patient_id=$1', [pat2]));
+  await assert.rejects(q("insert into medication_changes(patient_id,accion) values($1,'alta')", [pat2]));
+  await q("update medication_entries set dosis='2 comprimidos' where id=$1", [med]);
+  await q('update medication_entries set retirada_at=now() where id=$1', [med]);
+  // Guardar sin cambios no ensucia el registro.
+  await q("update medication_entries set dosis='2 comprimidos' where id=$1", [med]);
+  const log = await q('select accion, antes, despues from medication_changes where entry_id=$1 order by id', [med]);
+  assert.deepEqual(log.map((r) => r.accion), ['alta', 'cambio', 'retirada']);
+  assert.equal(log[1].antes.dosis, '1 comprimido');
+  assert.equal(log[1].despues.dosis, '2 comprimidos');
+ }));
+ await test('Medicación: ni el autor ni el expediente se pueden reescribir', () => user(uid2, async () => {
+  await assert.rejects(q('update medication_entries set professional_id=$2 where id=$1', [med, pro1]));
+  await assert.rejects(q('update medication_entries set patient_id=$2 where id=$1', [med, pat1]));
+ }));
+ await test('Medicación: la base rechaza pautas incoherentes', () => user(uid2, async () => {
+  const mal = (extra) => q(`insert into medication_entries(patient_id,professional_id,nombre,dosis,prescrito_por,${Object.keys(extra).join(',')}) values($1,$2,'F','1','Dr. X',${Object.keys(extra).map((_, i) => '$' + (i + 3)).join(',')})`, [pat2, pro2, ...Object.values(extra)]);
+  await assert.rejects(mal({ momentos: '{}' }), /momentos_si_pauta_fija/);
+  await assert.rejects(mal({ momentos: '{manana}', frecuencia: 'dias_semana' }), /dias_si_semanal/);
+  await assert.rejects(mal({ momentos: '{madrugada}' }), /momentos_conocidos/);
+  await assert.rejects(q("insert into medication_entries(patient_id,professional_id,nombre,dosis,momentos,prescrito_por) values($1,$2,'F','1','{manana}','   ')", [pat2, pro2]), /prescriptor_valido/);
+  // «Solo si hace falta» sí admite no tener momentos.
+  await mal({ frecuencia: 'si_precisa' });
+ }));
+
  return passed;
 }

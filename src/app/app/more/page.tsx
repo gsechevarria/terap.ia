@@ -5,9 +5,11 @@ import {
   CreditCard,
   KeyRound,
   Phone,
+  Pill,
   type LucideIcon,
 } from "lucide-react";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
+import { getMiMedicacion } from "@/lib/queries/medicacion";
 import { formatCurrency } from "@/lib/format";
 import { SignOutForm } from "@/components/SignOutForm";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -36,7 +38,7 @@ function Fila({
 }
 
 export default async function MorePage() {
-  const pay = await getMyPaymentSummary();
+  const [pay, medicacion] = await Promise.all([getMyPaymentSummary(), getMiMedicacion()]);
 
   return (
     <>
@@ -54,6 +56,8 @@ export default async function MorePage() {
           hint={pay.debtCents > 0 ? formatCurrency(pay.debtCents) : undefined}
           Icon={CreditCard}
         />
+        {/* Solo si el profesional ha activado el módulo para este paciente. */}
+        {medicacion && <Fila href="/app/medicacion" label="Mi medicación" Icon={Pill} />}
         <Fila href="/app/settings" label="Notificaciones" Icon={Bell} />
         <Fila href="/account/password" label="Contraseña" Icon={KeyRound} />
       </div>

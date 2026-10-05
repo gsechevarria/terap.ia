@@ -44,6 +44,8 @@ import { NotesPanel } from "@/app/pro/_components/NotesPanel";
 import { PatientDetailsPanel } from "@/app/pro/_components/PatientDetailsPanel";
 import { FlaggedAlerts } from "@/app/pro/_components/FlaggedAlerts";
 import { BotonModificarCita } from "@/app/pro/_components/EditarCita";
+import { MedicacionPanel } from "@/app/pro/_components/MedicacionPanel";
+import { getMedicacionProfesional } from "@/lib/queries/medicacion";
 
 const TABS = [
   { key: "informacion", label: "Información" },
@@ -53,6 +55,7 @@ const TABS = [
   { key: "citas", label: "Citas" },
   { key: "pagos", label: "Pagos" },
   { key: "diario", label: "Diario" },
+  { key: "medicacion", label: "Medicación" },
   { key: "recursos", label: "Recursos" },
   { key: "documentos", label: "Documentos" },
   { key: "invitacion", label: "Acceso y equipo" },
@@ -275,6 +278,9 @@ export default async function PatientDetailPage({
           )}
           {tab === "pagos" && <PaymentsTab patientId={id} />}
           {tab === "diario" && <DiaryTab patientId={id} />}
+          {tab === "medicacion" && (
+            <MedicacionTab patientId={id} tieneCuenta={Boolean(patient.user_id)} />
+          )}
           {tab === "recursos" && <ResourcesTab patientId={id} />}
           {tab === "documentos" && <DocumentsTab patientId={id} />}
           {tab === "invitacion" && (
@@ -441,6 +447,25 @@ function AppointmentsTab({
 async function PaymentsTab({ patientId }: { patientId: string }) {
   const detail = await getPatientPaymentDetail(patientId);
   return <PaymentsPanel patientId={patientId} detail={detail} />;
+}
+
+async function MedicacionTab({
+  patientId,
+  tieneCuenta,
+}: {
+  patientId: string;
+  tieneCuenta: boolean;
+}) {
+  const { ajustes, medicamentos, cambios } = await getMedicacionProfesional(patientId);
+  return (
+    <MedicacionPanel
+      patientId={patientId}
+      ajustes={ajustes}
+      medicamentos={medicamentos}
+      cambios={cambios}
+      tieneCuenta={tieneCuenta}
+    />
+  );
 }
 
 async function DiaryTab({ patientId }: { patientId: string }) {
