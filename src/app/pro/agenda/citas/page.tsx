@@ -10,6 +10,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import { Migas } from "@/app/pro/_components/Migas";
 import { BotonModificarCita } from "@/app/pro/_components/EditarCita";
+import { puedeEmitirJustificante } from "@/lib/asistencia";
 import {
   PRESETS,
   presetRange,
@@ -299,7 +300,7 @@ export default async function AllAppointmentsPage({
                         >
                           Añadir al calendario
                         </a>
-                        {a.attendance === "attended" && (
+                        {puedeEmitirJustificante(a, now) && (
                           <a
                             href={`/appointments/${a.id}/justificante`}
                             className="mr-3 text-[12.5px] text-ink-3 underline underline-offset-2 hover:text-ink"

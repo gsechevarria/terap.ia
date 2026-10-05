@@ -166,7 +166,7 @@ export default async function PatientDetailPage({
   // "Hoy" en la zona del profesional, resuelto una vez en el servidor.
   const hoy = todayYMD();
   const frase = fraseDelExpediente({
-    proxima: citas.proximas[0]?.starts_at ?? null,
+    proxima: citas.proximas.find((c) => c.status !== "completed")?.starts_at ?? null,
     ultimaSesion:
       citas.pasadas.find((c) => c.attendance === "attended")?.starts_at ?? null,
     tareasPendientes: tareas.filter((t) => !t.completed).length,
@@ -360,7 +360,9 @@ function FilaCita({
         >
           Añadir al calendario
         </a>
-        {cita.attendance === "attended" && (
+        {/* `pasada` sale de la consulta (inicio <= ahora): es la misma regla que
+            `puedeEmitirJustificante`, sin volver a pedir la hora en el render. */}
+        {pasada && cita.attendance === "attended" && (
           <a
             href={`/appointments/${cita.id}/justificante`}
             className="text-[12.5px] text-ink-3 underline underline-offset-2 hover:text-ink"

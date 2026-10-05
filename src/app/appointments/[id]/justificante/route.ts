@@ -4,6 +4,7 @@ import { getAppointment } from "@/lib/queries/appointments";
 import { getCurrentProfessional } from "@/lib/queries/identity";
 import { buildJustificantePdf } from "@/lib/justificante";
 import { ymdInTZ } from "@/lib/tz";
+import { puedeEmitirJustificante } from "@/lib/asistencia";
 
 const NO_STORE = { "Cache-Control": "private, no-store, max-age=0" } as const;
 
@@ -13,7 +14,7 @@ const NO_STORE = { "Cache-Control": "private, no-store, max-age=0" } as const;
  *
  * Solo el profesional que atendió la cita (`getAppointment` filtra por
  * `professional_id`, además de la RLS) y solo si la asistencia está marcada
- * como «acudió»: un justificante de una sesión a la que no se fue sería un
+ * como «acudió» con la hora de inicio ya pasada: un justificante de una sesión a la que no se fue sería un
  * documento falso con los datos del profesional.
  *
  * La sesión se comprueba aquí: los route handlers no ejecutan layouts.
@@ -43,9 +44,11 @@ export async function GET(
   if (!appt) {
     return new Response("No encontrado", { status: 404, headers: NO_STORE });
   }
-  if (appt.attendance !== "attended") {
+  // También exige que la cita haya empezado: antes se podía marcar «acudió»
+  // en una cita futura, y esas filas siguen en la base.
+  if (!puedeEmitirJustificante(appt)) {
     return new Response(
-      "Solo se emite justificante de una cita marcada como «acudió».",
+      "Solo se emite justificante de una cita ya empezada y marcada como «acudió».",
       { status: 409, headers: NO_STORE },
     );
   }

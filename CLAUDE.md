@@ -345,6 +345,18 @@ bloqueos según la duración. La ocupación la da `getDayBusyAction`, con el
 criterio de `findConflict`; es ayuda para elegir, no la barrera. Sin
 migraciones. **Sin revisión visual en este entorno.**
 
+**Asistencia solo en citas ya empezadas (6-oct).** Marcar «acudió» en una
+cita futura la liquidaba por adelantado (bono o pago pendiente), la pasaba a
+`completed` —y desaparecía de las dos listas de la ficha— y habilitaba el
+justificante. Regla única en `src/lib/asistencia.ts`: `setAttendanceAction`
+rechaza todo valor distinto de «pendiente» si la hora de inicio guardada no ha
+llegado, el diálogo solo ofrece «Pendiente» en una cita futura y el
+justificante exige además que haya empezado. «Pendiente» siempre se permite,
+que es como se deshace. **La barrera está en la acción, no en la base**:
+`change_appointment` sigue aceptándolo por RPC directa; cerrarlo ahí sería una
+migración. Las próximas de la ficha incluyen ya las `completed` futuras que
+quedaran de antes, para poder devolverlas a «pendiente».
+
 **Justificante de asistencia (6-oct).** Enlace «Justificante» en la agenda,
 «Todas las citas» y la ficha, **solo en citas marcadas «acudió»** (la ruta
 devuelve 409 en las demás: sería un documento falso con los datos del
