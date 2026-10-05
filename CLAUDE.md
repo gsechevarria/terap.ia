@@ -345,6 +345,12 @@ bloqueos según la duración. La ocupación la da `getDayBusyAction`, con el
 criterio de `findConflict`; es ayuda para elegir, no la barrera. Sin
 migraciones. **Sin revisión visual en este entorno.**
 
+**Modificar cita fuera de la agenda (5-oct).** El diálogo «Modificar cita»
+sale de `AgendaCalendar` a `src/app/pro/_components/EditarCita.tsx` y se abre
+también desde «Todas las citas» y la pestaña Citas de la ficha (botón
+«Modificar» por cita). El `.ics` se descarga desde un enlace «Añadir al
+calendario» en las tres pantallas, como ya hacía la app del paciente.
+
 En «Agenda de hoy» todas las sesiones muestran ya inicio y fin (#53); antes
 solo la próxima, y una de 90 min no se distinguía de una de 60.
 

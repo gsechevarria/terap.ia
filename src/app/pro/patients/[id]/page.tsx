@@ -43,6 +43,7 @@ import { TasksPanel } from "@/app/pro/_components/TasksPanel";
 import { NotesPanel } from "@/app/pro/_components/NotesPanel";
 import { PatientDetailsPanel } from "@/app/pro/_components/PatientDetailsPanel";
 import { FlaggedAlerts } from "@/app/pro/_components/FlaggedAlerts";
+import { BotonModificarCita } from "@/app/pro/_components/EditarCita";
 
 const TABS = [
   { key: "informacion", label: "Información" },
@@ -265,7 +266,13 @@ export default async function PatientDetailPage({
             <NotesPanel patientId={id} notes={await getNotesForPatient(id)} />
           )}
           {tab === "escalas" && <ScalesTab patientId={id} />}
-          {tab === "citas" && <AppointmentsTab patientId={id} citas={citas} />}
+          {tab === "citas" && (
+            <AppointmentsTab
+              patientId={id}
+              patientName={patient.full_name}
+              citas={citas}
+            />
+          )}
           {tab === "pagos" && <PaymentsTab patientId={id} />}
           {tab === "diario" && <DiaryTab patientId={id} />}
           {tab === "recursos" && <ResourcesTab patientId={id} />}
@@ -320,7 +327,15 @@ const ASISTENCIA: Record<string, { label: string; tone: StatusTone }> = {
   pending: { label: "sin registrar", tone: "neutral" },
 };
 
-function FilaCita({ cita, pasada }: { cita: Appointment; pasada: boolean }) {
+function FilaCita({
+  cita,
+  pasada,
+  patientName,
+}: {
+  cita: Appointment;
+  pasada: boolean;
+  patientName: string | null;
+}) {
   const estado = pasada
     ? ASISTENCIA[cita.attendance] ?? {
         label: cita.attendance,
@@ -341,10 +356,11 @@ function FilaCita({ cita, pasada }: { cita: Appointment; pasada: boolean }) {
         )}
         <a
           href={`/appointments/${cita.id}/ics`}
-          className="text-[12.5px] text-accent hover:underline"
+          className="text-[12.5px] text-ink-3 underline underline-offset-2 hover:text-ink"
         >
-          Descargar .ics
+          Añadir al calendario
         </a>
+        <BotonModificarCita appt={{ ...cita, patientName }} />
       </div>
     </li>
   );
@@ -352,9 +368,11 @@ function FilaCita({ cita, pasada }: { cita: Appointment; pasada: boolean }) {
 
 function AppointmentsTab({
   patientId,
+  patientName,
   citas,
 }: {
   patientId: string;
+  patientName: string | null;
   citas: { proximas: Appointment[]; pasadas: Appointment[] };
 }) {
   const { proximas, pasadas } = citas;
@@ -379,7 +397,7 @@ function AppointmentsTab({
           ) : (
             <ul>
               {proximas.map((a) => (
-                <FilaCita key={a.id} cita={a} pasada={false} />
+                <FilaCita key={a.id} cita={a} pasada={false} patientName={patientName} />
               ))}
             </ul>
           )}
@@ -399,7 +417,7 @@ function AppointmentsTab({
           ) : (
             <ul>
               {pasadas.map((a) => (
-                <FilaCita key={a.id} cita={a} pasada />
+                <FilaCita key={a.id} cita={a} pasada patientName={patientName} />
               ))}
             </ul>
           )}

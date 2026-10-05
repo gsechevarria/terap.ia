@@ -9,6 +9,7 @@ import type { Appointment } from "@/lib/types";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { Status, type StatusTone } from "@/components/ui/Status";
 import { Migas } from "@/app/pro/_components/Migas";
+import { BotonModificarCita } from "@/app/pro/_components/EditarCita";
 import {
   PRESETS,
   presetRange,
@@ -243,7 +244,7 @@ export default async function AllAppointmentsPage({
                   <th>Paciente</th>
                   <th>Estado</th>
                   <th>Asistencia</th>
-                  <th className="text-right">Enlaces</th>
+                  <th className="text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -294,10 +295,11 @@ export default async function AllAppointmentsPage({
                         )}
                         <a
                           href={`/appointments/${a.id}/ics`}
-                          className="text-[12.5px] text-ink-3 underline underline-offset-2 hover:text-ink"
+                          className="mr-3 text-[12.5px] text-ink-3 underline underline-offset-2 hover:text-ink"
                         >
-                          .ics
+                          Añadir al calendario
                         </a>
+                        <BotonModificarCita appt={a} />
                       </td>
                     </tr>
                   );
