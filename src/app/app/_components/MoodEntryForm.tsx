@@ -62,6 +62,24 @@ export function MoodEntryForm({
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
+  /*
+   * La cara y la nota se copian de las props al montar. Si el registro de hoy
+   * cambia por otro lado —guardado desde otro dispositivo, o pasa la
+   * medianoche con la app abierta— y llega en un refresco, el formulario se
+   * quedaba con lo de antes (hallazgo H7). Se ajusta el estado durante el
+   * render cuando cambian los datos del servidor (patrón recomendado por
+   * React). Tras guardar aquí mismo los valores ya coinciden: no cambia nada
+   * a la vista y el aviso de «guardado» se conserva.
+   */
+  const firma = `${dia}|${hoy?.mood_scale ?? ""}|${hoy?.mood_value ?? ""}|${hoy?.note ?? ""}`;
+  const [firmaVista, setFirmaVista] = useState(firma);
+  if (firma !== firmaVista) {
+    setFirmaVista(firma);
+    setValor(registroComparable?.mood_value ?? null);
+    setNota(hoy?.note ?? "");
+    if (!hoy) setGuardado(false);
+  }
+
   const apoyo = valor == null ? null : mensajeDeApoyo(valor, ESCALA_ACTUAL, dia);
   const restantes = LIMITE_NOTA - nota.length;
 

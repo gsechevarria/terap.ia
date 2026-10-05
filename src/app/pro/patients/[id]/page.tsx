@@ -221,7 +221,13 @@ export default async function PatientDetailPage({
               )}
             </div>
             <div className="mt-3">
-              <TagsEditor patientId={patient.id} tags={patient.tags} />
+              <TagsEditor
+                // Se vuelve a montar si las etiquetas cambian por otro lado
+                // (un compañero del centro): su estado se copia al montar.
+                key={patient.tags.join("|")}
+                patientId={patient.id}
+                tags={patient.tags}
+              />
             </div>
           </div>
         </div>

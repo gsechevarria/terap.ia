@@ -359,8 +359,11 @@ H1 sesión en curso, H2 cancelada futura, H3 colaboradores de centro, H4 dos
 expedientes) corregidos también el 6-oct**; H3 necesita la migración
 `20261006120001_solicitudes_por_asignacion` (la 51), **aplicada por Gabriel
 desde el editor SQL el 6-oct** (declaración suya; historial del CLI
-desincronizado otra vez). Batería: 52/52. Siguen
-abiertos H6-H9 (pantallas abiertas sin refresco y menores).
+desincronizado otra vez). Batería: 52/52. H6-H8
+(pantallas abiertas, contadores y diario) corregidos con
+`src/components/RefrescoAutomatico.tsx` en los layouts de `/app` y `/pro`:
+`router.refresh()` al volver a la app, al reconectar, desde la caché de
+atrás/adelante, cada 2 min a la vista y al navegar si pasó más de 1 min.
 
 ## Pauta de medicación (6-oct) — migración 50 APLICADA, en producción
 
