@@ -98,10 +98,23 @@ async function createAppointmentActionImpl(input: {
   // Todas las ocurrencias (la principal + las repeticiones).
   const occurrences: { start: Date; end: Date }[] = [{ start, end }];
   if (input.freq !== "none") {
-    const until = input.until ? new Date(input.until) : null;
+    // «Hasta» llega del formulario como el último minuto de ese día en Madrid
+    // (NewAppointment). Si llega como día suelto ('YYYY-MM-DD'), se toma el
+    // día ENTERO en Madrid: `new Date('YYYY-MM-DD')` sería la medianoche UTC
+    // y dejaría fuera la repetición que cae justo en la fecha de fin.
+    let hasta: number | null = null;
+    if (input.until) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(input.until)) {
+        const [y, m, d] = ymdParts(input.until);
+        hasta = fromWallClock(y, m, d + 1, 0, 0).getTime() - 1;
+      } else {
+        hasta = new Date(input.until).getTime();
+      }
+      if (!Number.isFinite(hasta)) throw new ActionInputError("La fecha de fin no es válida.");
+    }
     for (let i = 1; i < RECURRENCE_CAP; i++) {
       const cur = occurrenceAt(start, input.freq, i);
-      if (until && cur.getTime() > until.getTime()) break;
+      if (hasta !== null && cur.getTime() > hasta) break;
       occurrences.push({ start: cur, end: new Date(cur.getTime() + durationMs) });
     }
   }
@@ -139,9 +152,13 @@ async function createAppointmentActionImpl(input: {
     recurrence_until: input.until || null,
   };
 
+  // Cada fila lleva su propio id. Con `undefined` en las repeticiones,
+  // supabase-js arma el insert en bloque con la columna `id` y las manda con
+  // NULL: la base rechazaba la serie entera y ninguna cita recurrente se podía
+  // crear (hallazgo H0 de docs/SINCRONIZACION.md).
   const rows: TablesInsert<"appointments">[] = occurrences.map((o, i) => ({
     ...base,
-    id: i === 0 ? parentId : undefined,
+    id: i === 0 ? parentId : crypto.randomUUID(),
     starts_at: o.start.toISOString(),
     ends_at: o.end.toISOString(),
     parent_appointment_id: i === 0 ? null : parentId,

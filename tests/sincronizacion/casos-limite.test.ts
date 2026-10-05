@@ -1,8 +1,7 @@
 /*
  * Casos límite de la sincronización. Cada expectativa describe el
- * comportamiento CORRECTO; los que hoy no se cumplen están marcados con
- * `it.fails` y una referencia al hallazgo en docs/SINCRONIZACION.md. Cuando se
- * arreglen, `it.fails` empezará a fallar y obligará a quitar la marca.
+ * comportamiento CORRECTO. Los marcados [H…] fallaban en la prueba del 6-oct y
+ * se corrigieron el mismo día; ver docs/SINCRONIZACION.md.
  */
 import { createHash, randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -10,7 +9,7 @@ import { actuarComo, admin, nuevoUsuario, type Actor } from "./actores";
 
 import type { ActionResult } from "@/lib/action-result";
 import { createTaskAction } from "@/lib/actions/tasks";
-import { cancelAppointmentAction, createAppointmentAction, requestAppointmentAction } from "@/lib/actions/appointments";
+import { cancelAppointmentAction, createAppointmentAction, requestAppointmentAction, resolveRequestAction } from "@/lib/actions/appointments";
 import { createScaleAssignmentAction } from "@/lib/actions/scales";
 import { addMoodEntryAction, deleteMoodEntryAction } from "@/lib/actions/mood";
 import { getCurrentPatient } from "@/lib/queries/identity";
@@ -74,7 +73,7 @@ beforeAll(async () => {
 });
 
 describe("citas en los bordes", () => {
-  it.fails("[H1] una sesión EN CURSO sigue apareciendo en el inicio del paciente", async () => {
+  it("[H1] una sesión EN CURSO sigue apareciendo en el inicio del paciente", async () => {
     await pro.db.from("appointments").insert({
       professional_id: await proId(pro),
       patient_id: patientId,
@@ -89,7 +88,7 @@ describe("citas en los bordes", () => {
     expect(proximas.some((a) => a.video_link === "https://meet.example.com/en-curso")).toBe(true);
   });
 
-  it.fails("[H2] una cita futura CANCELADA sigue visible en la ficha del profesional", async () => {
+  it("[H2] una cita futura CANCELADA sigue visible en la ficha del profesional", async () => {
     await como(pro, () => ok(createAppointmentAction({ patientId, startsAt: enHoras(30), endsAt: enHoras(31), freq: "none" })));
     const { proximas } = await como(pro, () => getPatientAppointments(patientId));
     const cita = proximas.find((a) => new Date(a.starts_at).getTime() === new Date(enHoras(30)).getTime() || a.status === "scheduled")!;
@@ -145,7 +144,7 @@ describe("centro con varios profesionales", () => {
     expect(tareas.some((t) => t.title === "Tarea con aviso")).toBe(true);
   });
 
-  it.fails("[H3] el colaborador asignado ve las solicitudes de cita del paciente", async () => {
+  it("[H3] el colaborador asignado ve las solicitudes de cita del paciente", async () => {
     await como(paciente, () =>
       ok(requestAppointmentAction({ kind: "new", preferredStart: enHoras(24 * 15), durationMin: 50, note: "Para el centro" })),
     );
@@ -155,14 +154,33 @@ describe("centro con varios profesionales", () => {
     expect(await como(colaborador, countPendingRequests)).toBeGreaterThan(0);
   });
 
-  it.fails("[H3] el colaborador asignado tiene al paciente en su listado", async () => {
+  it("[H3] el colaborador asignado puede ACEPTAR la solicitud; la cita va a su agenda y llega al paciente", async () => {
+    const r = (await como(colaborador, () => getRequestsForProfessional("pending"))).find((x) => x.note === "Para el centro")!;
+    await como(colaborador, () => ok(resolveRequestAction({ id: r.id, action: "accept" })));
+    const { data: cita } = await admin()
+      .from("appointments")
+      .select("professional_id, starts_at")
+      .eq("patient_id", patientId)
+      .eq("starts_at", r.preferred_start!)
+      .single();
+    expect(cita?.professional_id).toBe(await proId(colaborador));
+    expect(await como(pro, countPendingRequests)).toBe(0);
+  });
+
+  it("[H3] el colaborador asignado crea una tarea desde la ficha y el paciente la recibe", async () => {
+    await como(colaborador, () => ok(createTaskAction({ patientId, title: "Tarea de la colaboradora" })));
+    const tareas = await como(paciente, () => getTasksForPatient(patientId));
+    expect(tareas.some((t) => t.title === "Tarea de la colaboradora")).toBe(true);
+  });
+
+  it("[H3] el colaborador asignado tiene al paciente en su listado", async () => {
     const lista = await como(colaborador, () => listPatientsWithOverview({ status: "active" } as never));
     expect(JSON.stringify(lista)).toContain(patientId);
   });
 });
 
 describe("una cuenta con expedientes en dos consultas", () => {
-  it.fails("[H4] la app del paciente sigue funcionando con dos expedientes", async () => {
+  it("[H4] la app del paciente sigue funcionando con dos expedientes", async () => {
     const otraConsulta = await nuevoUsuario("professional", "Otra Consulta");
     await vincular(otraConsulta, paciente, "Paciente Límite (otra consulta)");
     // `getCurrentPatient` hace `.maybeSingle()` sobre `user_id`: con dos filas

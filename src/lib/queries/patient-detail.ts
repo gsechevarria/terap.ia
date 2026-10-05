@@ -68,7 +68,13 @@ export async function getScaleAssignments(
   });
 }
 
-/** Próximas citas del paciente. */
+/**
+ * Próximas citas del paciente, incluida la que está EN CURSO.
+ *
+ * Filtraba `starts_at > ahora`: a los cinco minutos de empezar, la tarjeta del
+ * inicio y su botón de videollamada desaparecían, justo cuando el paciente que
+ * llega tarde los busca (hallazgo H1). Ahora vale mientras no haya terminado.
+ */
 export async function getUpcomingAppointments(
   patientId: string,
 ): Promise<Appointment[]> {
@@ -77,7 +83,7 @@ export async function getUpcomingAppointments(
     .from("appointments")
     .select("*")
     .eq("patient_id", patientId)
-    .gt("starts_at", new Date().toISOString())
+    .gt("ends_at", new Date().toISOString())
     .in("status", ["scheduled", "confirmed"])
     .order("starts_at", { ascending: true }));
   return data ?? [];
@@ -103,10 +109,10 @@ export async function getPatientAppointments(
       .select("*")
       .eq("patient_id", patientId)
       .gt("starts_at", ahora)
-      // `completed` también: una cita futura marcada «acudió» antes de que se
-      // impidiera no cabía en ninguna lista (ni próxima ni pasada) y no había
-      // forma de verla desde la ficha para devolverla a «pendiente».
-      .in("status", ["scheduled", "confirmed", "completed"])
+      // Todos los estados. `completed`: una cita futura marcada «acudió» antes
+      // de que se impidiera no cabía en ninguna lista. `cancelled`: una cita
+      // futura cancelada desaparecía de la ficha (hallazgo H2), porque el
+      // historial solo recoge lo que ya ha pasado. Se pintan con su estado.
       .order("starts_at", { ascending: true })),
     allRows(supabase
       .from("appointments")

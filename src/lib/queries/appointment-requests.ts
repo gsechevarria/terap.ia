@@ -43,8 +43,10 @@ export async function getRequestsForProfessional(
 
   let q = supabase
     .from("appointment_requests")
-    .select(`${SELECT}, patients(full_name), appointments(starts_at)`)
-    .eq("professional_id", pro.id);
+    .select(`${SELECT}, patients(full_name), appointments(starts_at)`);
+  // Sin `professional_id = pro.id`: la RLS ya da las solicitudes de los
+  // expedientes asignados, y desde 20261006120001 cualquier asignado puede
+  // resolverlas (hallazgo H3).
 
   q = scope === "pending"
     ? q.eq("status", "pending").order("created_at", { ascending: true })
@@ -65,7 +67,6 @@ export async function countPendingRequests(): Promise<number> {
     supabase
       .from("appointment_requests")
       .select("id", { count: "exact", head: true })
-      .eq("professional_id", pro.id)
       .eq("status", "pending"),
   );
   return count ?? 0;

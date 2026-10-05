@@ -169,7 +169,9 @@ export default async function PatientDetailPage({
   // "Hoy" en la zona del profesional, resuelto una vez en el servidor.
   const hoy = todayYMD();
   const frase = fraseDelExpediente({
-    proxima: citas.proximas.find((c) => c.status !== "completed")?.starts_at ?? null,
+    proxima:
+      citas.proximas.find((c) => c.status === "scheduled" || c.status === "confirmed")
+        ?.starts_at ?? null,
     ultimaSesion:
       citas.pasadas.find((c) => c.attendance === "attended")?.starts_at ?? null,
     tareasPendientes: tareas.filter((t) => !t.completed).length,

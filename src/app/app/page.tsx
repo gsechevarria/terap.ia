@@ -64,6 +64,9 @@ export default async function PatientHome() {
   ]);
 
   const proxima = appts[0] ?? null;
+  // La «próxima» puede estar ya en curso (se muestra hasta que termina): se
+  // dice así en vez de anunciarla como futura.
+  const enCurso = proxima ? new Date(proxima.starts_at).getTime() <= new Date().getTime() : false;
   const nombre = patient.full_name?.split(" ")[0] ?? "";
   const inicial = (nombre || patient.full_name || "?").charAt(0).toUpperCase();
   const hoy = todayYMD();
@@ -94,9 +97,11 @@ export default async function PatientHome() {
       {proxima ? (
         <article className="tp-session">
           <div className="tp-session-header">
-            <span className="tp-session-label">Próxima sesión</span>
+            <span className="tp-session-label">
+              {enCurso ? "Sesión en curso" : "Próxima sesión"}
+            </span>
             <span className="tp-status-inverse">
-              {proxima.status === "confirmed" ? "Confirmada" : "Por confirmar"}
+              {enCurso ? "Ahora" : proxima.status === "confirmed" ? "Confirmada" : "Por confirmar"}
             </span>
           </div>
           <div className="tp-session-main">

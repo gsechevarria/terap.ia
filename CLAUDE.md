@@ -354,7 +354,11 @@ recurrentes no se pueden crear** (insert con `id` NULL) y **H5, la
 comprobación de subidas leía `metadata.size/mimetype`**, que Storage ya no
 rellena: **corregido el 6-oct** (confirmado en producción por Gabriel), junto
 con el botón de elegir archivo, que no se veía (`.campo-archivo`). Informe completo:
-[docs/SINCRONIZACION.md](docs/SINCRONIZACION.md). El resto, sin arreglar todavía.
+[docs/SINCRONIZACION.md](docs/SINCRONIZACION.md). **Los otros seis (H0 series,
+H1 sesión en curso, H2 cancelada futura, H3 colaboradores de centro, H4 dos
+expedientes) corregidos también el 6-oct**; H3 necesita la migración
+`20261006120001_solicitudes_por_asignacion` (la 51). Batería: 52/52. Siguen
+abiertos H6-H9 (pantallas abiertas sin refresco y menores).
 
 ## Pauta de medicación (6-oct) — migración 50 APLICADA, en producción
 
