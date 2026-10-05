@@ -6,6 +6,7 @@ import {
   Clock,
   CreditCard,
   FileText,
+  Pill,
   Video,
 } from "lucide-react";
 import { getMyMoodToday } from "@/lib/queries/wellbeing";
@@ -15,6 +16,8 @@ import { getUpcomingAppointments } from "@/lib/queries/patient-detail";
 import { getMyActiveAssignments } from "@/lib/queries/scales";
 import { getMyPaymentSummary } from "@/lib/queries/payments";
 import { getMyRequests } from "@/lib/queries/appointment-requests";
+import { getMiMedicacion } from "@/lib/queries/medicacion";
+import { MOMENTO_LABEL, pautaDeHoy } from "@/lib/medicacion";
 import { formatCurrency, formatTime } from "@/lib/format";
 import { addDaysYMD, formatYMD, parseYMD, todayYMD } from "@/lib/tz";
 import { safeExternalUrl } from "@/lib/url";
@@ -47,7 +50,7 @@ export default async function PatientHome() {
     );
   }
 
-  const [tasks, appts, escalas, pay, mood, requests] = await Promise.all([
+  const [tasks, appts, escalas, pay, mood, requests, medicacion] = await Promise.all([
     getTasksForPatient(patient.id),
     getUpcomingAppointments(patient.id),
     // Opt-in estricto: solo las que el profesional ha activado Y tocan ahora.
@@ -56,6 +59,8 @@ export default async function PatientHome() {
     getMyPaymentSummary(),
     getMyMoodToday(),
     getMyRequests(),
+    // Null si el profesional no ha activado el módulo: entonces no se pinta nada.
+    getMiMedicacion(),
   ]);
 
   const proxima = appts[0] ?? null;
@@ -65,6 +70,10 @@ export default async function PatientHome() {
   const manana = formatYMD(addDaysYMD(parseYMD(hoy), 1));
   const video = safeExternalUrl(proxima?.video_link);
   const enEspera = requests.pending.length;
+  const medicacionHoy =
+    medicacion && medicacion.requiere_medicacion !== false
+      ? pautaDeHoy(medicacion.medicamentos)
+      : [];
 
   return (
     <>
@@ -156,6 +165,33 @@ export default async function PatientHome() {
       </section>
 
       <PatientTasks tasks={tasks} hoy={hoy} />
+
+      {/* Medicación de hoy: lo anotado, ordenado por momento del día. Sin
+          casillas de «tomada»: no se registra nada (decisión del 6-oct). */}
+      {medicacionHoy.length > 0 && (
+        <section className="tp-space-top" aria-labelledby="tp-medicacion-hoy">
+          <div className="tp-section-heading">
+            <h2 className="tp-h2" id="tp-medicacion-hoy">
+              Tu medicación de hoy
+            </h2>
+          </div>
+          <div className="tp-card tp-space-top">
+            {medicacionHoy.map((t) => (
+              <div key={t.momento} className="tp-list-row">
+                <span className="tp-list-label">{MOMENTO_LABEL[t.momento]}</span>
+                <span className="tp-list-hint">
+                  {t.medicamentos.map((m) => `${m.nombre} · ${m.dosis}`).join(", ")}
+                </span>
+              </div>
+            ))}
+            <Link href="/app/medicacion" className="tp-list-row">
+              <Pill size={18} strokeWidth={1.7} aria-hidden />
+              <span className="tp-list-label">Ver mi pauta completa</span>
+              <ChevronRight size={17} strokeWidth={1.8} aria-hidden className="tp-chevron" />
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Cuestionarios. Se enuncian como una petición del profesional: el
           paciente no ve puntuación ni severidad, ni aquí ni al responder. */}

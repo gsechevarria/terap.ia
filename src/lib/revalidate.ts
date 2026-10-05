@@ -33,6 +33,7 @@ export function revalidatePaciente(): void {
   // `/app/more` enseña la deuda pendiente: sin esto, el paciente cobraba y
   // seguía viendo el importe de antes en el menú.
   revalidatePath("/app/more");
+  revalidatePath("/app/medicacion");
 }
 
 /**

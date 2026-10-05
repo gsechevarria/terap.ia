@@ -875,6 +875,102 @@ Update: {
 };
 Relationships: [{ foreignKeyName: "invitations_invited_by_fkey"; columns: ["invited_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "invitations_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },{ foreignKeyName: "invitations_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "invitations_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
+"medication_changes": {
+Row: {
+"id": number;
+"patient_id": string;
+"entry_id": string | null;
+"professional_id": string | null;
+"accion": string;
+"antes": Json | null;
+"despues": Json | null;
+"created_at": string;
+};
+Insert: {
+"id": number;
+"patient_id": string;
+"entry_id"?: string | null;
+"professional_id"?: string | null;
+"accion": string;
+"antes"?: Json | null;
+"despues"?: Json | null;
+"created_at"?: string;
+};
+Update: {
+"id"?: number;
+"patient_id"?: string;
+"entry_id"?: string | null;
+"professional_id"?: string | null;
+"accion"?: string;
+"antes"?: Json | null;
+"despues"?: Json | null;
+"created_at"?: string;
+};
+Relationships: [{ foreignKeyName: "medication_changes_entry_id_fkey"; columns: ["entry_id"]; isOneToOne: false; referencedRelation: "medication_entries"; referencedColumns: ["id"] },{ foreignKeyName: "medication_changes_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "medication_changes_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"medication_entries": {
+Row: {
+"id": string;
+"patient_id": string;
+"professional_id": string;
+"nombre": string;
+"dosis": string;
+"momentos": (string)[];
+"horario": string | null;
+"frecuencia": string;
+"dias_semana": (number)[];
+"con_comida": string;
+"instrucciones": string | null;
+"prescrito_por": string;
+"fecha_inicio": string | null;
+"fecha_fin": string | null;
+"retirada_at": string | null;
+"created_at": string;
+"updated_at": string;
+"updated_by": string | null;
+};
+Insert: {
+"id"?: string;
+"patient_id": string;
+"professional_id": string;
+"nombre": string;
+"dosis": string;
+"momentos"?: (string)[];
+"horario"?: string | null;
+"frecuencia"?: string;
+"dias_semana"?: (number)[];
+"con_comida"?: string;
+"instrucciones"?: string | null;
+"prescrito_por": string;
+"fecha_inicio"?: string | null;
+"fecha_fin"?: string | null;
+"retirada_at"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+"updated_by"?: string | null;
+};
+Update: {
+"id"?: string;
+"patient_id"?: string;
+"professional_id"?: string;
+"nombre"?: string;
+"dosis"?: string;
+"momentos"?: (string)[];
+"horario"?: string | null;
+"frecuencia"?: string;
+"dias_semana"?: (number)[];
+"con_comida"?: string;
+"instrucciones"?: string | null;
+"prescrito_por"?: string;
+"fecha_inicio"?: string | null;
+"fecha_fin"?: string | null;
+"retirada_at"?: string | null;
+"created_at"?: string;
+"updated_at"?: string;
+"updated_by"?: string | null;
+};
+Relationships: [{ foreignKeyName: "medication_entries_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "medication_entries_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "medication_entries_updated_by_fkey"; columns: ["updated_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
 "mood_entries": {
 Row: {
 "id": string;
@@ -1150,6 +1246,30 @@ Update: {
 "revoked_at"?: string | null;
 };
 Relationships: [{ foreignKeyName: "patient_assignments_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] },{ foreignKeyName: "patient_assignments_organization_id_fkey"; columns: ["organization_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },{ foreignKeyName: "patient_assignments_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "patient_assignments_professional_id_fkey"; columns: ["professional_id"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
+};
+"patient_medication": {
+Row: {
+"patient_id": string;
+"visible_paciente": boolean;
+"requiere_medicacion": boolean | null;
+"updated_at": string;
+"updated_by": string | null;
+};
+Insert: {
+"patient_id": string;
+"visible_paciente"?: boolean;
+"requiere_medicacion"?: boolean | null;
+"updated_at"?: string;
+"updated_by"?: string | null;
+};
+Update: {
+"patient_id"?: string;
+"visible_paciente"?: boolean;
+"requiere_medicacion"?: boolean | null;
+"updated_at"?: string;
+"updated_by"?: string | null;
+};
+Relationships: [{ foreignKeyName: "patient_medication_patient_id_fkey"; columns: ["patient_id"]; isOneToOne: false; referencedRelation: "patients"; referencedColumns: ["id"] },{ foreignKeyName: "patient_medication_updated_by_fkey"; columns: ["updated_by"]; isOneToOne: false; referencedRelation: "professionals"; referencedColumns: ["id"] }];
 };
 "patient_notes": {
 Row: {
@@ -1885,6 +2005,7 @@ Functions: {
 "issue_invitation": { Args: {"p_patient_id": string | null;"p_token_hash": string | null;"p_email"?: string | null;"p_ttl_hours"?: number | null}; Returns: ({"invitation_id": string;"expires_at": string;"recipient": string})[] };
 "issue_professional_invitation": { Args: {"p_org": string | null;"p_email": string | null;"p_token_hash": string | null;"p_role"?: Database["public"]["Enums"]["org_member_role"] | null;"p_can_invite"?: boolean | null;"p_ttl_hours"?: number | null}; Returns: string };
 "mark_notification_read": { Args: {"p_id": string | null}; Returns: undefined };
+"medication_visible_to_patient": { Args: {"p_patient_id": string | null}; Returns: boolean };
 "my_professional_context": { Args: Record<PropertyKey, never>; Returns: Json };
 "patient_accept_consent": { Args: Record<PropertyKey, never>; Returns: string };
 "patient_request_appointment": { Args: {"p_kind": string | null;"p_preferred_start"?: string | null;"p_alt_start"?: string | null;"p_duration_min"?: number | null;"p_note"?: string | null;"p_appointment_id"?: string | null}; Returns: string };

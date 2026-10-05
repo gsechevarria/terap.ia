@@ -345,6 +345,21 @@ bloqueos según la duración. La ocupación la da `getDayBusyAction`, con el
 criterio de `findConflict`; es ayuda para elegir, no la barrera. Sin
 migraciones. **Sin revisión visual en este entorno.**
 
+## Pauta de medicación (6-oct) — migración 50 APLICADA, en producción
+
+`20261006100001_medicacion.sql`. Pestaña «Medicación» en la ficha con casilla
+«Mostrar en la app del paciente» (apagada por defecto) y «Mi medicación» en la
+app (Más + tarjeta en Inicio), solo si está activada: lo decide la RLS, no la
+pantalla. **Transcripción de la pauta del médico**: `prescrito_por`
+obligatorio, sin cálculo, sin recordatorios y sin «tomada» (descartados el
+6-oct). Los medicamentos se retiran, no se borran, y hay registro de cambios
+escrito solo por disparadores. Tres tablas nuevas; `terap-app` no se ve
+afectada. **Migración aplicada por Gabriel desde el editor SQL el 6-oct**
+(declaración suya, ejecutada desde el fichero de la rama); después se fusionó
+el PR #82. Aplicada desde el editor: el historial del CLI vuelve a estar
+desincronizado.
+Detalle, aplicación y reversión: [docs/MEDICACION.md](docs/MEDICACION.md).
+
 **Asistencia solo en citas ya empezadas (6-oct).** Marcar «acudió» en una
 cita futura la liquidaba por adelantado (bono o pago pendiente), la pasaba a
 `completed` —y desaparecía de las dos listas de la ficha— y habilitaba el
@@ -818,6 +833,10 @@ commits de la revisión: `supabase/scripts/reparar-historial.sql`,
   **no activa ninguna alerta ni notificación**. El circuito de riesgo sigue
   siendo el ítem 9 del PHQ-9 y el 024. Catálogo y reglas de redacción en
   `src/app/app/_ui/apoyo.ts`, sujetas por `src/lib/apoyo.test.ts`.
+- **Pauta de medicación (6-oct): solo transcripción.** El psicólogo anota lo
+  que indicó el médico (`prescrito_por` obligatorio). Nada de calcular dosis,
+  comprobar interacciones, sugerir cambios, recordar tomas ni registrar si se
+  tomó: cualquiera de esas cosas exige decidirlo de nuevo (MDR).
 - **Solo datos ficticios** hasta que existan DPA + base jurídica RGPD art. 9 +
   decisión explícita. Banner permanente de demo siempre visible.
 - **Nada que interprete o recomiende clínicamente. Nada que emita facturas.**
