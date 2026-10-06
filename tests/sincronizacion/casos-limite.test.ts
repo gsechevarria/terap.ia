@@ -9,7 +9,7 @@ import { actuarComo, admin, nuevoUsuario, type Actor } from "./actores";
 
 import type { ActionResult } from "@/lib/action-result";
 import { createTaskAction } from "@/lib/actions/tasks";
-import { cancelAppointmentAction, createAppointmentAction, requestAppointmentAction, resolveRequestAction } from "@/lib/actions/appointments";
+import { cancelAppointmentAction, createAppointmentAction, requestAppointmentAction, resolveRequestAction, respondAppointmentAction, updateAppointmentAction } from "@/lib/actions/appointments";
 import { createScaleAssignmentAction } from "@/lib/actions/scales";
 import { addMoodEntryAction, deleteMoodEntryAction } from "@/lib/actions/mood";
 import { getCurrentPatient } from "@/lib/queries/identity";
@@ -21,7 +21,10 @@ import { listPatientsWithOverview } from "@/lib/queries/patients";
 import { getMyMoodEntries } from "@/lib/queries/wellbeing";
 
 const sha = (t: string) => createHash("sha256").update(t).digest("hex");
-const enHoras = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
+// Ancladas a la hora en punto para poder buscar la cita por su inicio exacto.
+const base = Math.ceil(Date.now() / 3_600_000) * 3_600_000;
+const enHoras = (h: number) => new Date(base + h * 3_600_000).toISOString();
+const enHorasExacta = enHoras;
 
 async function ok<T>(p: Promise<ActionResult<T>>): Promise<T> {
   const r = await p;
@@ -77,8 +80,9 @@ describe("citas en los bordes", () => {
     await pro.db.from("appointments").insert({
       professional_id: await proId(pro),
       patient_id: patientId,
-      starts_at: enHoras(-0.2),
-      ends_at: enHoras(0.8),
+      // Respecto a AHORA, no a la hora en punto: tiene que haber empezado ya.
+      starts_at: new Date(Date.now() - 12 * 60_000).toISOString(),
+      ends_at: new Date(Date.now() + 48 * 60_000).toISOString(),
       status: "confirmed",
       video_link: "https://meet.example.com/en-curso",
     });
@@ -110,6 +114,36 @@ describe("avisos al paciente", () => {
     expect(tipos.has("new_task")).toBe(true);
     expect(tipos.has("appointment_created")).toBe(true);
     expect(tipos.has("new_scale")).toBe(true);
+  });
+});
+
+describe("avisos al cambiar una cita (H9)", () => {
+  it("mover y cancelar desde el panel avisan al paciente; si cancela él, no", async () => {
+    await como(pro, () => ok(createAppointmentAction({ patientId, startsAt: enHoras(120), endsAt: enHoras(121), freq: "none" })));
+    const { data: cita } = await admin()
+      .from("appointments")
+      .select("id")
+      .eq("patient_id", patientId)
+      .eq("starts_at", enHorasExacta(120))
+      .single();
+    await como(pro, () => ok(updateAppointmentAction({ id: cita!.id, patientId, startsAt: enHoras(144), endsAt: enHoras(145) })));
+    await como(pro, () => ok(cancelAppointmentAction(cita!.id)));
+    const tipos = async (id: string) =>
+      ((await admin().from("notifications").select("type").eq("user_id", paciente.id).eq("payload->>appointment_id", id)).data ?? [])
+        .map((n) => n.type)
+        .filter((t) => t !== "appointment_created")
+        .sort();
+    expect(await tipos(cita!.id)).toEqual(["appointment_cancelled", "appointment_moved"]);
+
+    await como(pro, () => ok(createAppointmentAction({ patientId, startsAt: enHoras(170), endsAt: enHoras(171), freq: "none" })));
+    const { data: otra } = await admin()
+      .from("appointments")
+      .select("id")
+      .eq("patient_id", patientId)
+      .eq("starts_at", enHorasExacta(170))
+      .single();
+    await como(paciente, () => ok(respondAppointmentAction(otra!.id, "cancel")));
+    expect(await tipos(otra!.id)).toEqual([]);
   });
 });
 

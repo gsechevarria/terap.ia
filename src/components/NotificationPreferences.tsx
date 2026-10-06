@@ -10,7 +10,7 @@ import {
 
 const OPTIONS: { key: keyof NotificationPrefs; label: string }[] = [
   { key: "appointment_reminders", label: "Recordatorios de cita (durante las 24 h anteriores)" },
-  { key: "new_appointment", label: "Nueva cita" },
+  { key: "new_appointment", label: "Citas nuevas, cambiadas o canceladas" },
   { key: "new_task", label: "Nueva tarea" },
   { key: "new_scale", label: "Nuevo cuestionario" },
 ];

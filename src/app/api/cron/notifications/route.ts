@@ -9,7 +9,16 @@ import { isAllowedPushEndpoint, safeNotificationPath } from "@/lib/push-safety";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-const PREF = { appointment_reminder: "appointment_reminders", appointment_created: "new_appointment", new_task: "new_task", new_scale: "new_scale" } as const;
+// Mover o cancelar una cita respeta la misma preferencia que una cita nueva:
+// es la casilla «Citas» del paciente (20261006130001_aviso_cambio_cita).
+const PREF = {
+  appointment_reminder: "appointment_reminders",
+  appointment_created: "new_appointment",
+  appointment_moved: "new_appointment",
+  appointment_cancelled: "new_appointment",
+  new_task: "new_task",
+  new_scale: "new_scale",
+} as const;
 
 export async function GET(req: NextRequest) {
   const expected = process.env.CRON_SECRET;
