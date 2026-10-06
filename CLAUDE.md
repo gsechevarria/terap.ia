@@ -365,8 +365,8 @@ desincronizado otra vez). Batería: 52/52. H6-H8
 `router.refresh()` al volver a la app, al reconectar, desde la caché de
 atrás/adelante, cada 2 min a la vista y al navegar si pasó más de 1 min.
 **H9** (avisar al mover, cancelar o borrar una cita): migración
-`20261006130001_aviso_cambio_cita` (la 52), **pendiente de aplicar por
-Gabriel**; el PR espera a que esté aplicada.
+`20261006130001_aviso_cambio_cita` (la 52), **aplicada por Gabriel desde
+el editor SQL el 6-oct** (declaración suya; historial del CLI desincronizado).
 
 ## Pauta de medicación (6-oct) — migración 50 APLICADA, en producción
 
