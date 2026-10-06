@@ -96,7 +96,7 @@ Además del Supabase local, se revisó el código entero: qué escribe cada acci
 - **H2 · Una cita futura cancelada desaparecía de la ficha. CORREGIDO el 6-oct:** ahora sale en «Próximas citas» con su estado. «Próximas citas» excluye las canceladas e «Historial» exige que ya haya pasado. Sigue visible en la agenda y en «Todas las citas».
 - **H7 · El formulario del diario podía quedarse con el valor de la carga. CORREGIDO el 6-oct:** se ajusta cuando cambia el registro de hoy o el día. De paso, el editor de etiquetas de la ficha se vuelve a montar si cambian las etiquetas. `MoodEntryForm` guarda en estado lo recibido al montarse. Se nota con el mismo paciente en dos dispositivos o al cruzar la medianoche con la app abierta.
 - **H8 · Los contadores de la barra lateral no se actualizaban al cambiar de sección. CORREGIDO el 6-oct:** `RefrescoAutomatico` refresca también al navegar si el último refresco tiene más de un minuto. Afecta a «Solicitudes» y al punto de avisos, porque el layout no se vuelve a pedir en navegaciones internas. Se actualizan al recargar.
-- **H9 · Mover o cancelar una cita no avisa al paciente.** Solo se avisa al crearla. Es una decisión de producto, no un fallo.
+- **H9 · Mover o cancelar una cita no avisaba al paciente. CORREGIDO el 6-oct**, con la migración `20261006130001_aviso_cambio_cita`. Un disparador avisa cuando el profesional mueve, cancela o borra una cita futura. No avisa si quien cancela es el propio paciente, si la cita ya ha pasado, ni si el cambio viene de aceptar una solicitud, porque esa función ya avisa. Respeta la preferencia «Citas».
 
 ### Lo que NO es un problema, aunque lo parezca
 

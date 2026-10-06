@@ -757,5 +757,46 @@ export async function sqlRegressions(db) {
   await mal({ frecuencia: 'si_precisa' });
  }));
 
+
+ // --- Aviso al paciente cuando se mueve o cancela una cita (20261006130001) ---
+ const avisos = async (cita) => (await q("select type from notifications where payload->>'appointment_id'=$1 and type in ('appointment_moved','appointment_cancelled') order by created_at", [cita])).map((r) => r.type);
+ const citaFutura = async (horas) => (await q(`insert into appointments(professional_id,patient_id,starts_at,ends_at) values($1,$2,now()+interval '${horas} hours',now()+interval '${horas + 1} hours') returning id`, [pro2, pat2]))[0].id;
+ // Las acciones van con la sesión del profesional; la comprobación, fuera:
+ // la RLS de `notifications` solo enseña a cada uno los suyos.
+ await test('Aviso: mover y cancelar como profesional avisan al paciente, una vez', async () => {
+  let cita; await user(uid2, async () => {
+  cita = await citaFutura(200);
+  await q("update appointments set starts_at=starts_at+interval '1 day', ends_at=ends_at+interval '1 day' where id=$1", [cita]);
+  await q("update appointments set notes='solo una nota' where id=$1", [cita]);
+  // Cancelar y borrar van por `change_appointment`, como en la app.
+  await q("select change_appointment(p_id=>$1, p_action=>'cancel')", [cita]);
+  await q("select change_appointment(p_id=>$1, p_action=>'cancel')", [cita]);
+  });
+  assert.deepEqual(await avisos(cita), ['appointment_moved', 'appointment_cancelled']);
+ });
+ await test('Aviso: borrar una cita futura avisa; una pasada no', async () => {
+  let futura, pasada; await user(uid2, async () => {
+  futura = await citaFutura(220);
+  pasada = (await q("insert into appointments(professional_id,patient_id,starts_at,ends_at) values($1,$2,now()-interval '5 hours',now()-interval '4 hours') returning id", [pro2, pat2]))[0].id;
+  await q("update appointments set starts_at=starts_at-interval '1 hour' where id=$1", [pasada]);
+  await q("select change_appointment(p_id=>$1, p_action=>'delete')", [futura]);
+  await q("select change_appointment(p_id=>$1, p_action=>'delete')", [pasada]);
+  });
+  assert.deepEqual(await avisos(futura), ['appointment_cancelled']);
+  assert.deepEqual(await avisos(pasada), []);
+ });
+ await test('Aviso: si cancela el propio paciente, no se le avisa a sí mismo', async () => {
+  let cita; await user(uid2, async () => { cita = await citaFutura(240); });
+  await user(patUid2, () => q("select patient_respond_appointment($1,'cancel')", [cita]));
+  assert.deepEqual(await avisos(cita), []);
+ });
+ await test('Aviso: aceptar una solicitud de cambio no duplica el aviso de la solicitud', async () => {
+  let cita, req; await user(uid2, async () => { cita = await citaFutura(260); });
+  await user(patUid2, async () => { req = (await q("select patient_request_appointment('reschedule',now()+interval '300 hours',null,50,null,$1) id", [cita]))[0].id; });
+  await user(uid2, () => q("select resolve_appointment_request($1,'accept')", [req]));
+  assert.deepEqual(await avisos(cita), []);
+  assert.equal((await q("select count(*)::int n from notifications where dedupe_key=$1", ['apptreqres:' + req]))[0].n, 1);
+ });
+
  return passed;
 }
